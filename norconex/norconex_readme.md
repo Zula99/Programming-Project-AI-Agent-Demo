@@ -106,15 +106,21 @@ norconex-collector-http-3.1.0/
 
 ### 3.2 Install Committer
 1. Navigate to the extracted committer folder
+
 2. Run the installer:
    ```cmd
    install.bat
    ```
+   OR
+   double click 'install.sh' .bat file.
+   
 3. When prompted, enter path to Norconex lib folder:
    ```
    D:\path\to\your\project\norconex-collector-http-3.1.0\lib
    ```
 4. Choose option **1** when asked about duplicate JARs (recommended)
+
+
 
 ### 3.3 Verify Committer Installation
 Check that new JARs were added:
