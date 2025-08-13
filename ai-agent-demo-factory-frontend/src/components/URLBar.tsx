@@ -7,7 +7,7 @@ export default function URLBar() {
 
     return (
         <div className="flex items-center gap-2 mt-4">
-            <div className="flex items-center flex-1 bg-white border rounded-lg px-3 py-2">
+            <div className="flex items-center flex-1 bg-white text-gray-300 border rounded-lg px-3 py-2">
                 <input
                     type="text"
                     value={url}
