@@ -1,0 +1,333 @@
+<document xmlns="http://maven.apache.org/changes/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/changes/1.0.0 http://maven.apache.org/xsd/changes-1.0.0.xsd">
+  <properties>
+    <title>Norconex HTTP Collector Release Notes</title>
+    <author email="info@norconex.com">Norconex Inc.</author>
+  </properties>
+  <body>
+
+    <release version="3.1.0" date="2025-05-24" description="Minor release.">
+      <action dev="essiembre" type="add" issue="1120">
+        HTTP status code and reason are now captured as metadata field 
+        ""collector.http-status-code" and "collector.http-status-reason"
+        respectively. Applies to both GenericHttpFetcher and
+        WebDriverHttpFetcher. 
+      </action>
+      <action dev="essiembre" type="add" issue="1061">
+        New "removeTrailingFragment" option on GenericURLNormalizer. 
+      </action>
+      <action dev="essiembre" type="add">
+        New WebDriverHttpFetcher browser options: CUSTOM. 
+      </action>
+      <action dev="essiembre" type="add">
+        Can now configure HttpSniffer "host" with WebDriverHttpFetcher.
+      </action>
+      <action dev="essiembre" type="add">
+        Can now configure HttpSniffer "responseTimeout" with 
+        WebDriverHttpFetcher.
+      </action>
+      <action dev="sakanaosama" type="add">
+        Now supports chained proxy when using HttpSniffer.
+      </action>
+      <action dev="essiembre" type="add" issue="844">
+        Can now pass arguments to WebDriverHttpFetcher browser (in addition to 
+        regular WebDriver capabilities).
+      </action>
+      <action dev="essiembre" type="update">
+        Now requires Java 11 to run. 
+      </action>
+      <action dev="essiembre" type="add" issue="1063">
+        Can now specify more than one URL Normalizer.
+      </action>
+      <action dev="essiembre" type="update" issue="1122">
+        HttpSniffer replaced Mobproxy and original LittleProxy dependency with
+        more recent LittleProxy fork (LittleProxy/LittleProxy).
+      </action>
+      <action dev="essiembre" type="update">
+        Maven dependency updates: Guava 33.0.0, imgscalr 4.2, 
+        Jetty 9.4.54.v20240208, Netty 4.1.96.Final, Selenium 4.23.0,
+        Apache Commons Lang 3.14.0, LittleProxy 2.4.0.
+        Removed browsermob.
+      </action>
+      <action dev="essiembre" type="fix" issue="1121">
+        Fixed redirected URL target being considered orphan when source URL
+        is not yet ready for recrawl.   
+      </action>
+      <action dev="essiembre" type="fix" issue="1117">
+        Fixed a NullPointerException in WebDriverHttpFetcher occurring in some
+        init tasks.  
+      </action>
+      <action dev="essiembre" type="fix" issue="1067">
+        Fixed stop command causing error. 
+      </action>
+      <action dev="essiembre" type="fix">
+        Fixed Opera WebDriverHttpFetcher proxy settings not being applied.   
+      </action>
+    </release>
+
+    <release version="3.0.2" date="2023-07-09" description="Maintenance release.">
+      <action dev="essiembre" type="add" issue="803">
+        Fixed GenericSitemapResolver NPE when the sitemap content-type
+        could not be detected.
+      </action>
+      <action dev="essiembre" type="update">
+        Maven dependency updates: norconex-commons-maven-parent 1.0.2,
+        norconex-collector-core 2.0.2, norconex-importer 3.0.1,
+        Guava 32.0.0-jre, Selenium 4.0.0, Jetty 9.4.51.v20230217.
+      </action>
+    </release>
+
+    <release version="3.0.1" date="2022-08-30" description="Maintenance release.">
+      <action dev="essiembre" type="add" issue="790">
+        New MDC attributes which can be used in supporting logging framework:
+        "ctx:crawler.id", "ctx:crawler.id.safe", "ctx:collector.id.safe", 
+        and "ctx:collector.id.safe".
+      </action>
+      <action dev="essiembre" type="fix" issue="788">
+        Fixed invalid relative URLs resolution when such URLs contain a 
+        colon (:) that is not the scheme.
+      </action>
+      <action dev="essiembre" type="fix" issue="785">
+        Fixed not always considering effective top level domain properly 
+        in HSTS resolution.
+      </action>
+      <action dev="essiembre" type="fix" issue="781">
+        Fixed occasional concurrency issue when crawler terminates.
+      </action>
+      <action dev="essiembre" type="fix">
+        Fixed the crawler sometimes not exiting when done. 
+      </action>
+    </release>
+
+    <release version="3.0.0" date="2022-01-05"
+            description="Major release. NOT a drop-in replacement for 2.x.">
+            
+      <!-- 3.0.0 (GA) -->
+      
+      <action dev="essiembre" type="update">
+        Updated transitive dependencies with known vulnerabilities.
+      </action>
+      <action dev="essiembre" type="fix" issue="766">
+        Fixed data store engine errors (via "collector-core" dependency update). 
+      </action>
+      <action dev="essiembre" type="fix" issue="770">
+        Fixed "Connection Pool Shut Down" error (from collector-core update).
+      </action>
+      
+      <!-- 3.0.0-RC1 -->
+      
+      <action dev="essiembre" type="add" issue="172">
+        Can now automatically stop a crawler when it reached a certain number
+        of crawler events, thanks to the new Collector Core 
+        "StopCrawlerOnMaxEventListener" class.
+      </action>
+      <action dev="essiembre" type="add" issue="211">
+        Can now send deletion requests to Committers based on "rejected" events
+        thanks to the new Collector Core "DeleteRejectedEventListener" class.
+      </action>
+      <action dev="essiembre" type="add" issue="579">
+        Added optional deduplication feature based on metadata and/or document 
+        checksums.
+      </action>
+      <action dev="essiembre" type="add" issue="182">
+        Added support for ETag/If-None-Match to GenericHttpFetcher.
+      </action>
+      <action dev="essiembre" type="add" issue="694">
+        Added supports HTTP Strict Transport Security (HSTS) to 
+        GenericHttpFetcher. Active by default.
+      </action>
+      <action dev="essiembre" type="add" issue="654">
+        Added support for restricting which HTTP method GenericHttpFetcher 
+        accepts.   
+      </action>
+      <action dev="essiembre" type="add" issue="654">
+        Added "DISABLED", "OPTIONAL", "REQUIRED" options for HTTP 
+        HEAD and GET methods. 
+      </action>
+      <action dev="essiembre" type="add">
+        New DOMLinkExtractor repeatable "extractSelector" and 
+        "noExtractSelector".  
+      </action>
+      <action dev="essiembre" type="update">
+        HttpCrawlerConfig metadata checksummer move to base class CrawlerConfig.  
+      </action>
+      <action dev="essiembre" type="update">
+        DOMLinkExtractor configurable "dom" elements deprecated in favor 
+        of "linkSelector".  
+      </action>
+      <action dev="essiembre" type="update">
+        Checksummers "disabled" flag deprecated in favor of setting a null
+        checksummer or using a self-closed checksummer tag in config.  
+      </action>
+      <action dev="essiembre" type="fix">
+        Fixed invalid configuration in POM "maven-dependency-plugin".
+      </action>
+      
+      <!-- 3.0.0-M2 -->
+      
+      <action dev="essiembre" type="remove">
+        Removed JEF dependency in favor of improved JMX for tracking.
+      </action>
+      <action dev="essiembre" type="update" issue="751">
+        WebDriver HttpSniffer can now have its max buffer size configured. 
+      </action>
+      <action dev="essiembre" type="fix" issue="738">
+        Fixed NullPointerException when resolving sitemaps.
+      </action>
+      <action dev="essiembre" type="fix" issue="758">
+        Fixed sitemap.xml URL entries not being extracted when they contain 
+        custom elements. 
+      </action>
+
+      <!-- 3.0.0-M1 -->
+
+      <action dev="essiembre" type="add">
+        New IHttpFetcher for making HTTP requests. Multiple instances
+        can now be specified and tried in sequence.  This replaces 
+        IHttpClientFactory, IHttpDocumentFetcher, and IHttpMetadataFetcher.
+      </action>
+      <action dev="essiembre" type="add">
+        New WebDriverHttpFetcher for using popular browsers in headless mode
+        (Chrome, Firefox, ...). Ideal for Javascript-driven websites and 
+        taking screenshots.
+      </action>
+      <action dev="essiembre" type="add" issue="637">
+        Now supports If-Modified-Since for more efficient crawling. 
+      </action>
+      <action dev="essiembre" type="add">
+        New flag for loading start URLs asynchronously.
+      </action>
+      <action dev="essiembre" type="add">
+        New HttpCollectorEvent.
+      </action>
+      <action dev="essiembre" type="add">
+        New crawler event: URLS_POST_IMPORTED 
+        (in addition to new events from Collector Core).
+      </action>
+      <action dev="essiembre" type="add">
+        New GenericHttpFetcher, replacing GenericHttpClientFactory and 
+        GenericHttpDocumentFetcher.
+      </action>
+      <action dev="martin-huber" type="add" issue="577">
+        New "disableSNI" crawler configuration option to disable Server Name 
+        Indication.
+      </action>
+      <action dev="essiembre" type="add">
+        New DOMLinkExtractor using JSoup to extract links. 
+      </action>
+      <action dev="essiembre" type="add">
+        Link extractors can now extracting links from metadata fields in 
+        addition to content.
+      </action>
+      <action dev="essiembre" type="add" issue="428">
+        New "postImportLinks" configuration option for considering links from 
+        metadata fields created during import for crawling 
+        (providing a way to extra links from parsed binaries).
+      </action>
+      <action dev="essiembre" type="add" issue="668">
+        New DOMLinkExtractor that uses JSoup to extract links from 
+        HTML/XML documents.
+      </action>
+      <action dev="essiembre" type="add">
+        New HttpDoc, HttpDocInfo, HttpDocMetadata (new or renamed).
+      </action>
+      <action dev="essiembre" type="add">
+        New metadata field set when URL changes from normalization:
+        "collector.originalReference". 
+      </action>
+      <action dev="essiembre" type="add">
+        Form authentication can now parse and submit HTML forms
+        (taking login page URL instead of form action URL). 
+      </action>
+      <action dev="essiembre" type="update">
+        PhantomJSDocumentFetcher now deprecated in favor of 
+        WebDriverHttpFetcher.
+      </action>
+      <action dev="essiembre" type="update">
+        Now using XML class from Norconex Commons Lang for loading/saving
+        configuration.
+      </action>
+      <action dev="essiembre" type="update">
+        User-Agent no longer set directly on crawler config.  It can be set
+        on IHttpFetcher implementations that support it.
+      </action>
+      <action dev="essiembre" type="update">
+        Now using SLF4J for logging.
+      </action>
+      <action dev="essiembre" type="update" issue="668">
+        HtmlLinkExtractor (and DOMLinkExtractor) now extracts all attributes 
+        of referrer links and adds them to the target document metadata.
+        This can be disabled with the #setIgnoreLinkData() method.
+      </action>
+      <action dev="essiembre" type="update">
+        Dependency updates: Norconex Collector Core 2.0.0, 
+        Jetty 9.4.12.v20180830.
+      </action>
+      <action dev="essiembre" type="update">
+        Now requires Java 8 or higher.
+      </action>
+      <action dev="essiembre" type="update">
+        Lists are now replacing arrays in most places.
+      </action>
+      <action dev="essiembre" type="update">
+        Path is used in addition/instead of File in many places.
+      </action>
+      <action dev="essiembre" type="update">
+        Default working directory structure has been improved.
+      </action>
+      <action dev="essiembre" type="update" issue="592">
+        Improved handling of "trustAllSSLCertificate" in GenericHttpFetcher
+        by auto-accepting/storing certificates. 
+      </action>
+      <action dev="essiembre" type="update">
+        Dates handling now consider the zone.
+      </action>
+      <action dev="essiembre" type="update">
+        Can now control whether to store as metadata all extracted links,
+        just in-scope ones, out-of-scope, both, or none.
+      </action>
+      <action dev="essiembre" type="update">
+        Link extractors and canonical URL classes are now in their own
+        distinct packages. 
+      </action>
+      <action dev="essiembre" type="update">
+        GenericLinkExtractor renamed to HtmlLinkExtractor. 
+      </action>
+      <action dev="essiembre" type="update">
+        Sitemap information now stored in the new data store engine as opposed
+        to its own storage mechanism. 
+      </action>
+      <action dev="essiembre" type="update">
+        URLStatusCrawlerEventListener now saves as CSV instead of TSV. 
+      </action>
+      <action dev="essiembre" type="update">
+        HttpCrawlerEvent now only holds HTTP crawler event names.
+        Crawler events are now all of CrawlerEvent type.
+      </action>
+      <action dev="essiembre" type="remove">
+        Removed some code deprecated in releases before 3.0.0. 
+      </action>
+      <action dev="essiembre" type="remove">
+        IHttpClientFactory, IHttpDocumentFetcher, and IHttpMetadataFetcher and
+        implementations were removed in favor of IHttpFetcher and
+        GenericHttpFetcher. 
+      </action>
+      <action dev="essiembre" type="remove">
+        Removed "data" package (and its classes) in favor of new classes 
+        in "doc" package. 
+      </action>
+      <action dev="essiembre" type="remove">
+        JDBC crawl store implementation has been removed in favor of 
+        NoSQL only (MVStore + MongoDB).
+      </action>
+      <action dev="essiembre" type="remove">
+        ISitemapResolverFactory removed in favor of ISitemapResolver.
+      </action>
+      <action dev="essiembre" type="remove">
+        Removed HttpCollectorEvent (now relying on CollectorEvent only).
+      </action>
+    </release>
+
+  </body>
+</document>
