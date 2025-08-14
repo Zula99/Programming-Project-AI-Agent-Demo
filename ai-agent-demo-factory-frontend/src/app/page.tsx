@@ -1,7 +1,10 @@
+'use client'
+
 import Header from "@/components/Header";
 import URLBar from "@/components/URLBar";
 import RecentRuns from "@/components/RecentRuns";
 import ActiveRun from "@/components/ActiveRun";
+import { useCrawler } from "@/hooks/useCrawler";
 
 export default function Home() {
   return (

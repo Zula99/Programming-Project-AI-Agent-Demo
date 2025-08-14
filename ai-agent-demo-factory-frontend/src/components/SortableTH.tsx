@@ -1,21 +1,25 @@
 export default function SortableTH({
   label,
-  active,
-  dir,
-  onClick,
+  sortKey,
+  currentSort,
+  sortDir,
+  onSort,
   className = "",
 }: {
   label: string;
-  active?: boolean;
-  dir?: "asc" | "desc";
-  onClick: () => void;
+  sortKey: string;
+  currentSort: string;
+  sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
   className?: string;
 }) {
+  const active = currentSort === sortKey;
+  
   return (
     <th
       scope="col"
       className={`cursor-pointer select-none ${className}`}
-      onClick={onClick}
+      onClick={() => onSort(sortKey)}
       title={`Sort by ${label}`}
     >
       <span
@@ -26,7 +30,7 @@ export default function SortableTH({
       >
         {label}
         {active && (
-          <span className="text-xs text-gray-500">{dir === "asc" ? "▲" : "▼"}</span>
+          <span className="text-xs text-gray-500">{sortDir === "asc" ? "▲" : "▼"}</span>
         )}
       </span>
     </th>
