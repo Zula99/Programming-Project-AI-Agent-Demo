@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html data-generated-by="stalefish@0.0.9" lang="de" geo="ALL" dir="ltr" theme="dark" class="lb-breakpoints">
+  <head>
+    <meta charset="utf-8" />
+    <!-- GA -->
+    <script nonce="9J1ELlSMmfWb44O3Rwb_tw">
+      (function (i, s, o, g, r, a, m) {
+        i["GoogleAnalyticsObject"] = r;
+        (i[r] =
+          i[r] ||
+          function () {
+            (i[r].q = i[r].q || []).push(arguments);
+          }),
+          (i[r].l = 1 * new Date());
+        (a = s.createElement(o)), (m = s.getElementsByTagName(o)[0]);
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m);
+      })(
+        window,
+        document,
+        "script",
+        "https://www.google-analytics.com/analytics.js",
+        "ga"
+      );
+      ga("create", "UA-60209926-1", "auto");
+      ga("send", "pageview");
+    </script>
+    <!-- End GA -->
+
+    <!-- Google Tag Manager -->
+    <script nonce="9J1ELlSMmfWb44O3Rwb_tw">
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-NVCXTDN");
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="viewport"
+      content="initial-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover"
+    />
+    <meta http-equiv="x-dns-prefetch-control" content="on" />
+    <title>
+      YouTube for Songwriters – Musikverlage, Verwertungsgesellschaften und
+      andere Gesellschaften
+    </title>
+    <meta
+      name="description"
+      content="Best Practices, mit denen Musikverlage, Verwertungsgesellschaften wie die GEMA und andere Gesellschaften ihr volles Potenzial auf YouTube ausschöpfen. Erstelle deine visuelle Diskografie, präsentiere dein Roster, lass dich zu Playlists inspirieren und vieles mehr."
+    />
+
+    <!-- The canonical tag tells search engines the canonical URL of pages that
+      may otherwise appear as different pages (e.g. with/without query params). -->
+    <link
+      rel="canonical"
+      href="https://artists.youtube/intl/de_ALL/songwriters/publishers-societies-pros/"
+    />
+
+    <!-- Social -->
+    <meta name="pinterest" content="nopin" />
+    <meta
+      property="og:url"
+      class="meta-url"
+      content="https://artists.youtube/intl/de_ALL/songwriters/publishers-societies-pros/"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://lh3.googleusercontent.com/bi2PAgzVpYZY8tGSsCi07mE7KHNWxGJeijiKBzuz92OlCIkx_ye-IXc2lO8XZ6yb-VtOTlWEVEkesGpdj4CrbdQw_LlCklgnLCxQ5eOVau7ail-EiQs=w600"
+    />
+    <meta
+      property="og:title"
+      content="YouTube for Songwriters – Musikverlage, Verwertungsgesellschaften und andere Gesellschaften"
+    />
+    <meta property="og:site_name" content="YouTube for Artists" />
+    <meta
+      property="og:description"
+      content="Best Practices, mit denen Musikverlage, Verwertungsgesellschaften wie die GEMA und andere Gesellschaften ihr volles Potenzial auf YouTube ausschöpfen. Erstelle deine visuelle Diskografie, präsentiere dein Roster, lass dich zu Playlists inspirieren und vieles mehr."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:url"
+      class="meta-url"
+      content="https://artists.youtube/intl/de_ALL/songwriters/publishers-societies-pros/"
+    />
+    <meta
+      name="twitter:title"
+      content="YouTube for Songwriters – Musikverlage, Verwertungsgesellschaften und andere Gesellschaften"
+    />
+    <meta
+      name="twitter:description"
+      content="Best Practices, mit denen Musikverlage, Verwertungsgesellschaften wie die GEMA und andere Gesellschaften ihr volles Potenzial auf YouTube ausschöpfen. Erstelle deine visuelle Diskografie, präsentiere dein Roster, lass dich zu Playlists inspirieren und vieles mehr."
+    />
+    <meta
+      name="twitter:image"
+      content="https://lh3.googleusercontent.com/bi2PAgzVpYZY8tGSsCi07mE7KHNWxGJeijiKBzuz92OlCIkx_ye-IXc2lO8XZ6yb-VtOTlWEVEkesGpdj4CrbdQw_LlCklgnLCxQ5eOVau7ail-EiQs=w600"
+    />
+
+    <link rel="preconnect" href="//lh3.googleusercontent.com" />
+    <link rel="preconnect" href="//kstatic.googleusercontent.com" />
+
+    <!-- Preload assets -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;lang=en"
+      as="style"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900"
+      as="style"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+      as="style"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.js?cache=701eb8f4ec"
+      as="script"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+
+    <!-- Favicons -->
+    <link
+      rel="shortcut icon"
+      href="https://www.youtube.com/yts/img/favicon-vfl8qSV2F.ico"
+      type="image/x-icon"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_32-vflOogEID.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_48-vflVjB_Qk.png"
+      sizes="48x48"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_96-vflW9Ec0w.png"
+      sizes="96x96"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_144-vfliLAfaB.png"
+      sizes="144x144"
+    />
+
+    <!-- External Stylesheets -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900|Roboto:300,400,500,600,700&amp;lang=en&amp;display=swap"
+      media="all"
+      nonce="9J1ELlSMmfWb44O3Rwb_tw"
+    />
+    <link
+      href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css"
+      rel="stylesheet"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+    <link
+      rel="stylesheet"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+   nonce="9J1ELlSMmfWb44O3Rwb_tw" />
+
+    <script
+      defer
+      src="https://www.gstatic.com/external_hosted/hammerjs/v2_0_2/hammer.min.js"
+    nonce="9J1ELlSMmfWb44O3Rwb_tw"></script>
+    <script defer src="/static/compiled/index.min.js?cache=701eb8f4ec" nonce="9J1ELlSMmfWb44O3Rwb_tw"></script>
+  </head>
+  <body class="yta-body">
+    <header
+      class="lb-header"
+      lb-auto-init="LBHeader"
+      lb-options="{
+            'persistentCtas': ['primary', 'secondary']
+          }"
+    >
+      <div class="lb-header__row">
+        <div class="lb-header__row-left lb-header-js-row-left">
+          <button
+            class="lb-header__menu-button lb-header-js-menu-btn"
+            aria-label="Alle einblenden"
+          >
+            <span class="lb-header__menu-button-box">
+              <span class="lb-header__menu-button-stroke"></span>
+            </span>
+          </button>
+          <a
+            class="lb-header__logo-wrapper lb-header-js-logo-wrapper"
+            href="/intl/de/"
+            aria-label="Startseite"
+          >
+            <img
+              class="lb-header__logo lb-header-js-logo"
+              lb-auto-init="LBImageLoader"
+              lb-options="{
+        '_1x': 'https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8 1x'
+      }"
+              src="https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8"
+              alt="site-logo"
+              style="width: auto"
+            />
+          </a>
+          <a class="lb-button lb-header__jump-to" href="#content">
+            Direkt zum Inhalt
+          </a>
+          <div class="lb-header__nav-wrapper lb-header-js-nav-wrapper">
+            <nav class="lb-header__nav lb-header-js-nav" role="menubar">
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Funktionen&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/intl/de/features/"
+                  target="_self"
+                >
+                  Funktionen
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Neuigkeiten&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/intl/de/news/"
+                  target="_self"
+                >
+                  Neuigkeiten
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-2"
+                  aria-haspopup="menu"
+                  aria-label="Ressourcen menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-resources"
+                  role="menuitem"
+                >
+                  Ressourcen
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-resources"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Ressourcen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Ressourcen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/channel-optimization/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Offiziellen Künstlerkanal erstellen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Offiziellen Künstlerkanal erstellen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/shorts-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Shorts für Künstler*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Shorts für Künstler*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/pre-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen vor der Veröffentlichung&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen vor der Veröffentlichung
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/release-day-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen am Veröffentlichungstag&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen am Veröffentlichungstag
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/post-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen nach der Veröffentlichung&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen nach der Veröffentlichung
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/growing-your-audience/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Mehr Menschen erreichen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Mehr Menschen erreichen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/analytics-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Analytics for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Analytics for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/additional-resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Weitere Ressourcen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Weitere Ressourcen
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-3"
+                  aria-haspopup="menu"
+                  aria-label="Songwriter*innen menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-songwriters"
+                  role="menuitem"
+                >
+                  Songwriter*innen
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-songwriters"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Startseite für Songwriter*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Startseite für Songwriter*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/songwriters-producers/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Songwriter*innen und Produzent*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Songwriter*innen und Produzent*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header__subnav-item--active lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/publishers-societies-pros/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Musikverlage und Gesellschaften&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Musikverlage und Gesellschaften
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/content-strategies/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Inhaltsstrategien&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Inhaltsstrategien
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/insider-tips/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Insider-Tipps&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Insider-Tipps
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Charts&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="https://charts.youtube.com/"
+                  target="_blank"
+                >
+                  Charts
+                </a>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="lb-header__row-right lb-header-js-row-right">
+          <div class="lb-header__search-wrapper lb-header-js-search-wrapper">
+            <!-- Search inner -->
+            <div class="lb-header__search-inner lb-header-js-search-inner">
+              <form
+                class="lb-header__search-bar-wrapper"
+                novalidate
+                role="search"
+                lb-auto-init="LBSearchForm"
+                lb-options="{
+                'resultsPage': '/search/'
+              }"
+              >
+                <!-- Search expand/search button -->
+                <button
+                  class="lb-header__search-button lb-header-js-search-toggle"
+                  aria-label="Suchen"
+                  type="submit"
+                  role="button"
+                >
+                  <svg
+                    class="lb-header__search-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                </button>
+                <!-- end Search expand/search button -->
+                <!-- Search bar -->
+                <input
+                  class="lb-font-body lb-header__search-bar lb-header-js-search-bar"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+    &#x27;name&#x27;: &#x27;keyword_search&#x27;
+  }"
+                  type="text"
+                  placeholder="Suchen"
+                  aria-hidden="false"
+                  aria-label="Suchen"
+                  tabindex="-1"
+                  name="lb-search"
+                />
+              </form>
+              <!-- Search collapse button -->
+              <button
+                class="lb-header__search-button lb-header__search-button--collapse lb-header-js-search-toggle"
+                aria-label="Schließen"
+                tabindex="-1"
+              >
+                <svg
+                  class="lb-header__search-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M0 0h24v24H0z" fill="none" />
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                  />
+                </svg>
+              </button>
+              <!-- end Search collapse button -->
+            </div>
+            <!-- end Search inner -->
+            <div
+              class="lb-header__search-overlay lb-header-js-search-toggle"
+            ></div>
+          </div>
+        </div>
+        <!-- end Search -->
+      </div>
+    </header>
+
+    <main id="content" class="yta-main" role="main">
+      <div class="yta-main__inner">
+        <div class="yta-songwriters-subpage publishers-societies">
+          <style>
+            .yta-page-hero-alpha {
+              background-image: url(https://lh3.googleusercontent.com/I1xuT0jrAY8N7N9s0srGR4xPRJuJYLoPZkIum2OiKWGzuK-SkiZPTWKHb19NlSR2GVSudfcH2y-cF2F_z1CUhv3c7nBgJn52PIIWFR08kts7wY_1kZhX=w400);
+            }
+          </style>
+
+          <style>
+            .yta-page-hero-alpha__column-right {
+              background-image: url(https://lh3.googleusercontent.com/lNt9e4WQvJAoC2rPdjzPYPR2O1uYLwZT3obfxQ2jzpV3gIyzMGNDoDOf98iufohCVQT7fOWbV0V0bchCTH8OmkHs6OYNfvBjETj9vXbwtguhEWH3_H4=w800);
+            }
+          </style>
+
+          <div
+            class="yta-page-hero-alpha yta-page-hero-alpha--video yta-background-animate"
+          >
+            <div class="lb-grid">
+              <div
+                class="lb-grid__cell lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6 yta-page-hero-alpha__content-wrapper"
+              >
+                <div class="yta-page-hero-alpha__content">
+                  <h1 class="lb-font-display-3 lb-font-weight-700">
+                    Musikverlage und Verwalter von Rechten (z. B. GEMA)
+                  </h1>
+                  <div
+                    class="yta-page-hero-alpha__content-subheading lb-font-subhead-2 lb-margin-bottom-s"
+                  ></div>
+                </div>
+              </div>
+              <div
+                class="lb-grid__cell lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+              >
+                <div class="yta-page-hero-alpha__column-right">
+                  <a
+                    class="lb-button lb-button--overlay yta-artist-link"
+                    href="https://www.youtube.com/jinjinofficial"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Jin Jin
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <section class="yta-section">
+            <div class="lb-grid">
+              <div
+                class="lb-grid__cell lb-grid__cell--offset-1-span-10 lb-grid__cell--sm-span-12"
+              >
+                <div class="yta-md">
+                  <p>
+                    Als Musikverlag, Verwertungsgesellschaft (z. B. GEMA) oder
+                    andere Gesellschaft hast du viele Möglichkeiten, dein
+                    Publikum mithilfe eines YouTube-Kanals zu vergrößern. Der
+                    Kanal dient als direkte Schnittstelle zwischen deiner
+                    Organisation und deinem Roster, deinen Mitgliedern, Kunden
+                    und Zweigunternehmen sowie zwischen deren Teams und Fans.
+                    Dein Kanal ist das am besten anpassbare Tool unter deinen
+                    Werbematerialien. Dein YouTube-Kanal erzählt visuell die
+                    Geschichte deines Katalogs und deines Rosters. Im Grunde ist
+                    er die ganz eigene
+                    <strong>visuelle Diskografie</strong> deiner Organisation –
+                    mit jeder Menge Potenzial. Dein Kanal ist eine umfassende
+                    Plattform, auf der du der ganzen Welt dein Roster, deine
+                    Mitglieder, Kunden und Zweigunternehmen präsentieren kannst.
+                    Du kannst deinen Kanal auch nutzen, um auf neue Verträge und
+                    Meilensteine im Katalog hinzuweisen, Veranstaltungen zu
+                    präsentieren und für andere Aktivitäten zu werben, die für
+                    deine Organisation wichtig sind.
+                  </p>
+                  <h2>Dein YouTube-Kanal als Promotion-Tool</h2>
+                  <p>
+                    Ein gut gepflegter YouTube-Kanal dient nicht nur als
+                    zentraler Hub, in dem du den Katalog deiner Organisation und
+                    dein Roster präsentierst, sondern auch als lebendige und
+                    ansprechende Visitenkarte. Das heißt, du und dein Team könnt
+                    deinen Kanal dazu nutzen, um eure Chancen auf Sessions,
+                    Cuts, Sync-Placements oder andere Kooperationen zu erhöhen.
+                  </p>
+                  <p class="tip">
+                    Tipp:
+                    <a
+                      href="https://www.youtube.com/watch?v=aKydtOXW8mI&amp;list=PLpjK416fmKwQKmatriVu3rdwv7g4ZJSfD"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Richte deinen Kanal</a
+                    >
+                    als
+                    <a
+                      href="https://support.google.com/youtube/answer/4628007"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Brand-Konto</a
+                    >
+                    ein, damit mehrere Nutzer den Kanal über ihr eigenes
+                    Google-Konto / ihre eigene E-Mail-Adresse verwalten können.
+                  </p>
+                  <h2>Lege die Ziele deines Kanals fest</h2>
+                  <p>
+                    Zwar hat jede Organisation ihre eigenen Ziele, aber hier
+                    sind ein paar allgemeine Tipps, die du beachten solltest,
+                    wenn du deine Präsenz auf YouTube aufbaust.
+                  </p>
+                  <p>
+                    <strong
+                      >Du kannst deinen Kanal folgendermaßen nutzen:</strong
+                    >
+                  </p>
+                  <ul>
+                    <li>
+                      als Ersatz für eine traditionelle Visitenkarte, um eine
+                      einzigartige Präsenz zu schaffen, die deine Organisation
+                      auf individuelle Weise repräsentiert
+                    </li>
+                    <li>um auf neue Künstler/Mitglieder hinzuweisen</li>
+                    <li>
+                      um Neuerscheinungen, Hits, Chart-Erfolge oder versteckte
+                      Schätze im Katalog deiner Künstler/Mitglieder zu
+                      präsentieren
+                    </li>
+                    <li>
+                      um Cuts, Sessions, Sync-Placements und andere kreative
+                      Möglichkeiten für deine Künstler/Mitglieder anzubieten und
+                      zu sichern
+                    </li>
+                    <li>
+                      um besondere Erfolge deiner Organisation hervorzuheben,
+                      wie z. B. branchenspezifische Auszeichnungen und
+                      bedeutende Auszeichnungen für Künstler/Mitglieder
+                    </li>
+                    <li>
+                      um die Meilensteine deiner Künstler/Mitglieder ins Zentrum
+                      der Aufmerksamkeit zu rücken
+                    </li>
+                    <li>
+                      als zentralen Ort für deine Künstler/Mitglieder, an dem
+                      sie sich austauschen und vernetzen können.
+                    </li>
+                  </ul>
+                  <h2>Nutze deinen Kanal, um deine Musik zu teilen</h2>
+                  <p>
+                    Dein YouTube-Kanal ist eine Möglichkeit, um deine Musik und
+                    Inhalte mit anderen zu teilen. Hierzu kannst du
+                    beispielsweise
+                    <a
+                      href="https://support.google.com/youtube/answer/57792?co=GENIE.Platform%3DDesktop&amp;"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Playlists</a
+                    >
+                    nutzen. Das Besondere an dieser Form, Musik mit anderen zu
+                    teilen, ist, dass sie von einem Video begleitet wird. So
+                    entsteht ein noch intensiveres Musikerlebnis und eine echte
+                    audiovisuelle Darstellung deines Katalogs und deines
+                    Rosters. Überlege dir, in welchen Fällen du die
+                    Veröffentlichungen deines Rosters / deiner Mitglieder für
+                    eine potenzielle Zusammenarbeit oder Karrierechance
+                    vorstellen möchtest und wie das zusätzliche Element „Video“
+                    deine Arbeit aufwerten kann.
+                  </p>
+                  <p class="tip">
+                    Tipp: Das Teilen von Musik über Playlists eignet sich
+                    besonders für Demos. Teile Demos über eine
+                    <a
+                      href="https://support.google.com/youtube/answer/3127309"
+                      target="_blank"
+                      rel="noreferrer"
+                      >nicht gelistete Playlist</a
+                    >, auf die nur diejenigen zugreifen können, die den
+                    entsprechenden Link erhalten haben.
+                  </p>
+                  <h2>Erstelle deinen Kanal</h2>
+                  <p>
+                    Nachdem wir nun diese grundlegenden Themen behandelt haben,
+                    besteht der nächste Schritt darin,
+                    <a
+                      href="https://support.google.com/youtube/answer/1646861"
+                      target="_blank"
+                      rel="noreferrer"
+                      >einen neuen YouTube-Kanal zu erstellen</a
+                    >
+                    und einige
+                    <a href="/intl/de/songwriters/insider-tips/"
+                      >Insider-Tipps</a
+                    >
+                    zu lesen. Dann ist es an der Zeit, eine umfassende
+                    Inhaltsstrategie festzulegen und darüber nachzudenken, wie
+                    du deine <strong>visuelle Diskografie</strong> künstlerisch
+                    präsentieren kannst.
+                  </p>
+                  <h2>Entwickle eine Inhaltsstrategie</h2>
+                  <p>
+                    In unseren
+                    <a href="/intl/de/songwriters/content-strategies/"
+                      >Infomaterialien zu Inhaltsstrategien</a
+                    >
+                    erfährst du mehr über die beiden Hauptstrategien für die
+                    Entwicklung von YouTube-Kanälen. Du kannst beide Ansätze
+                    gleichzeitig verwenden, da sie sich gegenseitig ergänzen.
+                    Denke auch über Livestreams nach!
+                    <a
+                      href="https://support.google.com/youtube/answer/2474026"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Livestreaming</a
+                    >
+                    auf deinem Kanal ist eine wunderbare Möglichkeit, in
+                    Echtzeit Einblicke in das Leben deines Rosters / deiner
+                    Mitglieder innerhalb und außerhalb des Studios zu gewähren.
+                    Und zu guter Letzt solltest du nicht vergessen,
+                    <a
+                      href="https://support.google.com/youtube/answer/10059070?#:~:text=YouTube%20Shorts%20are%20vertical%20videos,experience%2C%20made%20for%20short%20videos."
+                      target="_blank"
+                      rel="noreferrer"
+                      >YouTube Shorts</a
+                    >
+                    zu nutzen, um auf kommende Inhalte oder Veröffentlichungen
+                    hinzuweisen.
+                  </p>
+                  <h2>Im Fokus: Playlists</h2>
+                  <p>
+                    Playlists sind ein Organisationstool, mit dem du deine Fans
+                    durch eine ausgewählte Zusammenstellung von Videos erreichen
+                    kannst. Du kannst die Namen deiner Playlists so wählen, dass
+                    die darin enthaltenen Inhalte beschrieben und kategorisiert
+                    werden. Außerdem solltest du die Inhalte so ordnen, dass die
+                    Bedeutung, die sie für deine Organisation haben, am besten
+                    zum Ausdruck kommt. Damit du ein Video zu deiner eigenen
+                    Playlist hinzufügen kannst, musst du es nicht selbst
+                    hochgeladen haben. Du kannst für deine Playlists Videos aus
+                    allen Bereichen von YouTube zusammenstellen.
+                  </p>
+                  <p><strong>Ideen für Playlists:</strong></p>
+                  <ul class="column-list">
+                    <li>Neue Künstler/Mitglieder</li>
+                    <li>
+                      Neuerscheinungen, Cuts und Hits von Künstlern/Mitgliedern
+                    </li>
+                    <li>Sync-Placements</li>
+                    <li>Versteckte Schätze in deinem Katalog</li>
+                    <li>Interviews und Inhalte von Künstlern/Mitgliedern</li>
+                    <li>Bildung und Interessenvertretung</li>
+                    <li>Inhalte von Preisverleihungen</li>
+                  </ul>
+                  <p>
+                    <strong
+                      >Hier sind einige Beispiele für Playlists, die
+                      Musikverlage, Verwertungsgesellschaften (z. B. GEMA) und
+                      andere Gesellschaften auf ihren Kanälen erstellt
+                      haben:</strong
+                    >
+                  </p>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md">
+                      <h3>Enjoy these hit singles of the last two decades:</h3>
+                    </div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/jheMcFoVrFzh0AaZcxoHhIqicou75PZ5EqIahdBMNg2S_9MhPZjLour4VeOholivXQwBOSp96K-iVqyWMVnKm337qHjVAI1-dTtzy52rEqX6L59KjA=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/jheMcFoVrFzh0AaZcxoHhIqicou75PZ5EqIahdBMNg2S_9MhPZjLour4VeOholivXQwBOSp96K-iVqyWMVnKm337qHjVAI1-dTtzy52rEqX6L59KjA=v2-s1410 1410w',
+          '_2x': 'https://lh3.googleusercontent.com/jheMcFoVrFzh0AaZcxoHhIqicou75PZ5EqIahdBMNg2S_9MhPZjLour4VeOholivXQwBOSp96K-iVqyWMVnKm337qHjVAI1-dTtzy52rEqX6L59KjA=v1-s2115 2115w',
+          '_3x': 'https://lh3.googleusercontent.com/jheMcFoVrFzh0AaZcxoHhIqicou75PZ5EqIahdBMNg2S_9MhPZjLour4VeOholivXQwBOSp96K-iVqyWMVnKm337qHjVAI1-dTtzy52rEqX6L59KjA=v0-s2821 2821w'
+        }"
+                      src="https://lh3.googleusercontent.com/jheMcFoVrFzh0AaZcxoHhIqicou75PZ5EqIahdBMNg2S_9MhPZjLour4VeOholivXQwBOSp96K-iVqyWMVnKm337qHjVAI1-dTtzy52rEqX6L59KjA=v3-s20-fblur=1,20"
+                      alt="Hit-Singles"
+                      style="width: 2821px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          Sieh dir zur Inspiration diese Playlist auf dem Kanal
+                          von
+                          <a
+                            href="https://www.youtube.com/c/bmgblackbook/featured"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >BMG Black Book</a
+                          >
+                          an.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md">
+                      <h3>BMI’s Emoji That Track - Season 3</h3>
+                    </div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/bbGrW1p98UtQZK-x9sYoApM6xlyP_BmNJw7x98a8YrGiQTtyBYcoGPVqbasAcW9K9zZj4YlzJR6DOj_xwRLpZz5La0qP9Kaiv1uEHRSq47x0csDVFsI=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/bbGrW1p98UtQZK-x9sYoApM6xlyP_BmNJw7x98a8YrGiQTtyBYcoGPVqbasAcW9K9zZj4YlzJR6DOj_xwRLpZz5La0qP9Kaiv1uEHRSq47x0csDVFsI=v2-s1419 1419w',
+          '_2x': 'https://lh3.googleusercontent.com/bbGrW1p98UtQZK-x9sYoApM6xlyP_BmNJw7x98a8YrGiQTtyBYcoGPVqbasAcW9K9zZj4YlzJR6DOj_xwRLpZz5La0qP9Kaiv1uEHRSq47x0csDVFsI=v1-s2128 2128w',
+          '_3x': 'https://lh3.googleusercontent.com/bbGrW1p98UtQZK-x9sYoApM6xlyP_BmNJw7x98a8YrGiQTtyBYcoGPVqbasAcW9K9zZj4YlzJR6DOj_xwRLpZz5La0qP9Kaiv1uEHRSq47x0csDVFsI=v0-s2838 2838w'
+        }"
+                      src="https://lh3.googleusercontent.com/bbGrW1p98UtQZK-x9sYoApM6xlyP_BmNJw7x98a8YrGiQTtyBYcoGPVqbasAcW9K9zZj4YlzJR6DOj_xwRLpZz5La0qP9Kaiv1uEHRSq47x0csDVFsI=v3-s20-fblur=1,20"
+                      alt="YouTube-Kanal von BMI"
+                      style="width: 2838px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          Sieh dir zur Inspiration diese Playlist auf dem Kanal
+                          der
+                          <a
+                            href="https://www.youtube.com/bmi"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >BMI</a
+                          >
+                          an.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md"><h3>Support/Create/Advocate</h3></div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/Afd_7UhY4HQEYlgQ-FL50Ai7cpSpRhzwi5k5DRKGiZkE3GDvJOuQVSddhIdzOrCND7TCc8Sd4YHn9EbobfZUf6OCplG6Ixegza0z1LYFe9xjrk9angc=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/Afd_7UhY4HQEYlgQ-FL50Ai7cpSpRhzwi5k5DRKGiZkE3GDvJOuQVSddhIdzOrCND7TCc8Sd4YHn9EbobfZUf6OCplG6Ixegza0z1LYFe9xjrk9angc=v2-s1419 1419w',
+          '_2x': 'https://lh3.googleusercontent.com/Afd_7UhY4HQEYlgQ-FL50Ai7cpSpRhzwi5k5DRKGiZkE3GDvJOuQVSddhIdzOrCND7TCc8Sd4YHn9EbobfZUf6OCplG6Ixegza0z1LYFe9xjrk9angc=v1-s2128 2128w',
+          '_3x': 'https://lh3.googleusercontent.com/Afd_7UhY4HQEYlgQ-FL50Ai7cpSpRhzwi5k5DRKGiZkE3GDvJOuQVSddhIdzOrCND7TCc8Sd4YHn9EbobfZUf6OCplG6Ixegza0z1LYFe9xjrk9angc=v0-s2838 2838w'
+        }"
+                      src="https://lh3.googleusercontent.com/Afd_7UhY4HQEYlgQ-FL50Ai7cpSpRhzwi5k5DRKGiZkE3GDvJOuQVSddhIdzOrCND7TCc8Sd4YHn9EbobfZUf6OCplG6Ixegza0z1LYFe9xjrk9angc=v3-s20-fblur=1,20"
+                      alt="Support/Create/Advocate"
+                      style="width: 2838px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          Sieh dir zur Inspiration diese Playlist auf dem Kanal
+                          von
+                          <a
+                            href="https://www.youtube.com/user/aprahome"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >APRA AMCOS</a
+                          >
+                          an.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md"><h3>Abramus ROCK</h3></div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/CMvCTz_8Y0AbBbxsQuEUZpVKqAjYtVDbQClBiiOgoyIo16Fi09_piew_m91nPkawfOM-rbsn3uuvDSpNTStjabdPQIsiS3aHPG_rmqmApIKm2J_IGUI=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/CMvCTz_8Y0AbBbxsQuEUZpVKqAjYtVDbQClBiiOgoyIo16Fi09_piew_m91nPkawfOM-rbsn3uuvDSpNTStjabdPQIsiS3aHPG_rmqmApIKm2J_IGUI=v2-s1417 1417w',
+          '_2x': 'https://lh3.googleusercontent.com/CMvCTz_8Y0AbBbxsQuEUZpVKqAjYtVDbQClBiiOgoyIo16Fi09_piew_m91nPkawfOM-rbsn3uuvDSpNTStjabdPQIsiS3aHPG_rmqmApIKm2J_IGUI=v1-s2126 2126w',
+          '_3x': 'https://lh3.googleusercontent.com/CMvCTz_8Y0AbBbxsQuEUZpVKqAjYtVDbQClBiiOgoyIo16Fi09_piew_m91nPkawfOM-rbsn3uuvDSpNTStjabdPQIsiS3aHPG_rmqmApIKm2J_IGUI=v0-s2835 2835w'
+        }"
+                      src="https://lh3.googleusercontent.com/CMvCTz_8Y0AbBbxsQuEUZpVKqAjYtVDbQClBiiOgoyIo16Fi09_piew_m91nPkawfOM-rbsn3uuvDSpNTStjabdPQIsiS3aHPG_rmqmApIKm2J_IGUI=v3-s20-fblur=1,20"
+                      alt="Abramus ROCK"
+                      style="width: 2835px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          Sieh dir zur Inspiration diese Playlist auf dem Kanal
+                          von
+                          <a
+                            href="https://www.youtube.com/channel/UC1jeXtMLSX3KJSXSzjS-7Lw"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >Abramus</a
+                          >
+                          an.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+
+                  <p class="tip">
+                    Tipp: Wenn du bei anderen Diensten schon Playlists mit
+                    ausgewählten Inhalten zusammengestellt hast, solltest du
+                    diese auch auf YouTube anbieten.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="yta-section yta-songwriters-bg-section">
+            <div class="lb-grid">
+              <div
+                class="lb-grid__cell lb-grid__cell--offset-1-span-10 lb-grid__cell--sm-span-12"
+              >
+                <div class="yta-md">
+                  <h2>Im Fokus: Abschnitte</h2>
+                  <p>
+                    Mit Abschnitten kannst du Playlists auf deinem Kanal
+                    organisieren und präsentieren. Jeder Abschnitt zeigt visuell
+                    die Zusammenstellung der Videos, die in der jeweiligen
+                    Playlist enthalten sind. Ein Abschnitt kann auch so
+                    organisiert werden, dass eine benutzerdefinierte
+                    Zusammenstellung von anderen Kanälen gezeigt wird, die deine
+                    Organisation hervorheben möchte.
+                  </p>
+                  <p><strong>Beispiele hierfür sind:</strong></p>
+                  <ul>
+                    <li>Roster/Mitglieder</li>
+                    <li>Schwesterorganisationen</li>
+                    <li>Unterverleger</li>
+                    <li>Marken-Imprints</li>
+                  </ul>
+                  <p>
+                    <strong
+                      >Hier sind einige Beispiele für Playlists, die
+                      Musikverlage, Verwertungsgesellschaften (z. B. GEMA) und
+                      andere Gesellschaften auf ihren Kanälen erstellt
+                      haben:</strong
+                    >
+                  </p>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md"><h3>Featured Writers</h3></div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/l8HZcaNKi0DIYFx7km3C-CpkIn18PcsGHORUL1cstfdatBrW-EGfMN2K6Lxt9XuiuxVu1QdYPiOYJ4j0r0VxXFhm1I36Mj3ZXqob8MJNHN7pWD6y4w=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/l8HZcaNKi0DIYFx7km3C-CpkIn18PcsGHORUL1cstfdatBrW-EGfMN2K6Lxt9XuiuxVu1QdYPiOYJ4j0r0VxXFhm1I36Mj3ZXqob8MJNHN7pWD6y4w=v2-s1066 1066w',
+          '_2x': 'https://lh3.googleusercontent.com/l8HZcaNKi0DIYFx7km3C-CpkIn18PcsGHORUL1cstfdatBrW-EGfMN2K6Lxt9XuiuxVu1QdYPiOYJ4j0r0VxXFhm1I36Mj3ZXqob8MJNHN7pWD6y4w=v1-s1599 1599w',
+          '_3x': 'https://lh3.googleusercontent.com/l8HZcaNKi0DIYFx7km3C-CpkIn18PcsGHORUL1cstfdatBrW-EGfMN2K6Lxt9XuiuxVu1QdYPiOYJ4j0r0VxXFhm1I36Mj3ZXqob8MJNHN7pWD6y4w=v0-s2133 2133w'
+        }"
+                      src="https://lh3.googleusercontent.com/l8HZcaNKi0DIYFx7km3C-CpkIn18PcsGHORUL1cstfdatBrW-EGfMN2K6Lxt9XuiuxVu1QdYPiOYJ4j0r0VxXFhm1I36Mj3ZXqob8MJNHN7pWD6y4w=v3-s20-fblur=1,20"
+                      alt="UMPG rückt Songwriter, Produzenten und Künstler in den Fokus"
+                      style="width: 2133px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          In diesem Abschnitt präsentiert Musikverleger
+                          <a
+                            href="https://www.youtube.com/umpg"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >UMPG</a
+                          >
+                          Songwriter, Produzenten und Künstler aus seinem
+                          Roster.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+
+                  <figure class="yta-content-image">
+                    <div class="yta-md"><h3>Creative Nation Writers</h3></div>
+
+                    <img
+                      class="content-image"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/rOAg0ZoFRx1qync5S-fH2GeyfNb-PI_VF4cQS0MLJEEFetpYHlVuzEuOG9s6WXVibVahzzc19CdSSDG3P7JEfE10f575CF6gISh3k0CEp6Gx_z7DQ-Y=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/rOAg0ZoFRx1qync5S-fH2GeyfNb-PI_VF4cQS0MLJEEFetpYHlVuzEuOG9s6WXVibVahzzc19CdSSDG3P7JEfE10f575CF6gISh3k0CEp6Gx_z7DQ-Y=v2-s1074 1074w',
+          '_2x': 'https://lh3.googleusercontent.com/rOAg0ZoFRx1qync5S-fH2GeyfNb-PI_VF4cQS0MLJEEFetpYHlVuzEuOG9s6WXVibVahzzc19CdSSDG3P7JEfE10f575CF6gISh3k0CEp6Gx_z7DQ-Y=v1-s1611 1611w',
+          '_3x': 'https://lh3.googleusercontent.com/rOAg0ZoFRx1qync5S-fH2GeyfNb-PI_VF4cQS0MLJEEFetpYHlVuzEuOG9s6WXVibVahzzc19CdSSDG3P7JEfE10f575CF6gISh3k0CEp6Gx_z7DQ-Y=v0-s2148 2148w'
+        }"
+                      src="https://lh3.googleusercontent.com/rOAg0ZoFRx1qync5S-fH2GeyfNb-PI_VF4cQS0MLJEEFetpYHlVuzEuOG9s6WXVibVahzzc19CdSSDG3P7JEfE10f575CF6gISh3k0CEp6Gx_z7DQ-Y=v3-s20-fblur=1,20"
+                      alt="Creative Nation rückt Songwriter, Produzenten und Künstler in den Fokus"
+                      style="width: 2148px"
+                    />
+
+                    <figcaption
+                      class="lb-margin-top-s yta-font-body yta-content-image__caption"
+                    >
+                      <div class="yta-md">
+                        <p>
+                          In diesem Abschnitt präsentiert Musikverleger
+                          <a
+                            href="https://www.youtube.com/creativenation"
+                            target="_blank"
+                            rel="noreferrer"
+                            rel="noreferrer"
+                            >Creative Nation</a
+                          >
+                          Songwriter, Produzenten und Künstler aus seinem
+                          Roster.
+                        </p>
+                      </div>
+                    </figcaption>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="yta-section yta-songwriters-subpage__bottom-links">
+            <div class="lb-grid">
+              <div
+                class="lb-grid__cell lb-grid__cell--offset-1-span-10 lb-grid__cell--sm-span-12"
+              >
+                <div class="yta-md">
+                  <h2>Weitere Informationen</h2>
+                  <p>
+                    Du hast jetzt das Fundament für eine umfassende und starke
+                    YouTube-Präsenz gelegt. Vertiefe nun dein Wissen und sieh
+                    dir detaillierte Strategien an.
+                  </p>
+                  <ul class="column-list">
+                    <li>
+                      <a
+                        href="/intl/de/songwriters/songwriters-producers/"
+                        class="ytc-arrow-link"
+                        >YouTube für Songwriter und Produzenten</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="/intl/de/songwriters/insider-tips/"
+                        class="ytc-arrow-link"
+                        >Insider-Tipps</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="/intl/de/songwriters/content-strategies/"
+                        class="ytc-arrow-link"
+                        >Intelligente Inhaltsstrategien</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="https://support.google.com/youtube/answer/10192537"
+                        target="_blank"
+                        rel="noreferrer"
+                        class="ytc-arrow-link"
+                        >Weitere Informationen zum Mechanical Licensing
+                        Collective (MLC)</a
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="yta-songwriters-subpage__final-note">
+            <div class="lb-grid">
+              <div
+                class="lb-grid__cell lb-grid__cell--offset-1-span-10 lb-grid__cell--sm-span-12"
+              >
+                <div class="yta-md">
+                  <p>
+                    Hinweis: Alle Inhalte auf deinem YouTube-Kanal müssen den
+                    <a
+                      href="https://www.youtube.com/howyoutubeworks/policies/community-guidelines/#community-guidelines"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Community-Richtlinien von YouTube</a
+                    >
+                    und den
+                    <a
+                      href="https://www.youtube.com/static?gl=GB&amp;template=terms"
+                      target="_blank"
+                      rel="noreferrer"
+                      >Nutzungsbedingungen</a
+                    >
+                    entsprechen. Du musst die notwendigen Genehmigungen für
+                    On-Demand-Video-/Audio-Inhalte haben. Wenn du einen
+                    Livestream erstellen möchtest,
+                    <a
+                      href="https://support.google.com/youtube/answer/2474026"
+                      target="_blank"
+                      rel="noreferrer"
+                      >findest du hier weitere Informationen zu Livestreams auf
+                      YouTube</a
+                    >.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer
+      class="lb-footer"
+      lb-auto-init="LBFooter"
+      lb-options="{
+            'bareUrl': '/songwriters/publishers-societies-pros/',
+            'locales': 'de_ALL,el_ALL,en-GB_ALL,es-419_ALL,es_ALL,fr_ALL,id_ALL,it_ALL,ja_ALL,ko_ALL,nl_ALL,pl_ALL,pt-BR_ALL,pt-PT_ALL,ro_ALL,ru_ALL,sv_ALL,th_ALL,tr_ALL,vi_ALL,zh-TW_ALL'
+          }"
+    ></footer>
+
+    <script src="https://www.youtube.com/iframe_api" nonce="9J1ELlSMmfWb44O3Rwb_tw"></script>
+    <script
+      src="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js"
+      data-glue-cookie-notification-bar-category="2B"
+      data-glue-cookie-notification-bar-language="de"
+      data-glue-cookie-notification-bar-site-id="artists.youtube"
+    nonce="9J1ELlSMmfWb44O3Rwb_tw"></script>
+  </body>
+</html>

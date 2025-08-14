@@ -180,7 +180,7 @@ Create `test-config.xml` in the Norconex directory:
 Navigate to Norconex directory and run:
 ```powershell
 cd norconex-collector-http-3.1.0
-.\collector-http.bat start -c=test-config.xml
+.\collector-http.bat start -c test-config.xml
 ```
 
 ### 5.2 Expected Console Output

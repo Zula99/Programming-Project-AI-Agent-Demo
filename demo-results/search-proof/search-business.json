@@ -1,0 +1,22 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"took":20,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value
+                    ":3,"relation":"eq"},"max_score":3.926042,"hits":[{"_index":"nab_fixed","_type":"_doc","...
+RawContent        : HTTP/1.1 200 OK
+                    X-elastic-product: Elasticsearch
+                    Content-Length: 316922
+                    Content-Type: application/json; charset=UTF-8
+                    
+                    {"took":20,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0...
+Forms             : {}
+Headers           : {[X-elastic-product, Elasticsearch], [Content-Length, 316922], [Content-Type, application/json; charset=UTF-8]}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 316922
+
+
+

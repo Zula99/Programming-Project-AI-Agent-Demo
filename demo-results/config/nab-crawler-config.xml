@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<httpcollector id="Fixed NAB Crawl">
+    <workDir>./test-output</workDir>
+    
+    <crawlers>
+        <crawler id="nab-fixed">
+            <!-- Start from main NAB homepage with external domain access -->
+            <startURLs stayOnDomain="false" stayOnPort="false" stayOnProtocol="false">
+                <url>https://www.nab.com.au</url>
+            </startURLs>
+            
+            <!-- CORRECT: Use referenceFilters to EXCLUDE unwanted file types -->
+            <referenceFilters>
+                <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" 
+                        onMatch="exclude">zip,rar,exe,dmg,tar,gz,7z</filter>
+            </referenceFilters>
+          
+            <!-- Full scrape settings -->
+            <maxDepth>2</maxDepth>
+            <maxDocuments>75</maxDocuments>
+            
+            <!-- Keep downloads for visual mirroring -->
+            <keepDownloads>true</keepDownloads>
+
+            <!-- Disable canonical link detection -->
+            <canonicalLinkDetector ignore="true" />
+            
+            <!-- Add delays to be respectful -->
+            <delay class="GenericDelayResolver" default="1000" />
+
+            <!-- Index to Elasticsearch for search functionality -->
+            <committers>
+                <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+                    <nodes>http://localhost:9200</nodes>
+                    <indexName>nab_fixed</indexName>
+                </committer>
+            </committers>
+        </crawler>
+    </crawlers>
+</httpcollector>
