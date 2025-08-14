@@ -200,10 +200,10 @@ INFO [test-crawler] - COLLECTOR_RUN_END
 ```
 
 **Key Success Indicators:**
-- ✅ `DOCUMENT_COMMITTED_UPSERT` messages (documents successfully indexed)
-- ✅ `Sent X commit operations to Elasticsearch` (data transmitted)
-- ✅ No `REJECTED_` or error messages
-- ✅ Process completes without exceptions
+- `DOCUMENT_COMMITTED_UPSERT` messages (documents successfully indexed)
+- `Sent X commit operations to Elasticsearch` (data transmitted)
+- No `REJECTED_` or error messages
+- Process completes without exceptions
 
 ---
 
@@ -243,7 +243,7 @@ Open browser and navigate to:
 
 ## Current Capabilities
 
-### ✅ **Working Features:**
+### **Working Features:**
 - **Website crawling** with configurable depth and document limits
 - **Content extraction** from HTML pages
 - **Metadata collection** (titles, headers, links)
@@ -252,7 +252,7 @@ Open browser and navigate to:
 - **Multi-threaded processing**
 - **Sitemap discovery and processing**
 
-### 📊 **Output Data Structure:**
+### **Output Data Structure:**
 Each crawled document contains:
 - **`content`** - Full HTML/text content
 - **`title`** - Page title
@@ -296,5 +296,5 @@ This setup provides the foundation for:
 4. **AI agent integration** for demo factory automation
 5. **Quality assessment and completeness analysis**
 
-## System Status: ✅ Production Ready
+## System Status: Production Ready
 The crawler successfully processes real website content and stores it in a searchable format, ready for analysis and integration with broader demo factory systems.
