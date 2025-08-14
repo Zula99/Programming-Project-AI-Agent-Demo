@@ -1,7 +1,10 @@
 'use client'
 
-import { useMemo, useState, ChangeEvent } from "react";
+// Find HeroIcons here: https://react-icons.github.io/react-icons/icons/hi/
 import StatusBadge from "./StatusBadge";
+import TabList from "./TabList";
+import SortableTH from "./SortableTH";
+import { useMemo, useState, ChangeEvent } from "react";
 import { 
 	HiDownload,
     HiOutlineCheckCircle,
@@ -9,8 +12,6 @@ import {
     HiFilter,
 } from "react-icons/hi";
 import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
-import TabList from "./TabList";
-import SortableTH from "./SortableTH";
 
 type RunStatus = "running" | "complete";
 type Tab = "data" | "config" | "logs";
