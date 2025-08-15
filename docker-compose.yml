@@ -1,17 +1,18 @@
 version: '3.7'
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
-    container_name: elasticsearch
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
     environment:
-      - xpack.security.enabled=false
       - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=DemoPass123!
+      - DISABLE_SECURITY_PLUGIN=true
     ports:
       - 9200:9200
-      - 9300:9300
+      - 9600:9600
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+      - opensearch-data:/usr/share/opensearch/data
 
 volumes:
-  elasticsearch-data:
+  opensearch-data:
     driver: local
