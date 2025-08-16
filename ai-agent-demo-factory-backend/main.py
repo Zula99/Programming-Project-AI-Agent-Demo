@@ -171,10 +171,3 @@ async def get_crawl_results(run_id: str):
     else:
         raise HTTPException(status_code=409, detail="Crawl not yet complete or results not available")
 
-# --- Instructions to Run This Server ---
-# 1. Save this code as `main.py`
-# 2. Install FastAPI, Uvicorn, and Pydantic 
-# 3. Run the server using Uvicorn  terminal:
-#    uvicorn main:app --reload --port 5000
-
-# Interactive API documentation at http://127.0.0.1:5000/docs
