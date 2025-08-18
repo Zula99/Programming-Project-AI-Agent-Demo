@@ -4,7 +4,7 @@
 import StatusBadge from "./StatusBadge";
 import TabList from "./TabList";
 import SortableTH from "./SortableTH";
-import { useMemo, useState, ChangeEvent } from "react";
+import { useMemo, useState, useEffect, ChangeEvent } from "react";
 import { 
 	HiDownload,
     HiOutlineCheckCircle,
@@ -15,6 +15,23 @@ import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
 
 type RunStatus = "running" | "complete";
 type Tab = "data" | "config" | "logs";
+
+interface OSResult {
+	_id: string;
+	_score: number;
+	_source: {
+		title: string;
+		description: string;
+		url: string;
+	}
+	content?: string;
+	metadata?: { depth?: string; contentType?: string };
+}
+
+interface OSSearchResponse {
+	took: number;
+	hits: { total: { value: number }; hits: OSResult[] };
+}
 
 type PageRow = {
     id: string;
@@ -41,11 +58,74 @@ function formatKB(bytes: number) {
     return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+function urlPath(u: string): string {
+	try {
+		const p = new URL(u);
+		return p.pathname || "/";
+	} catch {
+		return "/";
+	}
+}
+
+function inferType(ct?: string, url?: string): PageRow["type"] {
+	const lc = (ct || "").toLowerCase();
+	const u = (url || "").toLowerCase();
+	if (lc.includes("pdf") || u.endsWith(".pdf")) return "pdf";
+	if (lc.includes("html") || lc.includes("text/")) return "html";
+	return "doc";
+}
+
+function mapHitToRow(hit: OSResult): PageRow {
+	const contentLen = hit._source.content?.length ?? 0;
+	return {
+		id: hit._id,
+		path: urlPath(hit._source.url),
+		title: hit._source.title || "Untitled",
+		type: inferType(hit._source.metadata?.contentType, hit._source.url),
+		size: contentLen,
+	};
+}
+
 export default function ActiveRun() {
     const [activeTab, setActiveTab] = useState<Tab>("data");
     const [query, setQuery] = useState("");
 	const [sortKey, setSortKey] = useState<keyof Pick<PageRow, "path" | "title" | "type" | "size">>("path");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+	const [rows, setRows] = useState<PageRow[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [searchTime, setSearchTime] = useState<number | null>(null);
+	const [error, setError] = useState<string>("");
+
+	// Initial load, getting some docs from index
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			setLoading(true);
+			setError("");
+
+			try {
+				const res = await fetch("/api/search", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ matchAll: true, size: 100 });
+				});
+
+				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+
+				const data: OSSearchResponse = await res.json();
+				if (!cancelled) {
+					setRows(data.hits.hits.map(mapHitToRow));
+					setSearchTime(data.took);
+				}
+			} catch (e) {
+				if (!cancelled) 
+					setError(e instanceOf Error ? e.message : "Search failed");
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+		return () => { cancelled = true; };
+	}, []);
 
 	const filtered = useMemo(() => {
     	const q = query.trim().toLowerCase();
@@ -70,7 +150,7 @@ export default function ActiveRun() {
     	});
 
     	return sorted;
-  	}, [query, sortKey, sortDir]);
+  	}, [initialRows, query, sortKey, sortDir]);
 
     const toggleSort = (key: keyof Pick<PageRow, "path" | "title" | "type" | "size">) => {
         if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
