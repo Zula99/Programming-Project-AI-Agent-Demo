@@ -1,0 +1,21 @@
+﻿
+
+StatusCode        : 200
+StatusDescription : OK
+Content           : {"count":15,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0}}
+RawContent        : HTTP/1.1 200 OK
+                    X-elastic-product: Elasticsearch
+                    Content-Length: 72
+                    Content-Type: application/json; charset=UTF-8
+                    
+                    {"count":15,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0}}
+Forms             : {}
+Headers           : {[X-elastic-product, Elasticsearch], [Content-Length, 72], [Content-Type, application/json; charset=UTF-8]}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 72
+
+
+

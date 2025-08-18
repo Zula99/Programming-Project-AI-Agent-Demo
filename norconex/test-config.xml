@@ -4,19 +4,22 @@
     <workDir>./test-output</workDir>
     
     <crawlers>
-        <crawler id="test-crawler">
+        <crawler id="nab-mirror">
             <!-- Simple test: crawl just one page -->
             <startURLs stayOnDomain="false" stayOnPort="false" stayOnProtocol="false">
                 <url>https://www.nab.com.au</url>
             </startURLs>
             
-            <!-- Crawl only 1 page to keep it simple -->
-            <maxDepth>0</maxDepth>
-            <maxDocuments>5</maxDocuments>
+          
+            <maxDepth>2</maxDepth>
+            <maxDocuments>50</maxDocuments>
             
+            <!-- Keep downloads for mirroring -->
+            <keepDownloads>true</keepDownloads>
+
             <!-- Disable canonical link detection that's rejecting content -->
             <canonicalLinkDetector ignore="true" />
-            
+
             <!-- Send crawled data to your local Elasticsearch -->
             <committers>
                 <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">

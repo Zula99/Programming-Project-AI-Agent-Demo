@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html data-generated-by="stalefish@0.0.9" lang="ALL" geo="ALL" dir="ltr" theme="dark" class="lb-breakpoints">
+  <head>
+    <meta charset="utf-8" />
+    <!-- GA -->
+    <script nonce="lRTjP3zCfM0m60a3agoZ8g">
+      (function (i, s, o, g, r, a, m) {
+        i["GoogleAnalyticsObject"] = r;
+        (i[r] =
+          i[r] ||
+          function () {
+            (i[r].q = i[r].q || []).push(arguments);
+          }),
+          (i[r].l = 1 * new Date());
+        (a = s.createElement(o)), (m = s.getElementsByTagName(o)[0]);
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m);
+      })(
+        window,
+        document,
+        "script",
+        "https://www.google-analytics.com/analytics.js",
+        "ga"
+      );
+      ga("create", "UA-60209926-1", "auto");
+      ga("send", "pageview");
+    </script>
+    <!-- End GA -->
+
+    <!-- Google Tag Manager -->
+    <script nonce="lRTjP3zCfM0m60a3agoZ8g">
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-NVCXTDN");
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="viewport"
+      content="initial-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover"
+    />
+    <meta http-equiv="x-dns-prefetch-control" content="on" />
+    <title>YouTube Music Foundry Class of 2022 Application</title>
+    <meta
+      name="description"
+      content="Foundry is YouTube music’s global artist development program. Foundry serves the independent music community, helping artists find and engage fans, and build careers on their own terms."
+    />
+
+    <!-- The canonical tag tells search engines the canonical URL of pages that
+      may otherwise appear as different pages (e.g. with/without query params). -->
+    <link rel="canonical" href="https://artists.youtube/foundry/" />
+
+    <!-- Social -->
+    <meta name="pinterest" content="nopin" />
+    <meta
+      property="og:url"
+      class="meta-url"
+      content="https://artists.youtube/foundry/"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://lh3.googleusercontent.com/HKt65tQfIKEID4s-C3enOATg56q-8Csq2ZhMFz3n5lVqmG0ElDuHWv1-OH07XpaN6SbqtwC_9XvkOBafuMgk0r28jox24cr_DbutbXqfPRT_E35eKQ=w600"
+    />
+    <meta
+      property="og:title"
+      content="YouTube Music Foundry Class of 2022 Application"
+    />
+    <meta property="og:site_name" content="YouTube for Artists" />
+    <meta
+      property="og:description"
+      content="Foundry is YouTube music’s global artist development program. Foundry serves the independent music community, helping artists find and engage fans, and build careers on their own terms."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:url"
+      class="meta-url"
+      content="https://artists.youtube/foundry/"
+    />
+    <meta
+      name="twitter:title"
+      content="YouTube Music Foundry Class of 2022 Application"
+    />
+    <meta
+      name="twitter:description"
+      content="Foundry is YouTube music’s global artist development program. Foundry serves the independent music community, helping artists find and engage fans, and build careers on their own terms."
+    />
+    <meta
+      name="twitter:image"
+      content="https://lh3.googleusercontent.com/HKt65tQfIKEID4s-C3enOATg56q-8Csq2ZhMFz3n5lVqmG0ElDuHWv1-OH07XpaN6SbqtwC_9XvkOBafuMgk0r28jox24cr_DbutbXqfPRT_E35eKQ=w600"
+    />
+
+    <link rel="preconnect" href="//lh3.googleusercontent.com" />
+    <link rel="preconnect" href="//kstatic.googleusercontent.com" />
+
+    <!-- Preload assets -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;lang=en"
+      as="style"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900"
+      as="style"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+      as="style"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.js?cache=701eb8f4ec"
+      as="script"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+
+    <!-- Favicons -->
+    <link
+      rel="shortcut icon"
+      href="https://www.youtube.com/yts/img/favicon-vfl8qSV2F.ico"
+      type="image/x-icon"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_32-vflOogEID.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_48-vflVjB_Qk.png"
+      sizes="48x48"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_96-vflW9Ec0w.png"
+      sizes="96x96"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_144-vfliLAfaB.png"
+      sizes="144x144"
+    />
+
+    <!-- External Stylesheets -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900|Roboto:300,400,500,600,700&amp;lang=en&amp;display=swap"
+      media="all"
+      nonce="lRTjP3zCfM0m60a3agoZ8g"
+    />
+    <link
+      href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css"
+      rel="stylesheet"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+    <link
+      rel="stylesheet"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+   nonce="lRTjP3zCfM0m60a3agoZ8g" />
+
+    <script
+      defer
+      src="https://www.gstatic.com/external_hosted/hammerjs/v2_0_2/hammer.min.js"
+    nonce="lRTjP3zCfM0m60a3agoZ8g"></script>
+    <script defer src="/static/compiled/index.min.js?cache=701eb8f4ec" nonce="lRTjP3zCfM0m60a3agoZ8g"></script>
+  </head>
+  <body class="yta-body">
+    <header
+      class="lb-header"
+      lb-auto-init="LBHeader"
+      lb-options="{
+            'persistentCtas': ['primary', 'secondary']
+          }"
+    >
+      <div class="lb-header__row">
+        <div class="lb-header__row-left lb-header-js-row-left">
+          <button
+            class="lb-header__menu-button lb-header-js-menu-btn"
+            aria-label="Toggle all"
+          >
+            <span class="lb-header__menu-button-box">
+              <span class="lb-header__menu-button-stroke"></span>
+            </span>
+          </button>
+          <a
+            class="lb-header__logo-wrapper lb-header-js-logo-wrapper"
+            href="/"
+            aria-label="Home page"
+          >
+            <img
+              class="lb-header__logo lb-header-js-logo"
+              lb-auto-init="LBImageLoader"
+              lb-options="{
+        '_1x': 'https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8 1x'
+      }"
+              src="https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8"
+              alt="site-logo"
+              style="width: auto"
+            />
+          </a>
+          <a class="lb-button lb-header__jump-to" href="#content">
+            Jump to content
+          </a>
+          <div class="lb-header__nav-wrapper lb-header-js-nav-wrapper">
+            <nav class="lb-header__nav lb-header-js-nav" role="menubar">
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Features&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/features/"
+                  target="_self"
+                >
+                  Features
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;News&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/news/"
+                  target="_self"
+                >
+                  News
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-2"
+                  aria-haspopup="menu"
+                  aria-label="Resources menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-resources"
+                  role="menuitem"
+                >
+                  Resources
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-resources"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Resources&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Resources
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/channel-optimization/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;How to Build Your OAC&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      How to Build Your OAC
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/shorts-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Shorts for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Shorts for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/pre-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Pre-Release Strategy for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Pre-Release Strategy for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/release-day-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Release Day Strategy for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Release Day Strategy for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/post-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Post-Release Strategy for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Post-Release Strategy for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/growing-your-audience/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Growing Your Audience&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Growing Your Audience
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/resources/analytics-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Analytics for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Analytics for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/additional-resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Resources&#x27;,
+        &#x27;navItem&#x27;: &#x27;Additional Resources&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Additional Resources
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-3"
+                  aria-haspopup="menu"
+                  aria-label="Songwriters menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-songwriters"
+                  role="menuitem"
+                >
+                  Songwriters
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-songwriters"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/songwriters/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriters&#x27;,
+        &#x27;navItem&#x27;: &#x27;Songwriters Home&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Songwriters Home
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/songwriters/songwriters-producers/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriters&#x27;,
+        &#x27;navItem&#x27;: &#x27;Songwriters &amp; Producers&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Songwriters &amp; Producers
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/songwriters/publishers-societies-pros/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriters&#x27;,
+        &#x27;navItem&#x27;: &#x27;Publishers &amp; Societies&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Publishers &amp; Societies
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/songwriters/content-strategies/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriters&#x27;,
+        &#x27;navItem&#x27;: &#x27;Content Strategies&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Content Strategies
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/songwriters/insider-tips/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriters&#x27;,
+        &#x27;navItem&#x27;: &#x27;Insider tips&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Insider tips
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Charts&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="https://charts.youtube.com/"
+                  target="_blank"
+                >
+                  Charts
+                </a>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="lb-header__row-right lb-header-js-row-right">
+          <div class="lb-header__search-wrapper lb-header-js-search-wrapper">
+            <!-- Search inner -->
+            <div class="lb-header__search-inner lb-header-js-search-inner">
+              <form
+                class="lb-header__search-bar-wrapper"
+                novalidate
+                role="search"
+                lb-auto-init="LBSearchForm"
+                lb-options="{
+                'resultsPage': '/search/'
+              }"
+              >
+                <!-- Search expand/search button -->
+                <button
+                  class="lb-header__search-button lb-header-js-search-toggle"
+                  aria-label="Search"
+                  type="submit"
+                  role="button"
+                >
+                  <svg
+                    class="lb-header__search-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                </button>
+                <!-- end Search expand/search button -->
+                <!-- Search bar -->
+                <input
+                  class="lb-font-body lb-header__search-bar lb-header-js-search-bar"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+    &#x27;name&#x27;: &#x27;keyword_search&#x27;
+  }"
+                  type="text"
+                  placeholder="Search"
+                  aria-hidden="false"
+                  aria-label="Search"
+                  tabindex="-1"
+                  name="lb-search"
+                />
+              </form>
+              <!-- Search collapse button -->
+              <button
+                class="lb-header__search-button lb-header__search-button--collapse lb-header-js-search-toggle"
+                aria-label="Close"
+                tabindex="-1"
+              >
+                <svg
+                  class="lb-header__search-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M0 0h24v24H0z" fill="none" />
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                  />
+                </svg>
+              </button>
+              <!-- end Search collapse button -->
+            </div>
+            <!-- end Search inner -->
+            <div
+              class="lb-header__search-overlay lb-header-js-search-toggle"
+            ></div>
+          </div>
+        </div>
+        <!-- end Search -->
+      </div>
+    </header>
+
+    <main id="content" class="yta-main" role="main">
+      <div class="yta-main__inner">
+        <div class="yta-page-hero-foundry">
+          <div class="yta-page-hero-foundry__inner">
+            <div class="yta-page-hero-foundry__logo-outer">
+              <img
+                src="https://lh3.googleusercontent.com/fwZsV1a5K0RWJIHwqVF2ils877LcSjFaDNRgnEvq8122ZrKDpjzc2D8KKBsr800HKae1WaKQA-CS1dYFoORMR9W4rRsIId3Tfn88dE1OI_ajGn2gPA=w800"
+                alt="Foundry"
+              />
+            </div>
+            <div
+              class="yta-page-hero-foundry__logo-outer yta-page-hero-foundry__logo-outer--width"
+            >
+              <img
+                src="https://lh3.googleusercontent.com/ecxGHnpcvIDeoijopn7onJ6MYP_CdIzrgBkLFhcgRIiNaQ-bjGQ-cdE_WMpVasi8v0XyYncNW8sOc1uOpDMJFqPM-KKLH6K2w4qlHN_1BkNoSewpB_k=w300"
+                alt="Youtube Music"
+              />
+            </div>
+          </div>
+        </div>
+
+        <section class="yta-section">
+          <div class="lb-grid">
+            <div
+              class="lb-grid__cell lb-grid__cell--md-offset-1-span-10 lb-grid__cell--lg-offset-2-span-8"
+            >
+              <h2
+                class="lb-font-headline-2 lb-font-weight-700 lb-margin-bottom-m"
+              >
+                Foundry
+              </h2>
+
+              <div>
+                <div class="yta-md">
+                  <p>
+                    Foundry is YouTube Music’s global artist development
+                    program. Foundry serves the independent music community,
+                    giving artists access to resources to help them thrive on
+                    YouTube and build careers on their own terms. If you’re an
+                    independent artist looking to grow your voice on YouTube, we
+                    want to hear from you.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="yta-section--bg-color">
+          <div class="lb-grid">
+            <div
+              class="lb-grid__cell lb-grid__cell--md-offset-1-span-10 lb-grid__cell--lg-offset-2-span-8"
+            >
+              <h2
+                class="lb-font-headline-2 lb-font-weight-700 lb-margin-bottom-m"
+              >
+                The Foundry Class of 2022 Application Window is Now Closed.
+              </h2>
+
+              <div>
+                <div class="yta-md">
+                  <p>
+                    We are no longer accepting applications for Foundry at this
+                    time. We will keep the community updated on future
+                    opportunities.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="yta-section" id="faqs">
+          <h2 class="lb-font-headline-2 lb-font-weight-700 lb-margin-bottom-m">
+            More questions? Check out the FAQs below.
+          </h2>
+          <h2 class="lb-font-headline-2 lb-font-weight-500 lb-margin-bottom-m">
+            Frequently asked questions
+          </h2>
+
+          <div class="lb-expansion-panel__container">
+            <div
+              class="lb-expansion-panel lb-expansion-panel--light"
+              lb-auto-init="LBExpansionPanel"
+              lb-options="{
+      &#x27;family&#x27;: &#x27;resources-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+            >
+              <div
+                class="lb-expansion-panel__heading"
+                role="heading"
+                aria-level="2"
+              >
+                <div
+                  class="lb-expansion-panel__trigger"
+                  role="button"
+                  tabindex="0"
+                  aria-expanded="false"
+                  aria-controls="resources-faqs-content-0"
+                  id="resources-faqs-header-0"
+                  lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                  lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;resources-faqs&#x27;, &#x27;index&#x27;: 0},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;&#x27;
+    }"
+                >
+                  <span class="lb-expansion-panel__trigger-name">
+                    What do artists selected for the Foundry Class of 2022
+                    receive?
+                  </span>
+                  <span class="lb-expansion-panel__trigger-icon">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                        fill="#606060"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="lb-expansion-panel__divider"></div>
+              <div
+                class="lb-expansion-panel__surface"
+                id="resources-faqs-content-0"
+                role="region"
+                aria-labelledby="resources-faqs-header-0"
+              >
+                <div class="lb-expansion-panel__surface-content">
+                  <div
+                    class="lb-grid lb-expansion-panel__surface-content--text-only"
+                  >
+                    <div class="lb-grid__cell lb-grid__cell--span-12">
+                      <div class="yta-md">
+                        <p>
+                          Independent artists selected for Foundry receive
+                          dedicated support from a YouTube partner manager, seed
+                          funding invested into the development of their
+                          channels, marketing and promotion opportunities, and
+                          access to new product features and opportunities to
+                          provide feedback.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="lb-expansion-panel lb-expansion-panel--light"
+              lb-auto-init="LBExpansionPanel"
+              lb-options="{
+      &#x27;family&#x27;: &#x27;resources-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+            >
+              <div
+                class="lb-expansion-panel__heading"
+                role="heading"
+                aria-level="2"
+              >
+                <div
+                  class="lb-expansion-panel__trigger"
+                  role="button"
+                  tabindex="0"
+                  aria-expanded="false"
+                  aria-controls="resources-faqs-content-1"
+                  id="resources-faqs-header-1"
+                  lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                  lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;resources-faqs&#x27;, &#x27;index&#x27;: 1},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;&#x27;
+    }"
+                >
+                  <span class="lb-expansion-panel__trigger-name">
+                    When will I hear if I have been selected, and how will you
+                    communicate it?
+                  </span>
+                  <span class="lb-expansion-panel__trigger-icon">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                        fill="#606060"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="lb-expansion-panel__divider"></div>
+              <div
+                class="lb-expansion-panel__surface"
+                id="resources-faqs-content-1"
+                role="region"
+                aria-labelledby="resources-faqs-header-1"
+              >
+                <div class="lb-expansion-panel__surface-content">
+                  <div
+                    class="lb-grid lb-expansion-panel__surface-content--text-only"
+                  >
+                    <div class="lb-grid__cell lb-grid__cell--span-12">
+                      <div class="yta-md">
+                        <p>
+                          We hope to inform our selected Class of 2022 by no
+                          later than July. If you are not selected for funding,
+                          don’t fret! We’ll have other opportunities to connect
+                          with us, your peers, receive training, and more.
+                          Additionally, this is a multi-year program, so there
+                          will be more opportunities to receive grants in years
+                          to come.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="lb-expansion-panel lb-expansion-panel--light"
+              lb-auto-init="LBExpansionPanel"
+              lb-options="{
+      &#x27;family&#x27;: &#x27;resources-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+            >
+              <div
+                class="lb-expansion-panel__heading"
+                role="heading"
+                aria-level="2"
+              >
+                <div
+                  class="lb-expansion-panel__trigger"
+                  role="button"
+                  tabindex="0"
+                  aria-expanded="false"
+                  aria-controls="resources-faqs-content-2"
+                  id="resources-faqs-header-2"
+                  lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                  lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;resources-faqs&#x27;, &#x27;index&#x27;: 2},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;&#x27;
+    }"
+                >
+                  <span class="lb-expansion-panel__trigger-name">
+                    Who controls the data I submitted?
+                  </span>
+                  <span class="lb-expansion-panel__trigger-icon">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                        fill="#606060"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="lb-expansion-panel__divider"></div>
+              <div
+                class="lb-expansion-panel__surface"
+                id="resources-faqs-content-2"
+                role="region"
+                aria-labelledby="resources-faqs-header-2"
+              >
+                <div class="lb-expansion-panel__surface-content">
+                  <div
+                    class="lb-grid lb-expansion-panel__surface-content--text-only"
+                  >
+                    <div class="lb-grid__cell lb-grid__cell--span-12">
+                      <div class="yta-md">
+                        <p>
+                          If you submitted application data, it will be
+                          controlled by Google LLC and subject to the
+                          <a
+                            href="https://policies.google.com/privacy"
+                            target="_blank"
+                            rel="noreferrer"
+                            >Google Privacy Policy</a
+                          >. However, your application data will be used solely
+                          for the purposes to which you agreed.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="lb-expansion-panel lb-expansion-panel--light"
+              lb-auto-init="LBExpansionPanel"
+              lb-options="{
+      &#x27;family&#x27;: &#x27;resources-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+            >
+              <div
+                class="lb-expansion-panel__heading"
+                role="heading"
+                aria-level="2"
+              >
+                <div
+                  class="lb-expansion-panel__trigger"
+                  role="button"
+                  tabindex="0"
+                  aria-expanded="false"
+                  aria-controls="resources-faqs-content-3"
+                  id="resources-faqs-header-3"
+                  lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                  lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;resources-faqs&#x27;, &#x27;index&#x27;: 3},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;&#x27;
+    }"
+                >
+                  <span class="lb-expansion-panel__trigger-name">
+                    How long is my data kept on file?
+                  </span>
+                  <span class="lb-expansion-panel__trigger-icon">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                        fill="#606060"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="lb-expansion-panel__divider"></div>
+              <div
+                class="lb-expansion-panel__surface"
+                id="resources-faqs-content-3"
+                role="region"
+                aria-labelledby="resources-faqs-header-3"
+              >
+                <div class="lb-expansion-panel__surface-content">
+                  <div
+                    class="lb-grid lb-expansion-panel__surface-content--text-only"
+                  >
+                    <div class="lb-grid__cell lb-grid__cell--span-12">
+                      <div class="yta-md">
+                        <p>
+                          We will keep the application information you provided
+                          for no longer than 3 months from the date of
+                          collection, unless you are awarded funding or choose
+                          to hear more about various programs, events,
+                          campaigns, and promotions related to Foundry, in which
+                          case data will be retained for as long as necessary to
+                          your participation.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="lb-expansion-panel lb-expansion-panel--light"
+              lb-auto-init="LBExpansionPanel"
+              lb-options="{
+      &#x27;family&#x27;: &#x27;resources-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+            >
+              <div
+                class="lb-expansion-panel__heading"
+                role="heading"
+                aria-level="2"
+              >
+                <div
+                  class="lb-expansion-panel__trigger"
+                  role="button"
+                  tabindex="0"
+                  aria-expanded="false"
+                  aria-controls="resources-faqs-content-4"
+                  id="resources-faqs-header-4"
+                  lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                  lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;resources-faqs&#x27;, &#x27;index&#x27;: 4},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;&#x27;
+    }"
+                >
+                  <span class="lb-expansion-panel__trigger-name">
+                    How can I make changes to my submission?
+                  </span>
+                  <span class="lb-expansion-panel__trigger-icon">
+                    <svg
+                      width="12"
+                      height="8"
+                      viewBox="0 0 12 8"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                        fill="#606060"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+              <div class="lb-expansion-panel__divider"></div>
+              <div
+                class="lb-expansion-panel__surface"
+                id="resources-faqs-content-4"
+                role="region"
+                aria-labelledby="resources-faqs-header-4"
+              >
+                <div class="lb-expansion-panel__surface-content">
+                  <div
+                    class="lb-grid lb-expansion-panel__surface-content--text-only"
+                  >
+                    <div class="lb-grid__cell lb-grid__cell--span-12">
+                      <div class="yta-md">
+                        <p>
+                          You may contact us at
+                          <a
+                            href="mailto:someone@yoursite.com"
+                            target="_blank"
+                            rel="noreferrer"
+                            >foundry-submission@google.com</a
+                          >
+                          at any time to withdraw your consent, or to access,
+                          change, or delete your information. You can also
+                          contact
+                          <a
+                            href="https://support.google.com/policies/answer/9581826?visit_id=637369096944296058-3562309537&amp;rd=1"
+                            target="_blank"
+                            rel="noreferrer"
+                            >Google’s Data Protection Officer</a
+                          >
+                          to submit a data access request.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lb-expansion-panel__divider"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer
+      class="lb-footer"
+      lb-auto-init="LBFooter"
+      lb-options="{
+            'bareUrl': '/foundry/',
+            'locales': 'de_ALL,el_ALL,en-GB_ALL,es-419_ALL,es_ALL,fr_ALL,id_ALL,it_ALL,ja_ALL,ko_ALL,nl_ALL,pl_ALL,pt-BR_ALL,pt-PT_ALL,ro_ALL,ru_ALL,sv_ALL,th_ALL,tr_ALL,vi_ALL,zh-TW_ALL'
+          }"
+    ></footer>
+
+    <script src="https://www.youtube.com/iframe_api" nonce="lRTjP3zCfM0m60a3agoZ8g"></script>
+    <script
+      src="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js"
+      data-glue-cookie-notification-bar-category="2B"
+      data-glue-cookie-notification-bar-language="ALL"
+      data-glue-cookie-notification-bar-site-id="artists.youtube"
+    nonce="lRTjP3zCfM0m60a3agoZ8g"></script>
+  </body>
+</html>

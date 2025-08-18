@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html data-generated-by="stalefish@0.0.9" lang="de" geo="ALL" dir="ltr" theme="dark" class="lb-breakpoints">
+  <head>
+    <meta charset="utf-8" />
+    <!-- GA -->
+    <script nonce="yBWxPv0TqwtDrrnWtTpGOg">
+      (function (i, s, o, g, r, a, m) {
+        i["GoogleAnalyticsObject"] = r;
+        (i[r] =
+          i[r] ||
+          function () {
+            (i[r].q = i[r].q || []).push(arguments);
+          }),
+          (i[r].l = 1 * new Date());
+        (a = s.createElement(o)), (m = s.getElementsByTagName(o)[0]);
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m);
+      })(
+        window,
+        document,
+        "script",
+        "https://www.google-analytics.com/analytics.js",
+        "ga"
+      );
+      ga("create", "UA-60209926-1", "auto");
+      ga("send", "pageview");
+    </script>
+    <!-- End GA -->
+
+    <!-- Google Tag Manager -->
+    <script nonce="yBWxPv0TqwtDrrnWtTpGOg">
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-NVCXTDN");
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta
+      name="viewport"
+      content="initial-scale=1, minimum-scale=1, width=device-width, viewport-fit=cover"
+    />
+    <meta http-equiv="x-dns-prefetch-control" content="on" />
+    <title>
+      YouTube for Artists - Infomaterial - YouTube Analytics for Artists
+    </title>
+    <meta
+      name="description"
+      content="Diese Anleitung zeigt dir, wie du YouTube Analytics for Artists nutzt, um die Performance deiner Musik besser nachzuvollziehen. Du erfährst, wie du Aufrufzahlen, Zielgruppenmesswerte und mehr im Blick behältst und die Zahlen bei deiner Strategie berücksichtigen kannst."
+    />
+
+    <!-- The canonical tag tells search engines the canonical URL of pages that
+      may otherwise appear as different pages (e.g. with/without query params). -->
+    <link
+      rel="canonical"
+      href="https://artists.youtube/intl/de_ALL/resources/analytics-for-artists/"
+    />
+
+    <!-- Social -->
+    <meta name="pinterest" content="nopin" />
+    <meta
+      property="og:url"
+      class="meta-url"
+      content="https://artists.youtube/intl/de_ALL/resources/analytics-for-artists/"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://lh3.googleusercontent.com/I5FJl8Ca3BDEH2sshG9zyWnaKMZj-auuOL1Xy5ucQRWT6xe5qeKmdGelkj-gS_lQ8gL1-hMiDMYUUS22W3dJgsZ34HvE0DcaZt5_CbaabSuaCb_5PNc=w600"
+    />
+    <meta
+      property="og:title"
+      content="YouTube for Artists - Infomaterial
+          - YouTube Analytics for Artists"
+    />
+    <meta property="og:site_name" content="YouTube for Artists" />
+    <meta
+      property="og:description"
+      content="Diese Anleitung zeigt dir, wie du YouTube Analytics for Artists nutzt, um die Performance deiner Musik besser nachzuvollziehen. Du erfährst, wie du Aufrufzahlen, Zielgruppenmesswerte und mehr im Blick behältst und die Zahlen bei deiner Strategie berücksichtigen kannst."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:url"
+      class="meta-url"
+      content="https://artists.youtube/intl/de_ALL/resources/analytics-for-artists/"
+    />
+    <meta
+      name="twitter:title"
+      content="YouTube for Artists - Infomaterial
+          - YouTube Analytics for Artists"
+    />
+    <meta
+      name="twitter:description"
+      content="Diese Anleitung zeigt dir, wie du YouTube Analytics for Artists nutzt, um die Performance deiner Musik besser nachzuvollziehen. Du erfährst, wie du Aufrufzahlen, Zielgruppenmesswerte und mehr im Blick behältst und die Zahlen bei deiner Strategie berücksichtigen kannst."
+    />
+    <meta
+      name="twitter:image"
+      content="https://lh3.googleusercontent.com/I5FJl8Ca3BDEH2sshG9zyWnaKMZj-auuOL1Xy5ucQRWT6xe5qeKmdGelkj-gS_lQ8gL1-hMiDMYUUS22W3dJgsZ34HvE0DcaZt5_CbaabSuaCb_5PNc=w600"
+    />
+
+    <link rel="preconnect" href="//lh3.googleusercontent.com" />
+    <link rel="preconnect" href="//kstatic.googleusercontent.com" />
+
+    <!-- Preload assets -->
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&amp;lang=en"
+      as="style"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+    <link
+      rel="preload"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900"
+      as="style"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+      as="style"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+    <link
+      rel="preload"
+      href="/static/compiled/index.min.js?cache=701eb8f4ec"
+      as="script"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+
+    <!-- Favicons -->
+    <link
+      rel="shortcut icon"
+      href="https://www.youtube.com/yts/img/favicon-vfl8qSV2F.ico"
+      type="image/x-icon"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_32-vflOogEID.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_48-vflVjB_Qk.png"
+      sizes="48x48"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_96-vflW9Ec0w.png"
+      sizes="96x96"
+    />
+    <link
+      rel="icon"
+      href="https://www.youtube.com/yts/img/favicon_144-vfliLAfaB.png"
+      sizes="144x144"
+    />
+
+    <!-- External Stylesheets -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=YouTube+Sans:300,400,500,600,700,900|Roboto:300,400,500,600,700&amp;lang=en&amp;display=swap"
+      media="all"
+      nonce="yBWxPv0TqwtDrrnWtTpGOg"
+    />
+    <link
+      href="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.css"
+      rel="stylesheet"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+    <link
+      rel="stylesheet"
+      href="/static/compiled/index.min.css?cache=ea6d246ba0"
+   nonce="yBWxPv0TqwtDrrnWtTpGOg" />
+
+    <script defer src="/static/compiled/index.min.js?cache=701eb8f4ec" nonce="yBWxPv0TqwtDrrnWtTpGOg"></script>
+  </head>
+  <body class="yta-body">
+    <header
+      class="lb-header"
+      lb-auto-init="LBHeader"
+      lb-options="{
+            'persistentCtas': ['primary', 'secondary']
+          }"
+    >
+      <div class="lb-header__row">
+        <div class="lb-header__row-left lb-header-js-row-left">
+          <button
+            class="lb-header__menu-button lb-header-js-menu-btn"
+            aria-label="Alle einblenden"
+          >
+            <span class="lb-header__menu-button-box">
+              <span class="lb-header__menu-button-stroke"></span>
+            </span>
+          </button>
+          <a
+            class="lb-header__logo-wrapper lb-header-js-logo-wrapper"
+            href="/intl/de/"
+            aria-label="Startseite"
+          >
+            <img
+              class="lb-header__logo lb-header-js-logo"
+              lb-auto-init="LBImageLoader"
+              lb-options="{
+        '_1x': 'https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8 1x'
+      }"
+              src="https://kstatic.googleusercontent.com/files/d2185fd8853184f082c3b16899fa42e93fcbec78b35c6e81b71831621e84d82a8ad4d083a6b3ebffb20af005ec21a736e6d5dde68ce89a999dd42c5e00178dd8"
+              alt="site-logo"
+              style="width: auto"
+            />
+          </a>
+          <a class="lb-button lb-header__jump-to" href="#content">
+            Direkt zum Inhalt
+          </a>
+          <div class="lb-header__nav-wrapper lb-header-js-nav-wrapper">
+            <nav class="lb-header__nav lb-header-js-nav" role="menubar">
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Funktionen&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/intl/de/features/"
+                  target="_self"
+                >
+                  Funktionen
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Neuigkeiten&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="/intl/de/news/"
+                  target="_self"
+                >
+                  Neuigkeiten
+                </a>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-2"
+                  aria-haspopup="menu"
+                  aria-label="Ressourcen menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-resources"
+                  role="menuitem"
+                >
+                  Ressourcen
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-resources"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Ressourcen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Ressourcen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/channel-optimization/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Offiziellen Künstlerkanal erstellen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Offiziellen Künstlerkanal erstellen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/shorts-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Shorts für Künstler*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Shorts für Künstler*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/pre-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen vor der Veröffentlichung&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen vor der Veröffentlichung
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/release-day-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen am Veröffentlichungstag&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen am Veröffentlichungstag
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/post-release-strategy/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Strategie für Künstler*innen nach der Veröffentlichung&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Strategie für Künstler*innen nach der Veröffentlichung
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/growing-your-audience/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Mehr Menschen erreichen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Mehr Menschen erreichen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header__subnav-item--active lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/resources/analytics-for-artists/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Analytics for Artists&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Analytics for Artists
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/additional-resources/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Ressourcen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Weitere Ressourcen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Weitere Ressourcen
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper" role="none">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  id="menuitem-3"
+                  aria-haspopup="menu"
+                  aria-label="Songwriter*innen menupopup"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  aria-controls="subnav-songwriters"
+                  role="menuitem"
+                >
+                  Songwriter*innen
+                  <span class="lb-header__subnav-chevron"></span>
+                </a>
+                <ul
+                  class="lb-header__subnav-wrapper lb-header-js-subnav-wrapper"
+                  role="menu"
+                  id="subnav-songwriters"
+                >
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Startseite für Songwriter*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Startseite für Songwriter*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/songwriters-producers/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Songwriter*innen und Produzent*innen&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Songwriter*innen und Produzent*innen
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/publishers-societies-pros/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Musikverlage und Gesellschaften&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Musikverlage und Gesellschaften
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/content-strategies/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Inhaltsstrategien&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Inhaltsstrategien
+                    </a>
+                  </li>
+
+                  <li class="lb-header__subnav-item-wrapper" role="none">
+                    <a
+                      class="lb-header-js-subnav-item lb-header__subnav-item"
+                      href="/intl/de/songwriters/insider-tips/"
+                      lb-auto-init="YTADatalayerTriggers"
+                      lb-options="{
+        &#x27;name&#x27;: &#x27;subnavigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Songwriter*innen&#x27;,
+        &#x27;navItem&#x27;: &#x27;Insider-Tipps&#x27;
+      }"
+                      role="menuitem"
+                    >
+                      Insider-Tipps
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="lb-header__nav-item-wrapper">
+                <a
+                  class="lb-header-js-nav-item lb-header__nav-item"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+        &#x27;name&#x27;: &#x27;navigation_link&#x27;,
+        &#x27;navCategory&#x27;: &#x27;Charts&#x27;
+      }"
+                  tabindex="0"
+                  data-nosnippet="true"
+                  role="menuitem"
+                  href="https://charts.youtube.com/"
+                  target="_blank"
+                >
+                  Charts
+                </a>
+              </div>
+            </nav>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="lb-header__row-right lb-header-js-row-right">
+          <div class="lb-header__search-wrapper lb-header-js-search-wrapper">
+            <!-- Search inner -->
+            <div class="lb-header__search-inner lb-header-js-search-inner">
+              <form
+                class="lb-header__search-bar-wrapper"
+                novalidate
+                role="search"
+                lb-auto-init="LBSearchForm"
+                lb-options="{
+                'resultsPage': '/search/'
+              }"
+              >
+                <!-- Search expand/search button -->
+                <button
+                  class="lb-header__search-button lb-header-js-search-toggle"
+                  aria-label="Suchen"
+                  type="submit"
+                  role="button"
+                >
+                  <svg
+                    class="lb-header__search-icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M0 0h24v24H0z" fill="none" />
+                    <path
+                      d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                    />
+                  </svg>
+                </button>
+                <!-- end Search expand/search button -->
+                <!-- Search bar -->
+                <input
+                  class="lb-font-body lb-header__search-bar lb-header-js-search-bar"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{
+    &#x27;name&#x27;: &#x27;keyword_search&#x27;
+  }"
+                  type="text"
+                  placeholder="Suchen"
+                  aria-hidden="false"
+                  aria-label="Suchen"
+                  tabindex="-1"
+                  name="lb-search"
+                />
+              </form>
+              <!-- Search collapse button -->
+              <button
+                class="lb-header__search-button lb-header__search-button--collapse lb-header-js-search-toggle"
+                aria-label="Schließen"
+                tabindex="-1"
+              >
+                <svg
+                  class="lb-header__search-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M0 0h24v24H0z" fill="none" />
+                  <path
+                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                  />
+                </svg>
+              </button>
+              <!-- end Search collapse button -->
+            </div>
+            <!-- end Search inner -->
+            <div
+              class="lb-header__search-overlay lb-header-js-search-toggle"
+            ></div>
+          </div>
+        </div>
+        <!-- end Search -->
+      </div>
+    </header>
+
+    <main id="content" class="yta-main yta-main--release" role="main">
+      <div class="yta-main__inner">
+        <div class="yta-release null">
+          <div class="yta-page-hero yta-page-hero-release">
+            <div class="yta-page-hero-release__inner">
+              <div class="yta-page-hero-release__logo-outer">
+                <img
+                  loading="lazy"
+                  src="https://lh3.googleusercontent.com/D_6VfkJj_p0h8IiR8BonaiRw-9kUX14bBsQ0PCgeuFLXCnMdBkepJLwy6Apqc9-EklnoSv82om3K_mrsSpEa0s3q9a40iC7sbOcG38TPPrWeQWo2WQ"
+                  alt="YouTube music logo"
+                />
+              </div>
+              <h1
+                class="lb-font-display-2 lb-font-weight-700 yta-page-hero__heading lb-font--no-crop"
+              >
+                Analytics for Artists
+              </h1>
+
+              <div class="yta-page-hero-release__description">
+                <div class="yta-md">
+                  <p>
+                    Spezielle Messwerte und Statistiken liefern dir
+                    aussagekräftige<br />
+                    Informationen zum Erfolg deiner Musik und Videos auf
+                    YouTube.
+                  </p>
+                </div>
+              </div>
+
+              <div class="yta-centered-type lb-margin-top-s">
+                <div class="yta-md">
+                  <p>
+                    Mit Analytics for Artists kannst du mehr über deine Fans
+                    erfahren und herausfinden, welche Inhalte am besten
+                    ankommen. Das macht es dir leichter, dein Publikum zu
+                    vergrößern.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ytc-gp-padding-top ytc-gp-padding-bottom">
+            <div
+              class="yta-release__section yta-module--medium yta-module--margin-sm yta-release__standalone-video"
+              id="analytics_for_artists_video_section"
+            >
+              <div class="lb-grid">
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-12"
+                >
+                  <div class="yta-video-card" lb-auto-init="YTCVideoCard">
+                    <div
+                      class="lb-player"
+                      lb-auto-init="LBPlayer"
+                      lb-video-id="FmqifH4Ai9M"
+                      lb-options="{
+      'uid': 'FmqifH4Ai9M-analytics_for_artists_video'
+    }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <section class="yta-module--margin-md">
+              <div class="yta-release__section yta-module--medium">
+                <h2
+                  class="lb-font-headline-2 lb-font-weight-700 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  Erste Schritte
+                </h2>
+
+                <div class="yta-text-media yta-module--margin-sm">
+                  <div class="lb-grid yta-text-media__grid">
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-5 lb-grid__cell--lg-span-5"
+                    >
+                      <img
+                        class="yta-text-media__image"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/TrzsivtYSY-KoyJv_aAYrQVFa_jeSDC0x2ACRBa7xEhly9Ofqw0Ku8JsnXF023vGPu9tYzqiUE7Aq2IN8pyhmgKctsFUsTI7-HB8Gg8hHTSJDIGNbZg=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/TrzsivtYSY-KoyJv_aAYrQVFa_jeSDC0x2ACRBa7xEhly9Ofqw0Ku8JsnXF023vGPu9tYzqiUE7Aq2IN8pyhmgKctsFUsTI7-HB8Gg8hHTSJDIGNbZg=v2-s416 416w',
+          '_2x': 'https://lh3.googleusercontent.com/TrzsivtYSY-KoyJv_aAYrQVFa_jeSDC0x2ACRBa7xEhly9Ofqw0Ku8JsnXF023vGPu9tYzqiUE7Aq2IN8pyhmgKctsFUsTI7-HB8Gg8hHTSJDIGNbZg=v1-s624 624w',
+          '_3x': 'https://lh3.googleusercontent.com/TrzsivtYSY-KoyJv_aAYrQVFa_jeSDC0x2ACRBa7xEhly9Ofqw0Ku8JsnXF023vGPu9tYzqiUE7Aq2IN8pyhmgKctsFUsTI7-HB8Gg8hHTSJDIGNbZg=v0-s833 833w'
+        }"
+                        src="https://lh3.googleusercontent.com/TrzsivtYSY-KoyJv_aAYrQVFa_jeSDC0x2ACRBa7xEhly9Ofqw0Ku8JsnXF023vGPu9tYzqiUE7Aq2IN8pyhmgKctsFUsTI7-HB8Gg8hHTSJDIGNbZg=v3-s20-fblur=1,20"
+                        alt="Getting there mobile image"
+                        style="width: 833px"
+                      />
+                    </div>
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-7 lb-grid__cell--lg-span-7"
+                    >
+                      <div
+                        class="yta-text-media__grid-content-wrapper yta-release__value--row"
+                      >
+                        <div class="content-container">
+                          <div class="content-value">
+                            <h3
+                              class="lb-font-subhead-1 content-container--heading"
+                            >
+                              <div class="yta-md">
+                                <p>
+                                  YouTube Analytics for Artists ist Teil von
+                                  <a
+                                    href="https://studio.youtube.com/"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    >YouTube Studio</a
+                                  >.
+                                </p>
+                              </div>
+                            </h3>
+                          </div>
+
+                          <div
+                            class="yta-font-body yta-release__description lb-margin-bottom-xs content-container--description"
+                          >
+                            <div class="yta-md">
+                              <p>
+                                Du kannst YouTube Studio direkt unter
+                                <a
+                                  href="https://studio.youtube.com/"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  >studio.youtube.com</a
+                                >
+                                öffnen. Oder klicke auf YouTube auf dein
+                                Profilbild und wähle „YouTube Studio“. YouTube
+                                Studio gibt es auch als
+                                <a
+                                  href="https://play.google.com/store/apps/details?id=com.google.android.apps.youtube.creator"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  >App für Smartphones und Tablets</a
+                                >.
+                              </p>
+                              <p>
+                                <strong
+                                  >Berichte zur Leistung deines Contents findest
+                                  du in YouTube Studio<br />
+                                  auf dem Tab „Analytics“ (auf Computern links,
+                                  in der App unten).</strong
+                                >
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="yta-module--margin-sm">
+              <div class="yta-release__section yta-module--large">
+                <div
+                  class="lb-font-headline-3 lb-font-weight-600 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  Tab „Übersicht“: Der Erfolg deiner Inhalte auf einen Blick
+                </div>
+
+                <div
+                  class="yta-text-media__subheading yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  <div class="yta-md">
+                    <p>Dein persönliches Leistungs-Dashboard</p>
+                  </div>
+                </div>
+
+                <div
+                  class="yta-centered-type yta-release__content-spacing lb-font--no-crop"
+                >
+                  <div class="yta-md">
+                    <p>
+                      Hier ist anhand von Messwerten wie Gesamtwiedergabezeit,
+                      Aufrufe und Zuschauerzahl
+                      <strong
+                        >übersichtlich zusammengefasst, wie deine Videos auf
+                        YouTube performen.</strong
+                      >
+                      Dabei werden deine offiziellen Veröffentlichungen und
+                      Ausschnitte deiner Videos in Uploads von anderen
+                      berücksichtigt. Die Daten werden laufend aktualisiert. So
+                      weißt du immer, wie oft deine neuesten Videos in den
+                      letzten 60 Minuten oder 48 Stunden aufgerufen wurden. Du
+                      kannst auch jederzeit sehen, wie viele Abonnent*innen du
+                      hast und welche Videos, Shorts oder Livestreams den
+                      größten Anteil der Gesamtwiedergabezeit ausmachen.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="yta-text-media yta-module--margin-sm">
+                  <div class="lb-grid yta-text-media__grid">
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-5 lb-grid__cell--lg-span-5"
+                    >
+                      <img
+                        class="yta-text-media__image"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/BWH1BDbIiOvKnTJrKSPo93EXcDaqIWKWtcZJsKNNV_Bq3PEr1y8qsevDds_Cjo3i9PgQQ68yeq18ZrQYzRFxSl3xeQa4b0IgD8uUa4CbhlHjfPnd7BqN=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/BWH1BDbIiOvKnTJrKSPo93EXcDaqIWKWtcZJsKNNV_Bq3PEr1y8qsevDds_Cjo3i9PgQQ68yeq18ZrQYzRFxSl3xeQa4b0IgD8uUa4CbhlHjfPnd7BqN=v2-s502 502w',
+          '_2x': 'https://lh3.googleusercontent.com/BWH1BDbIiOvKnTJrKSPo93EXcDaqIWKWtcZJsKNNV_Bq3PEr1y8qsevDds_Cjo3i9PgQQ68yeq18ZrQYzRFxSl3xeQa4b0IgD8uUa4CbhlHjfPnd7BqN=v1-s753 753w',
+          '_3x': 'https://lh3.googleusercontent.com/BWH1BDbIiOvKnTJrKSPo93EXcDaqIWKWtcZJsKNNV_Bq3PEr1y8qsevDds_Cjo3i9PgQQ68yeq18ZrQYzRFxSl3xeQa4b0IgD8uUa4CbhlHjfPnd7BqN=v0-s1004 1004w'
+        }"
+                        src="https://lh3.googleusercontent.com/BWH1BDbIiOvKnTJrKSPo93EXcDaqIWKWtcZJsKNNV_Bq3PEr1y8qsevDds_Cjo3i9PgQQ68yeq18ZrQYzRFxSl3xeQa4b0IgD8uUa4CbhlHjfPnd7BqN=v3-s20-fblur=1,20"
+                        alt="Overview Tab: Your Performance Dashboard image"
+                        style="width: 1004px"
+                      />
+                    </div>
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-7 lb-grid__cell--lg-span-7"
+                    >
+                      <div
+                        class="yta-text-media__grid-content-wrapper yta-release__value--row"
+                      >
+                        <div class="content-container">
+                          <div
+                            class="yta-font-body yta-release__description lb-margin-bottom-xs content-container--description"
+                          >
+                            <div class="yta-md">
+                              <p><strong>Nützliche Zahlen und Daten</strong></p>
+                              <ul>
+                                <li>
+                                  <p>
+                                    <strong
+                                      >Echtzeitdaten zu
+                                      Neuveröffentlichungen:</strong
+                                    >
+                                    Verfolge live, wie deine neuesten Uploads
+                                    beim Publikum ankommen.
+                                  </p>
+                                </li>
+                                <li>
+                                  <p>
+                                    <strong>Zuschauerentwicklung:</strong> An
+                                    den längerfristigen Trends bei deiner
+                                    Abonnenten- und Zuschauerzahl kannst du
+                                    ablesen, welche Inhalte für das stärkste
+                                    Wachstum sorgen. Die Zahl der
+                                    <a
+                                      href="https://support.google.com/youtube/answer/7577916"
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      >einzelnen Zuschauer</a
+                                    >
+                                    vermittelt dir eine noch bessere Vorstellung
+                                    davon, wie groß dein Publikum ist.
+                                  </p>
+                                </li>
+                                <li>
+                                  <p>
+                                    <strong
+                                      >Beste Videos in einem bestimmten
+                                      Zeitraum:</strong
+                                    >
+                                    Hier siehst du, welche deiner Videos, Shorts
+                                    und Livestreams am häufigsten angesehen
+                                    werden. Stimme deine Strategie darauf ab!
+                                  </p>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="yta-module--margin-sm">
+              <div class="yta-release__section yta-module--large">
+                <div
+                  class="lb-font-headline-3 lb-font-weight-600 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  Tab „Inhalte“: Der Blick aufs Detail
+                </div>
+
+                <div class="yta-gradient">
+                  <div
+                    class="yta-gradient__container yta-gradient__bg--royal-indigo yta-module--large yta-module--margin-sm"
+                  >
+                    <div class="yta-gradient__icon">
+                      <img
+                        class="yta-gradient__media-icon"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/yLksJbscIFlgbpGYXmLUcBYX3hm7pjpmENTmilvJ85jKq1viWPQxFXmPsNgUTMa3RvDjT6MxHgPS8fqobPlQk3WmfzSxHF1SLPvtqtUZ31UTCOyFt0M=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/yLksJbscIFlgbpGYXmLUcBYX3hm7pjpmENTmilvJ85jKq1viWPQxFXmPsNgUTMa3RvDjT6MxHgPS8fqobPlQk3WmfzSxHF1SLPvtqtUZ31UTCOyFt0M=v2-s72 72w',
+          '_2x': 'https://lh3.googleusercontent.com/yLksJbscIFlgbpGYXmLUcBYX3hm7pjpmENTmilvJ85jKq1viWPQxFXmPsNgUTMa3RvDjT6MxHgPS8fqobPlQk3WmfzSxHF1SLPvtqtUZ31UTCOyFt0M=v1-s108 108w',
+          '_3x': 'https://lh3.googleusercontent.com/yLksJbscIFlgbpGYXmLUcBYX3hm7pjpmENTmilvJ85jKq1viWPQxFXmPsNgUTMa3RvDjT6MxHgPS8fqobPlQk3WmfzSxHF1SLPvtqtUZ31UTCOyFt0M=v0-s144 144w'
+        }"
+                        src="https://lh3.googleusercontent.com/yLksJbscIFlgbpGYXmLUcBYX3hm7pjpmENTmilvJ85jKq1viWPQxFXmPsNgUTMa3RvDjT6MxHgPS8fqobPlQk3WmfzSxHF1SLPvtqtUZ31UTCOyFt0M=v3-s20-fblur=1,20"
+                        alt="Pro tip icon"
+                        style="width: 144px"
+                      />
+                    </div>
+
+                    <div class="lb-grid yta-gradient__grid">
+                      <div
+                        class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-12"
+                      >
+                        <div
+                          class="lb-font-subhead-2 lb-font--no-crop lb-margin-bottom-xxs lb-font-weight-600"
+                        >
+                          TIPP
+                        </div>
+                        <div>
+                          <p
+                            class="lb-font-subhead-3 lb-margin-bottom-xs yta-release__value yta-bg-color-deep-lavender"
+                          >
+                            1
+                          </p>
+
+                          <div class="yta-md">
+                            <p>
+                              <strong
+                                >Mit dem Filter „Offizieller Künstlerkanal“
+                                werden nur Daten zu dir zugeordneten Videos
+                                angezeigt, die von dir selbst, deinem Label oder
+                                VEVO hochgeladen wurden.</strong
+                              >
+                              Filterst du nach „Andere Kanäle“, beziehen sich
+                              die Messwerte auf Videos von anderen Kanälen. Das
+                              können gemeinsame Projekte mit anderen
+                              Künstlerinnen und Künstlern sein, Videos, die
+                              einen Song von dir (fast) komplett enthalten, oder
+                              Videos, in denen dein Titel der wichtigste
+                              Bestandteil ist.<br />
+                              <u
+                                ><strong
+                                  >Dieser Filter ist bei allen Berichten in
+                                  Analytics for Artists verfügbar.</strong
+                                ></u
+                              >
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="yta-text-media yta-module--margin-sm">
+                  <div class="lb-grid yta-text-media__grid">
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-5 lb-grid__cell--lg-span-5 yta-text-media--text-left"
+                    >
+                      <img
+                        class="yta-text-media__image"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/5vRk5P5aEYzwfxliYI6SwTG7Ba3AdhrvY4uM_143s6txGDnM1heT04dNVUDPUj6y50yckMtQnMb1cjIS786KEsQlFaz_BTg7nejAPFl8f08xoQ6I7oc=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/5vRk5P5aEYzwfxliYI6SwTG7Ba3AdhrvY4uM_143s6txGDnM1heT04dNVUDPUj6y50yckMtQnMb1cjIS786KEsQlFaz_BTg7nejAPFl8f08xoQ6I7oc=v2-s503 503w',
+          '_2x': 'https://lh3.googleusercontent.com/5vRk5P5aEYzwfxliYI6SwTG7Ba3AdhrvY4uM_143s6txGDnM1heT04dNVUDPUj6y50yckMtQnMb1cjIS786KEsQlFaz_BTg7nejAPFl8f08xoQ6I7oc=v1-s754 754w',
+          '_3x': 'https://lh3.googleusercontent.com/5vRk5P5aEYzwfxliYI6SwTG7Ba3AdhrvY4uM_143s6txGDnM1heT04dNVUDPUj6y50yckMtQnMb1cjIS786KEsQlFaz_BTg7nejAPFl8f08xoQ6I7oc=v0-s1006 1006w'
+        }"
+                        src="https://lh3.googleusercontent.com/5vRk5P5aEYzwfxliYI6SwTG7Ba3AdhrvY4uM_143s6txGDnM1heT04dNVUDPUj6y50yckMtQnMb1cjIS786KEsQlFaz_BTg7nejAPFl8f08xoQ6I7oc=v3-s20-fblur=1,20"
+                        alt="Content Tab: Your Performance Dashboard image"
+                        style="width: 1006px"
+                      />
+                    </div>
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-7 lb-grid__cell--lg-span-7"
+                    >
+                      <div
+                        class="yta-text-media__grid-content-wrapper yta-release__value--row"
+                      >
+                        <div class="content-container">
+                          <div class="content-value">
+                            <div
+                              class="lb-font-subhead-3 yta-release__value yta-bg-color-teal-blue"
+                            >
+                              2
+                            </div>
+                          </div>
+
+                          <div
+                            class="yta-font-body yta-release__description lb-margin-bottom-xs content-container--description"
+                          >
+                            <div class="yta-md">
+                              <p>
+                                <strong
+                                  >Auf dem Tab „Inhalte“ werden die Messwerte
+                                  nach Format aufgeschlüsselt: Videos, Songs,
+                                  Shorts, Livestreams, Beiträge und
+                                  Podcasts.</strong
+                                >
+                                Was sind die häufigsten
+                                <a
+                                  href="https://support.google.com/youtube/answer/9314355#traffic_sources"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  >Zugriffsquellen</a
+                                >
+                                für deine Inhalte? Welche deiner Videos und
+                                Songs sind am erfolgreichsten und welcher
+                                Content ist für deine Fans besonders
+                                interessant? Hier findest du es heraus.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="yta-module--margin-sm">
+              <div class="yta-release__section yta-module--large">
+                <div
+                  class="lb-font-headline-3 lb-font-weight-600 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  Tab „Zielgruppe“: Wer sind deine Fans?
+                </div>
+
+                <div class="yta-text-media yta-module--margin-sm">
+                  <div class="lb-grid yta-text-media__grid">
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-5 lb-grid__cell--lg-span-5 yta-text-media--text-right"
+                    >
+                      <img
+                        class="yta-text-media__image"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/WpaWXcFPc7Sz94xO6woIo2w94Oj4638J40Cn-upmU6uUkj1D_VSAzdR2572NYsHO48kXXMtUTZYMa9DM50SUTKEyY8-z9oOcM6yju5bTpk6NbGJJqK0=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/WpaWXcFPc7Sz94xO6woIo2w94Oj4638J40Cn-upmU6uUkj1D_VSAzdR2572NYsHO48kXXMtUTZYMa9DM50SUTKEyY8-z9oOcM6yju5bTpk6NbGJJqK0=v2-s502 502w',
+          '_2x': 'https://lh3.googleusercontent.com/WpaWXcFPc7Sz94xO6woIo2w94Oj4638J40Cn-upmU6uUkj1D_VSAzdR2572NYsHO48kXXMtUTZYMa9DM50SUTKEyY8-z9oOcM6yju5bTpk6NbGJJqK0=v1-s753 753w',
+          '_3x': 'https://lh3.googleusercontent.com/WpaWXcFPc7Sz94xO6woIo2w94Oj4638J40Cn-upmU6uUkj1D_VSAzdR2572NYsHO48kXXMtUTZYMa9DM50SUTKEyY8-z9oOcM6yju5bTpk6NbGJJqK0=v0-s1004 1004w'
+        }"
+                        src="https://lh3.googleusercontent.com/WpaWXcFPc7Sz94xO6woIo2w94Oj4638J40Cn-upmU6uUkj1D_VSAzdR2572NYsHO48kXXMtUTZYMa9DM50SUTKEyY8-z9oOcM6yju5bTpk6NbGJJqK0=v3-s20-fblur=1,20"
+                        alt="Audience Tab: Understanding Your Fans image"
+                        style="width: 1004px"
+                      />
+                    </div>
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-7 lb-grid__cell--lg-span-7"
+                    >
+                      <div
+                        class="yta-text-media__grid-content-wrapper yta-release__value--row"
+                      >
+                        <div class="content-container">
+                          <div
+                            class="yta-font-body yta-release__description lb-margin-bottom-xs content-container--description"
+                          >
+                            <div class="yta-md">
+                              <p>
+                                <strong
+                                  >Hier erfährst du mehr darüber, wer sich deine
+                                  Musik anhört und deine Videos ansieht.</strong
+                                >
+                                Du siehst, aus welchen Ländern oder Regionen
+                                deine Fans stammen, wie alt sie sind und welches
+                                Geschlecht sie haben. Außerdem kannst du
+                                herausfinden, zu welchen Zeiten dein Publikum
+                                YouTube am meisten nutzt und welche anderen
+                                Inhalte es mag.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="yta-module--margin-md">
+              <div class="yta-release__section yta-module--large">
+                <div
+                  class="lb-font-headline-3 lb-font-weight-600 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+                >
+                  Erweiterter Modus: Analysen im Detail
+                </div>
+
+                <div class="yta-text-media yta-module--margin-sm">
+                  <div class="lb-grid yta-text-media__grid">
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-5 lb-grid__cell--lg-span-5 yta-text-media--text-left"
+                    >
+                      <img
+                        class="yta-text-media__image"
+                        lb-auto-init="LBImageLoader"
+                        lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/p-8qqNsnetJT2HWbbldfZ8yr2k18jGPaSWVGvQ3-CAhbL65EvEesujpxMAj4fgUF24PWx2ju6z9yduw9GzzqSLG8ToK5qhcNOi226E6RMAw3m-MVAIY=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/p-8qqNsnetJT2HWbbldfZ8yr2k18jGPaSWVGvQ3-CAhbL65EvEesujpxMAj4fgUF24PWx2ju6z9yduw9GzzqSLG8ToK5qhcNOi226E6RMAw3m-MVAIY=v2-s502 502w',
+          '_2x': 'https://lh3.googleusercontent.com/p-8qqNsnetJT2HWbbldfZ8yr2k18jGPaSWVGvQ3-CAhbL65EvEesujpxMAj4fgUF24PWx2ju6z9yduw9GzzqSLG8ToK5qhcNOi226E6RMAw3m-MVAIY=v1-s753 753w',
+          '_3x': 'https://lh3.googleusercontent.com/p-8qqNsnetJT2HWbbldfZ8yr2k18jGPaSWVGvQ3-CAhbL65EvEesujpxMAj4fgUF24PWx2ju6z9yduw9GzzqSLG8ToK5qhcNOi226E6RMAw3m-MVAIY=v0-s1004 1004w'
+        }"
+                        src="https://lh3.googleusercontent.com/p-8qqNsnetJT2HWbbldfZ8yr2k18jGPaSWVGvQ3-CAhbL65EvEesujpxMAj4fgUF24PWx2ju6z9yduw9GzzqSLG8ToK5qhcNOi226E6RMAw3m-MVAIY=v3-s20-fblur=1,20"
+                        alt="Advanced Mode: Going Deeper image"
+                        style="width: 1004px"
+                      />
+                    </div>
+                    <div
+                      class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-7 lb-grid__cell--lg-span-7"
+                    >
+                      <div
+                        class="yta-text-media__grid-content-wrapper yta-release__value--row"
+                      >
+                        <div class="content-container">
+                          <div
+                            class="yta-font-body yta-release__description lb-margin-bottom-xs content-container--description"
+                          >
+                            <div class="yta-md">
+                              <p>
+                                Du willst es noch genauer wissen? Dafür gibt es
+                                auf jedem Tab den erweiterten Modus. Hier kannst
+                                du
+                                <strong
+                                  >einzelne Inhaltstypen nach ihrer Leistung
+                                  vergleichen und deinen Content nach
+                                  verschiedenen Kriterien analysieren.</strong
+                                >
+                              </p>
+                              <ul>
+                                <li>
+                                  Klicke einfach oben auf „Erweiterter Modus“.
+                                  Bei fast allen Berichten kannst du auch unten
+                                  auf „Mehr anzeigen“ klicken, um ausführlichere
+                                  Messwerte aufzurufen.
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="yta-release__section yta-module--large yta-module--margin-md yta-release__lb-expansion-panel"
+            >
+              <h2
+                class="lb-font-headline-2 lb-font-weight-700 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+              >
+                Antworten auf häufige Fragen
+              </h2>
+
+              <div class="lb-expansion-panel__container">
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-0"
+                      id="pre-release-faqs-header-0"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 0},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        Wie kommt mein Video an?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-0"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-0"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                <strong
+                                  >Es gibt zwei Möglichkeiten, die
+                                  Analysedaten<br />
+                                  für ein einzelnes Video aufzurufen:</strong
+                                >
+                              </p>
+                              <ol>
+                                <li>
+                                  <p>
+                                    Klicke in Analytics auf
+                                    <strong
+                                      >den Titel oder das<br />
+                                      Thumbnail eines Videos.</strong
+                                    >
+                                  </p>
+                                </li>
+                                <li>
+                                  <p>
+                                    Klicke auf dem Tab „Inhalte“ auf das<br />
+                                    <strong>Diagrammsymbol.</strong>
+                                  </p>
+                                </li>
+                              </ol>
+                              <p>
+                                Die Analysen für deinen Kanal umfassen neben
+                                allgemeinen Statistiken wie Aufrufen,
+                                Wiedergabezeit und Abonnentenzahl auch
+                                <a
+                                  href="https://support.google.com/youtube/answer/9314415"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  >wichtige Momente für die Zuschauerbindung</a
+                                >.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/LGEPQN2s-edkqB2cgfLyM-JDXaddrxjNtWYynqNtLK8c0W8UfGWHiXQICTLXbwzZQh7rF2au6WQj6BkoxnN5TfiwBHLlUQlDNaf7lQUXlL593I_Org=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/LGEPQN2s-edkqB2cgfLyM-JDXaddrxjNtWYynqNtLK8c0W8UfGWHiXQICTLXbwzZQh7rF2au6WQj6BkoxnN5TfiwBHLlUQlDNaf7lQUXlL593I_Org=v2-s401 401w',
+          '_2x': 'https://lh3.googleusercontent.com/LGEPQN2s-edkqB2cgfLyM-JDXaddrxjNtWYynqNtLK8c0W8UfGWHiXQICTLXbwzZQh7rF2au6WQj6BkoxnN5TfiwBHLlUQlDNaf7lQUXlL593I_Org=v1-s601 601w',
+          '_3x': 'https://lh3.googleusercontent.com/LGEPQN2s-edkqB2cgfLyM-JDXaddrxjNtWYynqNtLK8c0W8UfGWHiXQICTLXbwzZQh7rF2au6WQj6BkoxnN5TfiwBHLlUQlDNaf7lQUXlL593I_Org=v0-s802 802w'
+        }"
+                              src="https://lh3.googleusercontent.com/LGEPQN2s-edkqB2cgfLyM-JDXaddrxjNtWYynqNtLK8c0W8UfGWHiXQICTLXbwzZQh7rF2au6WQj6BkoxnN5TfiwBHLlUQlDNaf7lQUXlL593I_Org=v3-s20-fblur=1,20"
+                              alt="Channel content FAQ image"
+                              style="width: 802px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-1"
+                      id="pre-release-faqs-header-1"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 1},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        Wie kommt mein Song an?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-1"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-1"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                Klicke auf dem
+                                <strong>Tab „Inhalte“</strong> auf
+                                <strong>Songs.</strong>
+                              </p>
+                              <p>
+                                Hier wird die Leistung einzelner Songs genauer
+                                aufgeschlüsselt. Du siehst unter anderem, in
+                                welchen Shorts und Videos dein Song verwendet
+                                wird und wie sich die Zuschauerzahlen prozentual
+                                verteilen.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/-RJEk_rMqIq9Q2FG1lnIFH4kCY_vDsYVhXmpVjzGhWnLnzVTf6nUNRErzsRkAv2S4YCTyL-pSlTK1kNYyt0JqFaprBQswf36YjjFCu2W_v72DJg5i7ig=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/-RJEk_rMqIq9Q2FG1lnIFH4kCY_vDsYVhXmpVjzGhWnLnzVTf6nUNRErzsRkAv2S4YCTyL-pSlTK1kNYyt0JqFaprBQswf36YjjFCu2W_v72DJg5i7ig=v2-s124 124w',
+          '_2x': 'https://lh3.googleusercontent.com/-RJEk_rMqIq9Q2FG1lnIFH4kCY_vDsYVhXmpVjzGhWnLnzVTf6nUNRErzsRkAv2S4YCTyL-pSlTK1kNYyt0JqFaprBQswf36YjjFCu2W_v72DJg5i7ig=v1-s186 186w',
+          '_3x': 'https://lh3.googleusercontent.com/-RJEk_rMqIq9Q2FG1lnIFH4kCY_vDsYVhXmpVjzGhWnLnzVTf6nUNRErzsRkAv2S4YCTyL-pSlTK1kNYyt0JqFaprBQswf36YjjFCu2W_v72DJg5i7ig=v0-s249 249w'
+        }"
+                              src="https://lh3.googleusercontent.com/-RJEk_rMqIq9Q2FG1lnIFH4kCY_vDsYVhXmpVjzGhWnLnzVTf6nUNRErzsRkAv2S4YCTyL-pSlTK1kNYyt0JqFaprBQswf36YjjFCu2W_v72DJg5i7ig=v3-s20-fblur=1,20"
+                              alt="How is my song doing FAQ image"
+                              style="width: 249px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-2"
+                      id="pre-release-faqs-header-2"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 2},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        Wie wird mein Song in Shorts verwendet?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-2"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-2"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                Klicke oben rechts auf
+                                <strong>Erweiterter Modus,</strong> wähle im
+                                Menü „Filter“ die Option
+                                <strong>Inhaltstyp</strong> und dann
+                                <strong>Shorts.</strong>
+                              </p>
+                              <p>
+                                Auf dem <strong>Tab „Songs“</strong> siehst du
+                                die Top-Songs, die Fans in ihren Shorts
+                                verwendet haben. Und auf dem
+                                <strong>Tab „Inhalte“</strong> sind die
+                                beliebtesten Shorts-Inhalte aufgeführt.
+                              </p>
+                              <p>
+                                In der App findest du diese Daten auf der
+                                Infokarte „Inhalte, in denen dein Song verwendet
+                                wird“.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/EmAb2RNW_5k0uzRULCw1-Hzx8LsEB0X3eXnbof5ggUne4nVCq030abUtc4hcHc13wLCFDrirljqSdoKZhY5ffJuGBW8BudWUj6I5fFIhAK4h5hxWzi44=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/EmAb2RNW_5k0uzRULCw1-Hzx8LsEB0X3eXnbof5ggUne4nVCq030abUtc4hcHc13wLCFDrirljqSdoKZhY5ffJuGBW8BudWUj6I5fFIhAK4h5hxWzi44=v2-s390 390w',
+          '_2x': 'https://lh3.googleusercontent.com/EmAb2RNW_5k0uzRULCw1-Hzx8LsEB0X3eXnbof5ggUne4nVCq030abUtc4hcHc13wLCFDrirljqSdoKZhY5ffJuGBW8BudWUj6I5fFIhAK4h5hxWzi44=v1-s585 585w',
+          '_3x': 'https://lh3.googleusercontent.com/EmAb2RNW_5k0uzRULCw1-Hzx8LsEB0X3eXnbof5ggUne4nVCq030abUtc4hcHc13wLCFDrirljqSdoKZhY5ffJuGBW8BudWUj6I5fFIhAK4h5hxWzi44=v0-s780 780w'
+        }"
+                              src="https://lh3.googleusercontent.com/EmAb2RNW_5k0uzRULCw1-Hzx8LsEB0X3eXnbof5ggUne4nVCq030abUtc4hcHc13wLCFDrirljqSdoKZhY5ffJuGBW8BudWUj6I5fFIhAK4h5hxWzi44=v3-s20-fblur=1,20"
+                              alt="Select content type FAQ image"
+                              style="width: 780px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-3"
+                      id="pre-release-faqs-header-3"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 3},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        Welche Videos sieht sich mein Publikum noch an?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-3"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-3"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                Scrolle auf dem
+                                <strong>Tab „Zielgruppe“</strong> nach unten zu
+                                <strong
+                                  >„Andere Videos, die deine Zuschauer angesehen
+                                  haben“.</strong
+                                >
+                              </p>
+                              <p>
+                                Hier kannst du herausfinden, welche Art von
+                                Content deinen Fans noch gefällt. Vielleicht
+                                entdeckst du auch andere Künstlerinnen und
+                                Künstler oder Creatorinnen und Creator, mit
+                                denen du ein gemeinsames Projekt starten
+                                könntest.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/Ry5DMV375mMA0rSaydkv8m8Ys3Ag7NtfI0d-kxB7MQPDgjplhsAp10uaS6u7WvaRFI_inI0q9BL56UPytNVRrwdG1El0sSoGGrkIgmkAw1RM6Md0RA=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/Ry5DMV375mMA0rSaydkv8m8Ys3Ag7NtfI0d-kxB7MQPDgjplhsAp10uaS6u7WvaRFI_inI0q9BL56UPytNVRrwdG1El0sSoGGrkIgmkAw1RM6Md0RA=v2-s390 390w',
+          '_2x': 'https://lh3.googleusercontent.com/Ry5DMV375mMA0rSaydkv8m8Ys3Ag7NtfI0d-kxB7MQPDgjplhsAp10uaS6u7WvaRFI_inI0q9BL56UPytNVRrwdG1El0sSoGGrkIgmkAw1RM6Md0RA=v1-s585 585w',
+          '_3x': 'https://lh3.googleusercontent.com/Ry5DMV375mMA0rSaydkv8m8Ys3Ag7NtfI0d-kxB7MQPDgjplhsAp10uaS6u7WvaRFI_inI0q9BL56UPytNVRrwdG1El0sSoGGrkIgmkAw1RM6Md0RA=v0-s780 780w'
+        }"
+                              src="https://lh3.googleusercontent.com/Ry5DMV375mMA0rSaydkv8m8Ys3Ag7NtfI0d-kxB7MQPDgjplhsAp10uaS6u7WvaRFI_inI0q9BL56UPytNVRrwdG1El0sSoGGrkIgmkAw1RM6Md0RA=v3-s20-fblur=1,20"
+                              alt="Audience tab FAQ image"
+                              style="width: 780px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-4"
+                      id="pre-release-faqs-header-4"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 4},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        Wie groß ist meine Fanbase?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-4"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-4"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                Klicke auf dem
+                                <strong>Tab „Zielgruppe“</strong> auf
+                                <strong>Einzelne Zuschauer.</strong>
+                              </p>
+                              <p>
+                                An dieser Kennzahl kannst du ablesen, wie groß
+                                dein Publikum tatsächlich ist und wie viele
+                                Personen ungefähr deine Videos in einem
+                                bestimmten Zeitraum angesehen haben. Ob die
+                                Videos am Computer oder auf dem Smartphone
+                                aufgerufen oder mehrfach wiedergegeben wurden,
+                                spielt dabei keine Rolle. Dieser Messwert ist
+                                oft aussagekräftiger als die Abonnentenzahl.
+                              </p>
+                              <p>
+                                Der
+                                <a
+                                  href="https://support.google.com/youtube/answer/13615784"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  >Bericht „Neue und wiederkehrende Nutzer“</a
+                                >
+                                verrät dir, mit welchen Inhalten du neue Fans
+                                gewinnst oder dein Stammpublikum neu
+                                begeisterst.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/CLHT_lALJLarferxAIxjiIbHWvlgN0DMqpRRa3i9_6RMhcJD4OxlViG8ZCzbO3nK_8I-xa24ZOBRA0DKzLW_bNL0N0FCQM7HIHdlBLmphKwbQwm2mqw=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/CLHT_lALJLarferxAIxjiIbHWvlgN0DMqpRRa3i9_6RMhcJD4OxlViG8ZCzbO3nK_8I-xa24ZOBRA0DKzLW_bNL0N0FCQM7HIHdlBLmphKwbQwm2mqw=v2-s390 390w',
+          '_2x': 'https://lh3.googleusercontent.com/CLHT_lALJLarferxAIxjiIbHWvlgN0DMqpRRa3i9_6RMhcJD4OxlViG8ZCzbO3nK_8I-xa24ZOBRA0DKzLW_bNL0N0FCQM7HIHdlBLmphKwbQwm2mqw=v1-s585 585w',
+          '_3x': 'https://lh3.googleusercontent.com/CLHT_lALJLarferxAIxjiIbHWvlgN0DMqpRRa3i9_6RMhcJD4OxlViG8ZCzbO3nK_8I-xa24ZOBRA0DKzLW_bNL0N0FCQM7HIHdlBLmphKwbQwm2mqw=v0-s780 780w'
+        }"
+                              src="https://lh3.googleusercontent.com/CLHT_lALJLarferxAIxjiIbHWvlgN0DMqpRRa3i9_6RMhcJD4OxlViG8ZCzbO3nK_8I-xa24ZOBRA0DKzLW_bNL0N0FCQM7HIHdlBLmphKwbQwm2mqw=v3-s20-fblur=1,20"
+                              alt="Channel analytics FAQ image"
+                              style="width: 780px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-expansion-panel lb-expansion-panel--light"
+                  lb-auto-init="LBExpansionPanel"
+                  lb-options="{
+      &#x27;family&#x27;: &#x27;pre-release-faqs&#x27;,
+      &#x27;computeBeforeOpen&#x27;: false,
+      &#x27;open&#x27;: false
+    }"
+                >
+                  <div
+                    class="lb-expansion-panel__heading"
+                    role="heading"
+                    aria-level="2"
+                  >
+                    <div
+                      class="lb-expansion-panel__trigger"
+                      role="button"
+                      tabindex="0"
+                      aria-expanded="false"
+                      aria-controls="pre-release-faqs-content-5"
+                      id="pre-release-faqs-header-5"
+                      lb-auto-init="LBExpansionPanelTrigger, YTADatalayerTriggers"
+                      lb-options="{
+      &#x27;component&#x27;: &#x27;expansion-panel&#x27;,
+      &#x27;action&#x27;: &#x27;toggle&#x27;,
+      &#x27;detail&#x27;: {&#x27;family&#x27;: &#x27;pre-release-faqs&#x27;, &#x27;index&#x27;: 5},
+      &#x27;name&#x27;: &#x27;expansion_panel_section&#x27;,
+      &#x27;label&#x27;: &#x27;Antworten auf häufige Fragen&#x27;
+    }"
+                    >
+                      <span class="lb-expansion-panel__trigger-name">
+                        In welchen Playlists kommen meine Songs vor?
+                      </span>
+                      <span class="lb-expansion-panel__trigger-icon">
+                        <svg
+                          width="12"
+                          height="8"
+                          viewBox="0 0 12 8"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M1.41 0.589966L6 5.16997L10.59 0.589966L12 1.99997L6 7.99997L0 1.99997L1.41 0.589966Z"
+                            fill="#606060"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="lb-expansion-panel__divider"></div>
+                  <div
+                    class="lb-expansion-panel__surface"
+                    id="pre-release-faqs-content-5"
+                    role="region"
+                    aria-labelledby="pre-release-faqs-header-5"
+                  >
+                    <div class="lb-expansion-panel__surface-content">
+                      <div
+                        class="lb-grid lb-expansion-panel__surface-content--text-only"
+                      >
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-span-6"
+                        >
+                          <div class="yta-md">
+                            <div class="yta-md">
+                              <p>
+                                Wenn du auf dem
+                                <strong>Tab „Inhalte“</strong> nach unten
+                                scrollst, siehst du unter
+                                <strong
+                                  >„So gelangen Zuschauer zu deinen
+                                  Videos“</strong
+                                >
+                                die häufigsten Zugriffsquellen für deinen
+                                Content. Klicke auf
+                                <strong>Mehr anzeigen</strong> und dann auf
+                                <strong>Playlists,</strong> um eine Liste aller
+                                Playlists abzurufen, in denen deine Musik
+                                vorkommt.
+                              </p>
+                              <p>
+                                <strong
+                                  >Statistiken zu Zugriffsquellen und
+                                  Top-Playlists</strong
+                                >
+                                sind hilfreich, um deine Playlists gezielt auf
+                                die Hörvorlieben der Fans abzustimmen. Gibt es
+                                bestimmte Songs von dir, die besonders häufig
+                                wiedergegeben werden?
+                              </p>
+                              <p>
+                                <strong
+                                  >Zu diesen beliebten Titeln könntest du
+                                  Playlists mit begleitenden Inhalten wie
+                                  Interviews, Behind-the-Scenes-Videos oder
+                                  Liveversionen erstellen. Oder du nutzt die
+                                  Songs als Aufhänger für Playlists, in denen du
+                                  andere Musik von dir vorstellst.</strong
+                                >
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          class="lb-grid__cell lb-grid__cell--sm-span-12 lb-grid__cell--md-span-12 lb-grid__cell--lg-offset-7-span-5"
+                        >
+                          <div class="icon-container">
+                            <img
+                              class="icon-container__media-image"
+                              lb-auto-init="LBImageLoader"
+                              lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/0Cj1p--VyotJ6sHN5fFz0ZGYve4GbY3P9LQBAm2C7D93nxTFijNeKd9ojtzekEKhWp4yYeHbn1px3YrvRsdKAJ7X5Unok5BdOfouVFKX7aXEUxnSojQO=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/0Cj1p--VyotJ6sHN5fFz0ZGYve4GbY3P9LQBAm2C7D93nxTFijNeKd9ojtzekEKhWp4yYeHbn1px3YrvRsdKAJ7X5Unok5BdOfouVFKX7aXEUxnSojQO=v2-s390 390w',
+          '_2x': 'https://lh3.googleusercontent.com/0Cj1p--VyotJ6sHN5fFz0ZGYve4GbY3P9LQBAm2C7D93nxTFijNeKd9ojtzekEKhWp4yYeHbn1px3YrvRsdKAJ7X5Unok5BdOfouVFKX7aXEUxnSojQO=v1-s585 585w',
+          '_3x': 'https://lh3.googleusercontent.com/0Cj1p--VyotJ6sHN5fFz0ZGYve4GbY3P9LQBAm2C7D93nxTFijNeKd9ojtzekEKhWp4yYeHbn1px3YrvRsdKAJ7X5Unok5BdOfouVFKX7aXEUxnSojQO=v0-s780 780w'
+        }"
+                              src="https://lh3.googleusercontent.com/0Cj1p--VyotJ6sHN5fFz0ZGYve4GbY3P9LQBAm2C7D93nxTFijNeKd9ojtzekEKhWp4yYeHbn1px3YrvRsdKAJ7X5Unok5BdOfouVFKX7aXEUxnSojQO=v3-s20-fblur=1,20"
+                              alt="How viewers find your videos FAQ image"
+                              style="width: 780px"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lb-expansion-panel__divider"></div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="yta-release__section yta-resources-lockup yta-module--small yta-module--margin-md"
+            >
+              <h2
+                class="lb-font-headline-2 lb-font-weight-700 yta-release__content-spacing lb-font--no-crop yta-centered-type"
+              >
+                Du möchtest mehr über Analytics for Artists wissen?
+              </h2>
+
+              <div class="yta-centered-type yta-release__content-spacing">
+                <div class="yta-md">
+                  <p>
+                    HIER GEHTS ZUM AKTUELLEN PLAYBOOK ZU BEST PRACTICES UND ZU
+                    ERFOLGSGESCHICHTEN VON KÜNSTLER*INNEN
+                  </p>
+                </div>
+              </div>
+
+              <div class="lb-grid">
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/Or_y7kIFN4zwhdbc8RqYjj9A5YkBE0rtB-YQN1B5x9ff-wldQX8WT1m4ZP6X-IOdR8tzLEG3UxZrUhjETh8pOxTJus873NA6EOukVh5Cbkss6tRO6w=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/Or_y7kIFN4zwhdbc8RqYjj9A5YkBE0rtB-YQN1B5x9ff-wldQX8WT1m4ZP6X-IOdR8tzLEG3UxZrUhjETh8pOxTJus873NA6EOukVh5Cbkss6tRO6w=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/Or_y7kIFN4zwhdbc8RqYjj9A5YkBE0rtB-YQN1B5x9ff-wldQX8WT1m4ZP6X-IOdR8tzLEG3UxZrUhjETh8pOxTJus873NA6EOukVh5Cbkss6tRO6w=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/Or_y7kIFN4zwhdbc8RqYjj9A5YkBE0rtB-YQN1B5x9ff-wldQX8WT1m4ZP6X-IOdR8tzLEG3UxZrUhjETh8pOxTJus873NA6EOukVh5Cbkss6tRO6w=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/Or_y7kIFN4zwhdbc8RqYjj9A5YkBE0rtB-YQN1B5x9ff-wldQX8WT1m4ZP6X-IOdR8tzLEG3UxZrUhjETh8pOxTJus873NA6EOukVh5Cbkss6tRO6w=v3-s20-fblur=1,20"
+                      alt=""
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Strategie vor der Veröffentlichung
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/pre-release-strategy/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/pre-release-strategy/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/flWkCITjmABsgEYdD48_fwIqvjSsbCvZmLv0voCSeR_D2MeSzshpTL8hGRamOZrzvaIGkE7Bn82UpbZzlCrwdRP6rKpTFu8EqOd5qmMFurP0ezoQ30c=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/flWkCITjmABsgEYdD48_fwIqvjSsbCvZmLv0voCSeR_D2MeSzshpTL8hGRamOZrzvaIGkE7Bn82UpbZzlCrwdRP6rKpTFu8EqOd5qmMFurP0ezoQ30c=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/flWkCITjmABsgEYdD48_fwIqvjSsbCvZmLv0voCSeR_D2MeSzshpTL8hGRamOZrzvaIGkE7Bn82UpbZzlCrwdRP6rKpTFu8EqOd5qmMFurP0ezoQ30c=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/flWkCITjmABsgEYdD48_fwIqvjSsbCvZmLv0voCSeR_D2MeSzshpTL8hGRamOZrzvaIGkE7Bn82UpbZzlCrwdRP6rKpTFu8EqOd5qmMFurP0ezoQ30c=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/flWkCITjmABsgEYdD48_fwIqvjSsbCvZmLv0voCSeR_D2MeSzshpTL8hGRamOZrzvaIGkE7Bn82UpbZzlCrwdRP6rKpTFu8EqOd5qmMFurP0ezoQ30c=v3-s20-fblur=1,20"
+                      alt=""
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Strategie für den Veröffentlichungstag
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/release-day-strategy/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/release-day-strategy/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/LDf5pBnA1627k6-49UtFJjZLD1YF9W4BeDchmyvFkHXMeuPab-hQMxIc3_uviPbeDn6vRi54cXuV8Hkyz5l06phcHdw0FUxXr5zNH78f5fSpGOayKQ=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/LDf5pBnA1627k6-49UtFJjZLD1YF9W4BeDchmyvFkHXMeuPab-hQMxIc3_uviPbeDn6vRi54cXuV8Hkyz5l06phcHdw0FUxXr5zNH78f5fSpGOayKQ=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/LDf5pBnA1627k6-49UtFJjZLD1YF9W4BeDchmyvFkHXMeuPab-hQMxIc3_uviPbeDn6vRi54cXuV8Hkyz5l06phcHdw0FUxXr5zNH78f5fSpGOayKQ=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/LDf5pBnA1627k6-49UtFJjZLD1YF9W4BeDchmyvFkHXMeuPab-hQMxIc3_uviPbeDn6vRi54cXuV8Hkyz5l06phcHdw0FUxXr5zNH78f5fSpGOayKQ=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/LDf5pBnA1627k6-49UtFJjZLD1YF9W4BeDchmyvFkHXMeuPab-hQMxIc3_uviPbeDn6vRi54cXuV8Hkyz5l06phcHdw0FUxXr5zNH78f5fSpGOayKQ=v3-s20-fblur=1,20"
+                      alt="Strategie nach der Veröffentlichung"
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Strategie nach der Veröffentlichung
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/post-release-strategy/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/post-release-strategy/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/NpQio-GRok2h7svUgr-yKE_CExwHucKY9XZEMisqXPM2miNANu50bW6jiuJlFrDLQTdckfSwx6xajRZPmgLEFwxlNgh077R0iE1uLmmEDEIGBoNNSQDg=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/NpQio-GRok2h7svUgr-yKE_CExwHucKY9XZEMisqXPM2miNANu50bW6jiuJlFrDLQTdckfSwx6xajRZPmgLEFwxlNgh077R0iE1uLmmEDEIGBoNNSQDg=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/NpQio-GRok2h7svUgr-yKE_CExwHucKY9XZEMisqXPM2miNANu50bW6jiuJlFrDLQTdckfSwx6xajRZPmgLEFwxlNgh077R0iE1uLmmEDEIGBoNNSQDg=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/NpQio-GRok2h7svUgr-yKE_CExwHucKY9XZEMisqXPM2miNANu50bW6jiuJlFrDLQTdckfSwx6xajRZPmgLEFwxlNgh077R0iE1uLmmEDEIGBoNNSQDg=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/NpQio-GRok2h7svUgr-yKE_CExwHucKY9XZEMisqXPM2miNANu50bW6jiuJlFrDLQTdckfSwx6xajRZPmgLEFwxlNgh077R0iE1uLmmEDEIGBoNNSQDg=v3-s20-fblur=1,20"
+                      alt=""
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Offiziellen Künstlerkanal erstellen
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/channel-optimization/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/channel-optimization/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/cdY3O69i18aL_EybbuseBQM9a51i_sgoq0AhW6XdQmN-Et4vqcGPzMaaEygXiaatbjiFk0I83EjGlJaCgzb7v1fxupGaI3ZH4FTxEilrWrEO_pP4T74=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/cdY3O69i18aL_EybbuseBQM9a51i_sgoq0AhW6XdQmN-Et4vqcGPzMaaEygXiaatbjiFk0I83EjGlJaCgzb7v1fxupGaI3ZH4FTxEilrWrEO_pP4T74=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/cdY3O69i18aL_EybbuseBQM9a51i_sgoq0AhW6XdQmN-Et4vqcGPzMaaEygXiaatbjiFk0I83EjGlJaCgzb7v1fxupGaI3ZH4FTxEilrWrEO_pP4T74=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/cdY3O69i18aL_EybbuseBQM9a51i_sgoq0AhW6XdQmN-Et4vqcGPzMaaEygXiaatbjiFk0I83EjGlJaCgzb7v1fxupGaI3ZH4FTxEilrWrEO_pP4T74=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/cdY3O69i18aL_EybbuseBQM9a51i_sgoq0AhW6XdQmN-Et4vqcGPzMaaEygXiaatbjiFk0I83EjGlJaCgzb7v1fxupGaI3ZH4FTxEilrWrEO_pP4T74=v3-s20-fblur=1,20"
+                      alt=""
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Als Künstler*in mehr Menschen erreichen
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/growing-your-audience/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/growing-your-audience/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lb-grid__cell lb-grid__cell--sm-span-6 lb-grid__cell--md-span-4 lb-grid__cell--lg-span-4"
+                >
+                  <div class="yta-resources-item">
+                    <img
+                      class="yta-resources-item__icon lb-margin-bottom-xs"
+                      lb-auto-init="LBImageLoader"
+                      lb-options="{
+          '_0x': 'https://lh3.googleusercontent.com/X4-VOgA-RJxwlSGIBV6h7vfJyLT0m6QVZASlibadcf7XO8JFAlmrAvsBh2a3Jyprv183N7iAaql9hiQLGxip23XqMawe9-FlrOYQyTlrqeSxtcoYnCA=v3-s10-fblur=1,20',
+          '_1x': 'https://lh3.googleusercontent.com/X4-VOgA-RJxwlSGIBV6h7vfJyLT0m6QVZASlibadcf7XO8JFAlmrAvsBh2a3Jyprv183N7iAaql9hiQLGxip23XqMawe9-FlrOYQyTlrqeSxtcoYnCA=v2-s100 100w',
+          '_2x': 'https://lh3.googleusercontent.com/X4-VOgA-RJxwlSGIBV6h7vfJyLT0m6QVZASlibadcf7XO8JFAlmrAvsBh2a3Jyprv183N7iAaql9hiQLGxip23XqMawe9-FlrOYQyTlrqeSxtcoYnCA=v1-s150 150w',
+          '_3x': 'https://lh3.googleusercontent.com/X4-VOgA-RJxwlSGIBV6h7vfJyLT0m6QVZASlibadcf7XO8JFAlmrAvsBh2a3Jyprv183N7iAaql9hiQLGxip23XqMawe9-FlrOYQyTlrqeSxtcoYnCA=v0-s200 200w'
+        }"
+                      src="https://lh3.googleusercontent.com/X4-VOgA-RJxwlSGIBV6h7vfJyLT0m6QVZASlibadcf7XO8JFAlmrAvsBh2a3Jyprv183N7iAaql9hiQLGxip23XqMawe9-FlrOYQyTlrqeSxtcoYnCA=v3-s20-fblur=1,20"
+                      alt=""
+                      style="width: 100px"
+                    />
+
+                    <div
+                      class="yta-icon-item__text-container yta-centered-type"
+                    >
+                      <h3
+                        class="lb-font-subhead-3 ytc-list-lockup__content-spacing lb-font--no-crop lb-margin-bottom-xs"
+                      >
+                        Shorts für Künstler*innen
+                      </h3>
+                      <a
+                        class="resources-arrow"
+                        href="/intl/de/resources/shorts-for-artists/"
+                        target="_blank"
+                        lb-auto-init="YTADatalayerTriggers"
+                        lb-options="{'name': 'resources_arrow_click', 'label': 'label'}"
+                        aria-label="/intl/de/resources/shorts-for-artists/"
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                            stroke="#fff"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="center-button lb-margin-top-m">
+                <a
+                  class="show-all-resources-btn lb-button yta-button--filled"
+                  href="https://artists.youtube/intl/de/"
+                  lb-auto-init="YTADatalayerTriggers"
+                  lb-options="{'name': 'show_all_resources_button_click', 'label': 'label'}"
+                  target="_blank"
+                >
+                  Alle Infomaterialien anzeigen
+                </a>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer
+      class="lb-footer"
+      lb-auto-init="LBFooter"
+      lb-options="{
+            'bareUrl': '/resources/analytics-for-artists/',
+            'locales': 'de_ALL,el_ALL,en-GB_ALL,es-419_ALL,es_ALL,fr_ALL,id_ALL,it_ALL,ja_ALL,ko_ALL,nl_ALL,pl_ALL,pt-BR_ALL,pt-PT_ALL,ro_ALL,ru_ALL,sv_ALL,th_ALL,tr_ALL,vi_ALL,zh-TW_ALL'
+          }"
+    ></footer>
+
+    <script src="https://www.youtube.com/iframe_api" nonce="yBWxPv0TqwtDrrnWtTpGOg"></script>
+    <script
+      src="https://www.gstatic.com/glue/cookienotificationbar/cookienotificationbar.min.js"
+      data-glue-cookie-notification-bar-category="2B"
+      data-glue-cookie-notification-bar-language="de"
+      data-glue-cookie-notification-bar-site-id="artists.youtube"
+    nonce="yBWxPv0TqwtDrrnWtTpGOg"></script>
+  </body>
+</html>
