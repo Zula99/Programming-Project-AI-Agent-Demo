@@ -4,7 +4,7 @@
 import StatusBadge from "./StatusBadge";
 import TabList from "./TabList";
 import SortableTH from "./SortableTH";
-import { useMemo, useState, useEffect, ChangeEvent } from "react";
+import { useMemo, useState, useEffect, ChangeEvent, FormEvent } from "react";
 import { 
 	HiDownload,
     HiOutlineCheckCircle,
@@ -23,9 +23,9 @@ interface OSResult {
 		title: string;
 		description: string;
 		url: string;
+		content?: string;
+		metadata?: { depth?: string; contentType?: string };
 	}
-	content?: string;
-	metadata?: { depth?: string; contentType?: string };
 }
 
 interface OSSearchResponse {
@@ -107,7 +107,7 @@ export default function ActiveRun() {
 				const res = await fetch("/api/search", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ matchAll: true, size: 100 });
+					body: JSON.stringify({ matchAll: true, size: 100 }),
 				});
 
 				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
@@ -119,7 +119,7 @@ export default function ActiveRun() {
 				}
 			} catch (e) {
 				if (!cancelled) 
-					setError(e instanceOf Error ? e.message : "Search failed");
+					setError(e instanceof Error ? e.message : "Search failed");
 			} finally {
 				if (!cancelled) setLoading(false);
 			}
@@ -160,6 +160,28 @@ export default function ActiveRun() {
         }
     };
 
+	async function handleSearchSubmit(e: FormEvent) {
+		e.preventDefault();
+		const q = query.trim();
+		if (!q) return;
+		setLoading(true); setError("");
+		try {
+			const res = await fetch("/api/search", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ query: q, size: 100 }),
+			});
+			if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+			const data: OSSearchResponse = await res.json();
+			setRows(data.hits.hits.map(mapHitToRow));
+			setSearchTime(data.took);
+		} catch (e) {
+			setError(e instanceof Error ? e.message : "Search failed");
+		} finally {
+			setLoading(false);
+		}
+	}
+
     return (
         <section className="bg-white border rounded-lg p-4">
             {/*Header*/}
@@ -198,15 +220,14 @@ export default function ActiveRun() {
                     	        />
                     	    </div>
 							<button
-								type="button"
+								type="submit"
 								className="inline-flex items-center gap-2 rounded-lg border border-gray-300
 											bg-white px-3 py-2 text-gray-700 shadow-sm transition-all 
 											hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
 											focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
-								title="Filters"
+								title="Query OpenSearch"
 							>
-								<HiFilter className="h-5 w-5" />
-								Filters
+								<HiArrowPath className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
 							</button>
 							<button
 								type="button"
@@ -225,11 +246,14 @@ export default function ActiveRun() {
 					{/*Count*/}
 					<div className="mb-2 flex items-center justify-between">
 						<div className="text-sm text-gray-500">
-							<span className="font-medium text-gray-900">Indexed Pages</span>
+							<span className="font-medium text-gray-900">Indexed Pages</span> ({filtered.length})
 						</div>
 						<div className="flex items-center gap-2 text-xs text-gray-500">
-							<HiArrowPath className="h-4 w-4" />
-							updating...
+							{loading ? (
+								<>
+									<HiArrowPath className="h-4 w-4 animate-spin" /> Loading...
+								</>
+							) : null}
 						</div>
 					</div>
 
