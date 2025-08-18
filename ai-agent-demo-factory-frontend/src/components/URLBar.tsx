@@ -56,7 +56,7 @@ export default function URLBar() {
                     onChange={(e) => setUrl(e.target.value)}
                     className="flex-1 outline-none"
                     placeholder="Enter URL to crawl..."
-                    />
+                />
             </div>
             <button
                 type="submit"

@@ -11,6 +11,9 @@ import {
     HiOutlineCheckCircle,
     HiClipboard,
     HiFilter,
+    HiStop,
+    HiPlay,
+    HiRefresh,
 } from "react-icons/hi";
 import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
 
@@ -114,7 +117,15 @@ export default function ActiveRun() {
 			)}
 
             {/*Tabs*/}
-            <TabList value={activeTab} onChange={setActiveTab} />
+            <TabList 
+                activeTab={activeTab} 
+                onTabChange={setActiveTab}
+                tabs={[
+                    { id: "data", label: "Data", count: filtered.length },
+                    { id: "config", label: "Config", count: 0 },
+                    { id: "logs", label: "Logs", count: 0 }
+                ]}
+            />
 
             {/*Panels*/}
             {activeTab === "data" && (
@@ -173,27 +184,31 @@ export default function ActiveRun() {
 									<tr className="[&>th]:py-2 [&>th]:px-3">
 										<SortableTH
 											label="Path"
-											active={sortKey === "path"}
-											dir={sortKey === "path" ? sortDir : undefined}
-											onClick={() => toggleSort("path")}
+											sortKey="path"
+											currentSort={sortKey}
+											sortDir={sortDir}
+											onSort={(key) => toggleSort(key as keyof Pick<PageRow, "path" | "title" | "type" | "size">)}
 										/>
 										<SortableTH
 											label="Title"
-											active={sortKey === "title"}
-											dir={sortKey === "title" ? sortDir : undefined}
-											onClick={() => toggleSort("title")}
+											sortKey="title"
+											currentSort={sortKey}
+											sortDir={sortDir}
+											onSort={(key) => toggleSort(key as keyof Pick<PageRow, "path" | "title" | "type" | "size">)}
 										/>
 										<SortableTH
 											label="Type"
-											active={sortKey === "type"}
-											dir={sortKey === "type" ? sortDir : undefined}
-											onClick={() => toggleSort("type")}
+											sortKey="type"
+											currentSort={sortKey}
+											sortDir={sortDir}
+											onSort={(key) => toggleSort(key as keyof Pick<PageRow, "path" | "title" | "type" | "size">)}
 										/>
 										<SortableTH
 											label="Size"
-											active={sortKey === "size"}
-											dir={sortKey === "size" ? sortDir : undefined}
-											onClick={() => toggleSort("size")}
+											sortKey="size"
+											currentSort={sortKey}
+											sortDir={sortDir}
+											onSort={(key) => toggleSort(key as keyof Pick<PageRow, "path" | "title" | "type" | "size">)}
 										/>
 									</tr>
 								</thead>
