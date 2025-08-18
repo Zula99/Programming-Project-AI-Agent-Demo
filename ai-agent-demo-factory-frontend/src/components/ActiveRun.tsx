@@ -4,8 +4,9 @@
 import StatusBadge from "./StatusBadge";
 import TabList from "./TabList";
 import SortableTH from "./SortableTH";
+import ProgressBar from "./ProgressBar";
 import { useMemo, useState, ChangeEvent } from "react";
-import { 
+import {
 	HiDownload,
     HiOutlineCheckCircle,
     HiClipboard,
@@ -17,60 +18,60 @@ type RunStatus = "running" | "complete";
 type Tab = "data" | "config" | "logs";
 
 type PageRow = {
-    id: string;
-    path: string;
-    title: string;
-    type: "html" | "pdf" | "doc";
-    size: number; // KB
+	id: string;
+	path: string;
+	title: string;
+	type: "html" | "pdf" | "doc";
+	size: number; // KB
 };
 
 const mockRun = {
-    runId: "RUN-003",
-    url: "https://agilent.com",
-    status: "running" as RunStatus,
-    startedAt: "14 Aug, 2025 10:12am",
+	runId: "RUN-003",
+	url: "https://agilent.com",
+	status: "running" as RunStatus,
+	startedAt: "14 Aug, 2025 10:12am",
 };
 
 const initialRows: PageRow[] = [
-    { id: "1", path: "/", title: "Home", type: "html", size: 18_322 },
-    { id: "2", path: "/pricing", title: "Pricing", type: "html", size: 25_101 },
-    { id: "3", path: "/about", title: "About", type: "html", size: 19_552 },
+	{ id: "1", path: "/", title: "Home", type: "html", size: 18_322 },
+	{ id: "2", path: "/pricing", title: "Pricing", type: "html", size: 25_101 },
+	{ id: "3", path: "/about", title: "About", type: "html", size: 19_552 },
 ]
 
 function formatKB(bytes: number) {
-    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+	return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 export default function ActiveRun() {
-    const [activeTab, setActiveTab] = useState<Tab>("data");
-    const [query, setQuery] = useState("");
+	const [activeTab, setActiveTab] = useState<Tab>("data");
+	const [query, setQuery] = useState("");
 	const [sortKey, setSortKey] = useState<keyof Pick<PageRow, "path" | "title" | "type" | "size">>("path");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
 	const filtered = useMemo(() => {
-    	const q = query.trim().toLowerCase();
-    	const rows = q
-    	  ? initialRows.filter(
-    	      (r) =>
-    	        r.path.toLowerCase().includes(q) ||
-    	        r.title.toLowerCase().includes(q) ||
-    	        r.type.toLowerCase().includes(q)
-    	    )
-    	  : initialRows;
+		const q = query.trim().toLowerCase();
+		const rows = q
+		  ? initialRows.filter(
+		      (r) =>
+		        r.path.toLowerCase().includes(q) ||
+		        r.title.toLowerCase().includes(q) ||
+		        r.type.toLowerCase().includes(q)
+		    )
+		  : initialRows;
 
-    	const sorted = [...rows].sort((a, b) => {
-    	  const av = a[sortKey];
-    	  const bv = b[sortKey];
-    	  if (typeof av === "number" && typeof bv === "number") {
-    	    return sortDir === "asc" ? av - bv : bv - av;
-    	  }
-    	  const as = String(av).toLowerCase();
-    	  const bs = String(bv).toLowerCase();
-    	  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
-    	});
+		const sorted = [...rows].sort((a, b) => {
+		  const av = a[sortKey];
+		  const bv = b[sortKey];
+		  if (typeof av === "number" && typeof bv === "number") {
+		    return sortDir === "asc" ? av - bv : bv - av;
+		  }
+		  const as = String(av).toLowerCase();
+		  const bs = String(bv).toLowerCase();
+		  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
+		});
 
-    	return sorted;
-  	}, [query, sortKey, sortDir]);
+		return sorted;
+	  }, [query, sortKey, sortDir]);
 
     const toggleSort = (key: keyof Pick<PageRow, "path" | "title" | "type" | "size">) => {
         if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -97,6 +98,21 @@ export default function ActiveRun() {
                 </div>
             </div>
 
+            {/* Example: Using ProgressBar to show crawling progress */}
+			{mockRun.status === "running" && (
+				<div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+					<ProgressBar
+						progress={65}
+						label="Crawling Progress"
+						size="md"
+						animated={true}
+					/>
+					<p className="text-xs text-blue-600 mt-2">
+						Indexed 65% of target pages • 3 pages remaining
+					</p>
+				</div>
+			)}
+
             {/*Tabs*/}
             <TabList value={activeTab} onChange={setActiveTab} />
 
@@ -117,7 +133,7 @@ export default function ActiveRun() {
 						<button
 							type="button"
 							className="inline-flex items-center gap-2 rounded-lg border border-gray-300
-										bg-white px-3 py-2 text-gray-700 shadow-sm transition-all 
+										bg-white px-3 py-2 text-gray-700 shadow-sm transition-all
 										hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
 										focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
 							title="Filters"
@@ -127,9 +143,9 @@ export default function ActiveRun() {
 						</button>
 						<button
 							type="button"
-							className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 
-										font-medium text-white shadow-sm transition-all hover:bg-blue-500 
-										hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 
+							className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2
+										font-medium text-white shadow-sm transition-all hover:bg-blue-500
+										hover:shadow-lg focus-visible:outline-none focus-visible:ring-2
 										focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
 							title="Download CSV"
 						>
@@ -239,6 +255,7 @@ export default function ActiveRun() {
 
 function CopyButton({ value, label = "Copy ID" }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
+
   return (
     <button
       type="button"

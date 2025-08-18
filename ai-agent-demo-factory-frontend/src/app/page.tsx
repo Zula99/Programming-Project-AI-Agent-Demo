@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import URLBar from "@/components/URLBar";
 import RecentRuns from "@/components/RecentRuns";
 import ActiveRun from "@/components/ActiveRun";
+import { ToastContainer } from "@/components/Toast";
 
 export default function Home() {
   return (
@@ -20,6 +21,9 @@ export default function Home() {
           <ActiveRun />
         </div>
       </div>
+
+      {/* Toast notifications */}
+      <ToastContainer />
     </main>
   );
 }
