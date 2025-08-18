@@ -172,7 +172,9 @@ export default function ActiveRun() {
                 </div>
                 <div className="flex items-center gap-2">
                     <StatusBadge status={mockRun.status} />
-                    <span className="hidden sm:inline text-sm text-gray-500">Started {mockRun.startedAt}</span>
+					{searchTime !== null && (
+						<span className="hidden sm:inline text-sm text-gray-500">{loading ? "Searching..." : `Fetched in ${searchTime}ms`}</span>
+					)}
                     <CopyButton value={mockRun.runId} />
                 </div>
             </div>
@@ -184,39 +186,41 @@ export default function ActiveRun() {
             {activeTab === "data" && (
                 <div className="mt-4">
                     {/*Toolbar*/}
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm hover:border-gray-300">
-                            <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-400" />
-                            <input
-                                value={query}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-                                placeholder="Filter by path, title, or type"
-                                className="w-full bg-transparent outline-none placeholder:text-gray-400"
-                            />
-                        </div>
-						<button
-							type="button"
-							className="inline-flex items-center gap-2 rounded-lg border border-gray-300
-										bg-white px-3 py-2 text-gray-700 shadow-sm transition-all 
-										hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
-										focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
-							title="Filters"
-						>
-							<HiFilter className="h-5 w-5" />
-							Filters
-						</button>
-						<button
-							type="button"
-							className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 
-										font-medium text-white shadow-sm transition-all hover:bg-blue-500 
-										hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 
-										focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
-							title="Download CSV"
-						>
-							<HiDownload className="h-5 w-5" />
-							CSV
-						</button>
-                    </div>
+					<form onSubmit={handleSearchSubmit} className="mb-3 flex flex-wrap items-center gap-2">
+                    	<div className="mb-3 flex flex-wrap items-center gap-2">
+                    	    <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm hover:border-gray-300">
+                    	        <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-400" />
+                    	        <input
+                    	            value={query}
+                    	            onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                    	            placeholder="Filter by path, title, or type"
+                    	            className="w-full bg-transparent outline-none placeholder:text-gray-400"
+                    	        />
+                    	    </div>
+							<button
+								type="button"
+								className="inline-flex items-center gap-2 rounded-lg border border-gray-300
+											bg-white px-3 py-2 text-gray-700 shadow-sm transition-all 
+											hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
+											focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
+								title="Filters"
+							>
+								<HiFilter className="h-5 w-5" />
+								Filters
+							</button>
+							<button
+								type="button"
+								className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 
+											font-medium text-white shadow-sm transition-all hover:bg-blue-500 
+											hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 
+											focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
+								title="Download CSV"
+							>
+								<HiDownload className="h-5 w-5" />
+								CSV
+							</button>
+                    	</div>
+					</form>
 
 					{/*Count*/}
 					<div className="mb-2 flex items-center justify-between">
