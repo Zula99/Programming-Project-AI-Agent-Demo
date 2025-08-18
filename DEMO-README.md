@@ -1,5 +1,39 @@
 # Demo Factory Search Implementation
 
+Quick Start Guide
+Prerequisites
+
+Docker Desktop installed and running
+Node.js installed
+Git repository cloned
+
+1. Start the Search Engine
+bash# Navigate to project directory
+cd Programming-Project-AI-Agent-Demo
+
+# Start OpenSearch database
+docker-compose up -d
+
+# Verify it's running (should return cluster info)
+curl http://localhost:9200
+2. Load the Crawled Data
+bash# Load NAB content into search index
+node load-data.js
+
+# Expected output:
+#  OpenSearch is running: docker-cluster
+#  Successfully indexed 15 documents
+#  Data loading complete!
+3. Start the Search Interface
+bash# Navigate to frontend
+cd ai-agent-demo-factory-frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Start the demo interface
+npm run dev
+
 ## Overview
 Today we successfully built an end-to-end search demo that connects crawled website data to a live search interface. This demonstrates the core concept of the "Demo Factory" - automated website crawling with searchable content.
 
