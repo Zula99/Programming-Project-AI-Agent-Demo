@@ -128,29 +128,32 @@ export default function ActiveRun() {
 	}, []);
 
 	const filtered = useMemo(() => {
-    	const q = query.trim().toLowerCase();
-    	const rows = q
-    	  ? initialRows.filter(
-    	      (r) =>
-    	        r.path.toLowerCase().includes(q) ||
-    	        r.title.toLowerCase().includes(q) ||
-    	        r.type.toLowerCase().includes(q)
-    	    )
-    	  : initialRows;
+  		const q = query.trim().toLowerCase();
+  		const effectiveRows = rows.length ? rows : initialRows;
 
-    	const sorted = [...rows].sort((a, b) => {
-    	  const av = a[sortKey];
-    	  const bv = b[sortKey];
-    	  if (typeof av === "number" && typeof bv === "number") {
-    	    return sortDir === "asc" ? av - bv : bv - av;
-    	  }
-    	  const as = String(av).toLowerCase();
-    	  const bs = String(bv).toLowerCase();
-    	  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
-    	});
+  		const dataset = q
+  		  ? effectiveRows.filter(
+  		      (r) =>
+  		        r.path.toLowerCase().includes(q) ||
+  		        r.title.toLowerCase().includes(q) ||
+  		        r.type.toLowerCase().includes(q)
+  		    )
+  		  : effectiveRows;
+		
+  		const sorted = [...dataset].sort((a, b) => {
+  		  const av = a[sortKey];
+  		  const bv = b[sortKey];
+  		  if (typeof av === "number" && typeof bv === "number") {
+  		    return sortDir === "asc" ? av - bv : bv - av;
+  		  }
+  		  const as = String(av).toLowerCase();
+  		  const bs = String(bv).toLowerCase();
+  		  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
+  		});
+	
+  		return sorted;
+	}, [rows, query, sortKey, sortDir]);
 
-    	return sorted;
-  	}, [initialRows, query, sortKey, sortDir]);
 
     const toggleSort = (key: keyof Pick<PageRow, "path" | "title" | "type" | "size">) => {
         if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
