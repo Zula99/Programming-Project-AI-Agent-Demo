@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Norconex Web Crawler v3.x configuration - OPTIMIZED -->
+<httpcollector id="nab-banking-collector">
+
+  <workDir>./norconex/workdir</workDir>
+  
+  <!-- Memory optimization settings -->
+  <maxMemoryPool>1024</maxMemoryPool>
+  <maxMemoryInstance>256</maxMemoryInstance>
+
+  <crawlers>
+    <crawler id="nab-banking-crawler">
+
+      <!-- Start URLs with proper domain restrictions -->
+      <startURLs stayOnDomain="true" includeSubdomains="false" stayOnProtocol="true">
+        <url>https://www.nab.com.au/</url>
+        <url>https://www.nab.com.au/personal</url>
+        <url>https://www.nab.com.au/business</url>
+        <url>https://www.nab.com.au/corporate</url>
+        <url>https://www.nab.com.au/about-us</url>
+      </startURLs>
+
+      <!-- Reduced threads to prevent overwhelming -->
+      <numThreads>2</numThreads>
+      <maxDocuments>5000</maxDocuments>
+      <maxDepth>5</maxDepth>
+      
+      <!-- Keep alive settings to prevent connection drops -->
+      <keepAlive>true</keepAlive>
+      <keepAliveIdleTime>5000</keepAliveIdleTime>
+
+      <!-- Increased delay for stability -->
+      <delay class="com.norconex.collector.http.delay.impl.GenericDelayResolver"
+              default="1500" />
+
+      <!-- Robots and sitemap settings -->
+      <robotsTxt ignore="false" />
+      <sitemapResolver ignore="false" />
+      
+      <!-- Connection settings to prevent timeouts -->
+      <connectionTimeout>30000</connectionTimeout>
+      <socketTimeout>30000</socketTimeout>
+      <connectionRequestTimeout>30000</connectionRequestTimeout>
+      <connectionCharset>UTF-8</connectionCharset>
+      
+      <!-- User agent to avoid being blocked -->
+      <userAgent>Mozilla/5.0 (compatible; Norconex/3.0; Demo Factory Crawler)</userAgent>
+
+      <!-- CRITICAL: Fixed reference filters to prevent YouTube crawling -->
+      <referenceFilters>
+        <!-- First, EXCLUDE everything that's not NAB -->
+        <filter class="com.norconex.collector.core.filter.impl.RegexReferenceFilter" 
+                onMatch="exclude">
+          <regex>^(?!https?://(www\.)?nab\.com\.au).*</regex>
+        </filter>
+        
+        <!-- Then include only NAB.com.au URLs -->
+        <filter class="com.norconex.collector.core.filter.impl.RegexReferenceFilter" 
+                onMatch="include">
+          <regex>^https?://(www\.)?nab\.com\.au(/.*)?$</regex>
+        </filter>
+        
+        <!-- Exclude login/auth pages -->
+        <filter class="com.norconex.collector.core.filter.impl.RegexReferenceFilter" 
+                onMatch="exclude">
+          <regex>.*/(?:login|signin|register|secure|logout|auth|account|my-nab).*</regex>
+        </filter>
+        
+        <!-- Exclude static assets -->
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" 
+                onMatch="exclude">
+          <extensions>css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2,ttf,eot</extensions>
+        </filter>
+      </referenceFilters>
+
+      <!-- Document filters to ensure we only process HTML/PDF -->
+      <documentFilters>
+        <filter class="com.norconex.collector.core.filter.impl.RegexMetadataFilter" 
+                onMatch="include" field="document.contentType">
+          <regex>text/html|application/pdf|text/plain</regex>
+        </filter>
+      </documentFilters>
+
+      <!-- Link extractors with domain checking -->
+      <linkExtractors>
+        <extractor class="com.norconex.collector.http.link.impl.HtmlLinkExtractor">
+          <schemes>http,https</schemes>
+          <ignoreNofollow>false</ignoreNofollow>
+          <extractSelectors>
+            a[href]
+          </extractSelectors>
+        </extractor>
+      </linkExtractors>
+
+      <!-- Content extraction -->
+      <importer>
+        <preParseHandlers>
+          <!-- Charset detection -->
+          <handler class="com.norconex.importer.handler.transformer.impl.CharsetTransformer">
+            <sourceCharset>detect</sourceCharset>
+            <targetCharset>UTF-8</targetCharset>
+          </handler>
+          
+          <!-- Extract metadata -->
+          <handler class="com.norconex.importer.handler.tagger.impl.DOMTagger">
+            <dom selector="title" toField="page_title" />
+            <dom selector="h1" toField="main_heading" />
+            <dom selector="meta[name='description']" toField="meta_description" extract="attr(content)" />
+            <dom selector="meta[property='og:description']" toField="og_description" extract="attr(content)" />
+          </handler>
+        </preParseHandlers>
+        
+        <postParseHandlers>
+          <!-- Limit content size to prevent memory issues -->
+          <handler class="com.norconex.importer.handler.transformer.impl.TruncateTransformer">
+            <maxLength>500000</maxLength>
+            <field>content</field>
+          </handler>
+        </postParseHandlers>
+      </importer>
+
+      <!-- Spoiled state management -->
+      <spoiledReferenceStrategizer 
+          class="com.norconex.collector.core.spoil.impl.GenericSpoiledReferenceStrategizer">
+        <fallbackStrategy>DELETE</fallbackStrategy>
+      </spoiledReferenceStrategizer>
+
+      <!-- Checksum to avoid re-processing -->
+      <documentChecksummer 
+          class="com.norconex.collector.core.checksum.impl.MD5DocumentChecksummer" />
+
+      <!-- OPTIMIZED COMMITTERS -->
+      <committers>
+        <!-- Local XML for debugging (smaller batches) -->
+        <committer class="com.norconex.committer.core3.fs.impl.XMLFileCommitter">
+          <directory>./norconex/out/xml</directory>
+          <docsPerFile>50</docsPerFile>
+          <compress>false</compress>
+          <splitUpsertDelete>true</splitUpsertDelete>
+          <fileNamePrefix>nab-</fileNamePrefix>
+          <indent>2</indent>
+        </committer>
+
+        <!-- OpenSearch with optimized settings -->
+        <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+          <nodes>http://localhost:9200</nodes>
+          <indexName>nab-demo-index</indexName>
+          
+          <!-- Reduced bulk size to prevent memory issues -->
+          <bulkActions>20</bulkActions>
+          <bulkSize>5</bulkSize>
+          <bulkFlushInterval>1000</bulkFlushInterval>
+          
+          <ignoreResponseErrors>true</ignoreResponseErrors>
+          <discoverNodes>false</discoverNodes>
+          
+          <connectionTimeout>60000</connectionTimeout>
+          <socketTimeout>60000</socketTimeout>
+          <maxRetryTimeout>120000</maxRetryTimeout>
+          <ioThreadCount>1</ioThreadCount>
+          
+          <sourceIdField>document.reference</sourceIdField>
+          
+          <fieldMappings>
+            <mapping fromField="document.reference" toField="url" />
+            <mapping fromField="page_title" toField="title" />
+            <mapping fromField="meta_description" toField="description" />
+            <mapping fromField="main_heading" toField="heading" />
+            <mapping fromField="content" toField="content" />
+            <mapping fromField="collector.depth" toField="crawl_depth" />
+          </fieldMappings>
+
+          <!-- Optimized queue settings -->
+          <queue class="com.norconex.committer.core3.batch.queue.impl.FSQueue">
+            <batchSize>10</batchSize>
+            <maxPerFolder>100</maxPerFolder>
+            <commitLeftoversOnInit>true</commitLeftoversOnInit>
+            <onCommitFailure>
+              <maxRetries>5</maxRetries>
+              <retryDelay>10000</retryDelay>
+              <ignoreErrors>false</ignoreErrors>
+            </onCommitFailure>
+          </queue>
+        </committer>
+      </committers>
+      
+      <!-- Event listeners for debugging -->
+      <eventListeners>
+        <listener class="com.norconex.collector.core.event.impl.DebugCollectorEventListener" />
+      </eventListeners>
+
+    </crawler>
+  </crawlers>
+
+  <!-- Progress logging -->
+  <progressLogger 
+      class="com.norconex.collector.core.monitor.impl.FileProgressLogger">
+    <directory>./norconex/progress</directory>
+  </progressLogger>
+
+</httpcollector>
