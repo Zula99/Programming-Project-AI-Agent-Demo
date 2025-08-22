@@ -10,7 +10,8 @@ jobs:
   block-push:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if push is direct to main
+      - name: Check for direct push to protected branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "This branch is protected. Direct pushes are not allowed."
           echo "Please create a pull request to merge your changes."
