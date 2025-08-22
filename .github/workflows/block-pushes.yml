@@ -1,0 +1,17 @@
+name: Block Direct Pushes to Main
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  block-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if push is direct to main
+        run: |
+          echo "This branch is protected. Direct pushes are not allowed."
+          echo "Please create a pull request to merge your changes."
+          exit 1
