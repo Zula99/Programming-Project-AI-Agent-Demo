@@ -1,6 +1,5 @@
 @echo off
 REM Run Norconex Crawler on Windows with optimized settings
-REM This script should be placed in the ROOT directory
 
 echo Starting NAB Crawler with optimized settings...
 echo ==============================================

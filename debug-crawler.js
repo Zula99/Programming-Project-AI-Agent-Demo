@@ -4,7 +4,7 @@ const path = require('path');
 
 // Configuration
 const OPENSEARCH_URL = 'http://localhost:9200';
-const INDEX_NAME = 'nab-demo-index';
+const INDEX_NAME = 'demo_factory';
 const WORKDIR = './norconex/workdir/nab-banking-collector';
 const OUTPUT_DIR = './norconex/out/xml';
 
@@ -44,22 +44,22 @@ async function makeRequest(url, options = {}) {
 }
 
 async function checkCrawlerStatus() {
-    console.log('\n🔍 CRAWLER STATUS CHECK');
+    console.log('\ CRAWLER STATUS CHECK');
     console.log('======================\n');
 
     // 1. Check OpenSearch status
     try {
         const health = await makeRequest(`${OPENSEARCH_URL}/_cluster/health`);
-        console.log('✅ OpenSearch Status:', health.data.status);
+        console.log(' OpenSearch Status:', health.data.status);
 
         const count = await makeRequest(`${OPENSEARCH_URL}/${INDEX_NAME}/_count`);
-        console.log(`📊 Documents indexed: ${count.data.count || 0}`);
+        console.log(` Documents indexed: ${count.data.count || 0}`);
     } catch (e) {
-        console.log('❌ OpenSearch not reachable:', e.message);
+        console.log(' OpenSearch not reachable:', e.message);
     }
 
     // 2. Check crawler work directory
-    console.log('\n📁 CRAWLER WORK DIRECTORY:');
+    console.log('\n CRAWLER WORK DIRECTORY:');
 
     // Check for lock files (indicates crash)
     const findLockFiles = (dir) => {
@@ -83,22 +83,22 @@ async function checkCrawlerStatus() {
 
     const lockFiles = findLockFiles(WORKDIR);
     if (lockFiles.length > 0) {
-        console.log('⚠️  Lock files found (crawler may have crashed):');
+        console.log(' Lock files found (crawler may have crashed):');
         lockFiles.forEach(f => console.log('   -', f));
     } else {
-        console.log('✅ No lock files found');
+        console.log(' No lock files found');
     }
 
     // 3. Check queue status
     const queueDir = path.join(WORKDIR, 'queue');
     if (fs.existsSync(queueDir)) {
         const queueFiles = fs.readdirSync(queueDir);
-        console.log(`\n📋 Queue status: ${queueFiles.length} batch files`);
+        console.log(`\n Queue status: ${queueFiles.length} batch files`);
 
         // Check for failed batches
         const failedBatches = queueFiles.filter(f => f.includes('failed') || f.includes('error'));
         if (failedBatches.length > 0) {
-            console.log(`⚠️  Failed batches: ${failedBatches.length}`);
+            console.log(`  Failed batches: ${failedBatches.length}`);
         }
     }
 
@@ -106,7 +106,7 @@ async function checkCrawlerStatus() {
     if (fs.existsSync(OUTPUT_DIR)) {
         const outputFiles = fs.readdirSync(OUTPUT_DIR);
         const xmlFiles = outputFiles.filter(f => f.endsWith('.xml'));
-        console.log(`\n📄 Output XML files: ${xmlFiles.length}`);
+        console.log(`\nOutput XML files: ${xmlFiles.length}`);
 
         // Count total documents
         let totalDocs = 0;
@@ -115,7 +115,7 @@ async function checkCrawlerStatus() {
             const docMatches = content.match(/<doc>/g);
             if (docMatches) totalDocs += docMatches.length;
         });
-        console.log(`📝 Total documents in XMLs: ${totalDocs}`);
+        console.log(` Total documents in XMLs: ${totalDocs}`);
     }
 
     // 5. Check logs for errors
@@ -126,7 +126,7 @@ async function checkCrawlerStatus() {
             const latestLog = path.join(logsDir, logFiles[0]);
             const logContent = fs.readFileSync(latestLog, 'utf-8');
 
-            console.log(`\n📜 Latest log: ${logFiles[0]}`);
+            console.log(`\n Latest log: ${logFiles[0]}`);
 
             // Check for common errors
             const errorPatterns = [
@@ -138,31 +138,31 @@ async function checkCrawlerStatus() {
                 { pattern: /ERROR.*committer/gi, message: 'Committer errors' }
             ];
 
-            console.log('\n🔍 Error Analysis:');
+            console.log('\n Error Analysis:');
             errorPatterns.forEach(({ pattern, message }) => {
                 const matches = logContent.match(pattern);
                 if (matches) {
-                    console.log(`   ⚠️  ${message}: ${matches.length} occurrences`);
+                    console.log(`     ${message}: ${matches.length} occurrences`);
                 }
             });
 
             // Get last few lines
             const lines = logContent.split('\n');
             const lastLines = lines.slice(-10).filter(l => l.trim());
-            console.log('\n📝 Last log entries:');
+            console.log('\n Last log entries:');
             lastLines.forEach(line => console.log('   ', line.substring(0, 100)));
         }
     }
 
     // 6. Memory usage
     const memUsage = process.memoryUsage();
-    console.log('\n💾 Current Node Memory Usage:');
+    console.log('\n Current Node Memory Usage:');
     console.log(`   Heap: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`);
     console.log(`   RSS: ${Math.round(memUsage.rss / 1024 / 1024)}MB`);
 }
 
 async function analyzeCrawledUrls() {
-    console.log('\n🌐 CRAWLED URL ANALYSIS');
+    console.log('\n CRAWLED URL ANALYSIS');
     console.log('=======================\n');
 
     try {
@@ -192,7 +192,7 @@ async function analyzeCrawledUrls() {
             });
 
             // Report
-            console.log('📊 Domains crawled:');
+            console.log(' Domains crawled:');
             Object.entries(domains).forEach(([domain, urls]) => {
                 console.log(`\n   ${domain}: ${urls.length} pages`);
                 // Show first few URLs
@@ -210,17 +210,17 @@ async function analyzeCrawledUrls() {
             );
 
             if (unwantedDomains.length > 0) {
-                console.log('\n⚠️  WARNING: Crawler went to unwanted domains:');
+                console.log('\n  WARNING: Crawler went to unwanted domains:');
                 unwantedDomains.forEach(d => console.log(`   - ${d} (${domains[d].length} pages)`));
             }
         }
     } catch (e) {
-        console.log('❌ Could not analyze URLs:', e.message);
+        console.log(' Could not analyze URLs:', e.message);
     }
 }
 
 async function cleanupFailedRun() {
-    console.log('\n🧹 CLEANUP FAILED RUN');
+    console.log('\n CLEANUP FAILED RUN');
     console.log('====================\n');
 
     const cleanup = [
@@ -243,9 +243,9 @@ async function cleanupFailedRun() {
                         const fullPath = path.join(dir, file);
                         try {
                             fs.unlinkSync(fullPath);
-                            console.log(`   ✅ Removed: ${fullPath}`);
+                            console.log(` Removed: ${fullPath}`);
                         } catch (e) {
-                            console.log(`   ❌ Could not remove: ${fullPath}`);
+                            console.log(` Could not remove: ${fullPath}`);
                         }
                     }
                 }
@@ -253,19 +253,19 @@ async function cleanupFailedRun() {
         }
     });
 
-    console.log('\n✅ Cleanup complete. You can restart the crawler now.');
+    console.log('\n Cleanup complete. You can restart the crawler now.');
 }
 
 // Main execution
 async function main() {
-    console.log('🔧 NORCONEX CRAWLER DEBUGGER');
+    console.log(' NORCONEX CRAWLER DEBUGGER');
     console.log('=============================');
 
     await checkCrawlerStatus();
     await analyzeCrawledUrls();
 
     // Ask if cleanup is needed
-    console.log('\n❓ Do you want to clean up failed runs? (Run with --cleanup flag)');
+    console.log('\n Do you want to clean up failed runs? (Run with --cleanup flag)');
 
     if (process.argv.includes('--cleanup')) {
         await cleanupFailedRun();
