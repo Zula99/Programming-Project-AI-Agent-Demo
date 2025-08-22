@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Norconex HTTP Collector v3.x configuration -->
-<httpcollector id="nab-banking-collector">
+<httpcollector id="demo_factory">
 
   <workDir>./workdir</workDir>
 
   <crawlers>
     <crawler id="nab-banking-crawler">
+    <keepDownloads>true</keepDownloads>
 
       <!-- Seeds -->
       <startURLs stayOnDomain="true" includeSubdomains="false" stayOnProtocol="true">
@@ -103,7 +104,7 @@
         <!-- OpenSearch via Elasticsearch committer -->
         <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
           <nodes>http://localhost:9200</nodes>
-          <indexName>nab-demo-index</indexName>
+          <indexName>demo_factory</indexName>
           <ignoreResponseErrors>true</ignoreResponseErrors>
           <discoverNodes>false</discoverNodes>
           <connectionTimeout>60000</connectionTimeout>
