@@ -1,5 +1,9 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
 from lxml import etree
-from lanchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from services.llm_provider import llm_openAI
 
@@ -46,7 +50,7 @@ chain = (
 )
 
 def _validate_xml(xml_str: str):
-    etree.fromstring(xml_text.encode("utf-8"))  # raises on malformed
+    etree.fromstring(xml_str.encode("utf-8"))  # raises on malformed
 
 def generate_norconex_v3_xml(url: str, max_depth: int = 3, max_documents: int = 500,
                              index_name: str = "demo_factory", keep_downloads: bool = True) -> str:
@@ -61,6 +65,7 @@ def generate_norconex_v3_xml(url: str, max_depth: int = 3, max_documents: int = 
         "keep_downloads": keep_downloads
     }).strip()
 
+    xml = result
     if xml.startswith("```"):
         xml = xml.strip("`")
         if xml.startswith("xml\n"):
