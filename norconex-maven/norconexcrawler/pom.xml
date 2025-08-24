@@ -15,16 +15,11 @@
       <scope>test</scope>
     </dependency>
     <!-- Norconex HTTP Collector -->
+    <!-- https://mvnrepository.com/artifact/com.norconex.collectors/norconex-collector-http -->
     <dependency>
-        <groupId>com.norconex.collector</groupId>
+        <groupId>com.norconex.collectors</groupId>
         <artifactId>norconex-collector-http</artifactId>
-        <version>3.0.0</version> <!-- Use the version you want, e.g., 3.0.0 or latest stable -->
-    </dependency>
-    <!-- Norconex HTTP Opensearch committer -->
-    <dependency>
-        <groupId>com.norconex.committer</groupId>
-        <artifactId>norconex-committer-opensearch</artifactId>
-        <version>3.0.0</version> <!-- Match collector version -->
+        <version>3.1.0</version>
     </dependency>
     <!-- For logging  -->
     <dependency>
@@ -38,4 +33,24 @@
         <version>1.4.14</version>
     </dependency>
   </dependencies>
+  <repositories>
+    <repository>
+        <id>norconex-public</id>
+        <name>Norconex Public Repository</name>
+        <url>https://maven.norconex.com/public/</url>
+    </repository>
+  </repositories>
+  <build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.8.1</version>
+      <configuration>
+        <source>24</source>
+        <target>24</target>
+      </configuration>
+    </plugin>
+  </plugins>
+  </build>
 </project>
