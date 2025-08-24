@@ -190,7 +190,7 @@ async def config_generate(req: GenConfigRequest):
     """
     Generates a Norconex v3 XML config using a LangChain agent (OpenAI backend).
     """
-    xml = generate_norconex_v3_xml(
+    xml = generate_norconex_V3_config(
         url=req.url,
         max_depth=req.max_depth,
         max_documents=req.max_documents,
