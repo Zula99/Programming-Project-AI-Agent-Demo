@@ -1,0 +1,13 @@
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()  # Load environment variables from .env file
+from langchain import OpenAI as LangChainOpenAI
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+
+OPENAI_MODEL_NAME = "gpt-3.5-turbo" #Change this for a different model
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
