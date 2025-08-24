@@ -1,70 +1,94 @@
-version: '3.8'
-
 services:
   # OpenSearch Service
   opensearch:
-    image: opensearchproject/opensearch:2.14.0 
-    container_name: opensearch 
+    image: opensearchproject/opensearch:2.14.0
+    container_name: opensearch
     ports:
-      - "9200:9200" # Exposes HTTP API for backend/frontend
-      - "9600:9600" # Exposes Transport layer
+      - "9200:9200"
+      - "9600:9600"
     environment:
-      # Required for single-node development setup (DO NOT use these settings in production)
       - discovery.type=single-node
-      - cluster.name=opensearch-cluster # Name for your OpenSearch cluster
-      - node.name=opensearch-node1    # Name for this specific node
-      # - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # Allocate memory for OpenSearch (adjust as needed)
-      - bootstrap.memory_lock=true # Prevents Java heap from being swapped to disk (recommended for performance)
-      # - OPENSEARCH_INITIAL_ADMIN_PASSWORD=DemoPass123! # Uncomment and set if you need security features
-      - DISABLE_SECURITY_PLUGIN=true # Uncomment to disable security plugin for easier development
-    # ulimits: # Recommended ulimits for OpenSearch to prevent file descriptor issues
-    #   memlock:
-    #     soft: -1
-    #     hard: -1
-    #   nofile:
-    #     soft: 65536
-    #     hard: 65536
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      - DISABLE_SECURITY_PLUGIN=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     volumes:
-      - opensearch_data:/usr/share/opensearch/data # Persistent volume for OpenSearch data
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # FastAPI Backend Service
   backend:
     build:
-      context: ./backend # Docker will look for Dockerfile in ./backend/
+      context: ./ai-agent-demo-factory-backend
       dockerfile: Dockerfile
     ports:
-      - "5000:5000" # Maps host port 5000 to container port 5000
+      - "5000:5000"
     volumes:
-      - ./backend:/app # Mounts local backend code into the container for live reloading
+      - ./ai-agent-demo-factory-backend:/app
+      - ./norconex_configs:/opt/norconex/configs:rw
+      - ./norconex_data:/opt/norconex/data:ro
     depends_on:
-      - opensearch 
+      opensearch:
+        condition: service_healthy
+      norconex-cli-legacy:
+        condition: service_started
     environment:
-      # Pass OpenSearch host and port as environment variables to the backend
-      # 'opensearch' is the service name, which acts as a hostname within the Docker network
       OPENSEARCH_HOST: opensearch
       OPENSEARCH_PORT: 9200
-    develop: # Docker Compose Watch configuration for live reloading during development
+      NORCONEX_MODE: "legacy"
+    develop:
       watch:
-        - action: sync+restart 
-          path: ./backend        
+        - action: sync+restart
+          path: ./ai-agent-demo-factory-backend
+          target: /app
 
   # React Frontend Service
   frontend:
     build:
-      context: ./ai-agent-demo-factory-frontend 
+      context: ./ai-agent-demo-factory-frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000" 
+      - "3000:3000"
     volumes:
-      - ./frontend:/app # Mounts local frontend code for live reloading
-      - /app/node_modules # Important: Prevents host's node_modules from overwriting container's
+      - ./ai-agent-demo-factory-frontend:/app
+      - /app/node_modules
     depends_on:
-      - backend # Backend starts before the frontend 
-    develop: # Docker Compose Watch configuration for live reloading
+      - backend
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:5000
+    develop:
       watch:
         - action: sync+restart
-          path: ./frontend
+          path: ./ai-agent-demo-factory-frontend
+          target: /app
+
+  # Norconex CLI (Legacy Direct Distribution) Container
+  norconex-cli-legacy:
+    build:
+      context: ./norconex
+      dockerfile: Dockerfile
+    volumes:
+      - ./norconex_data:/opt/norconex/data:rw
+      - ./norconex_configs:/opt/norconex/configs:rw
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 # Define named volumes for persistent data storage
 volumes:
-  opensearch_data: {} # Volume for OpenSearch data persistence
+  opensearch_data: {}

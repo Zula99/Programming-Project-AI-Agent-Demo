@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Norconex Web Crawler v3.x configuration - Docker Version -->
+<httpcollector id="nab-banking-collector">
+
+  <!-- Updated paths for Docker container -->
+  <workDir>/opt/norconex/data/workdir</workDir>
+
+  <crawlers>
+    <crawler id="nab-banking-crawler">
+
+    <!-- Start URLs: stay on *.nab.com.au and go deeper -->
+    <startURLs stayOnDomain="true" includeSubdomains="true" stayOnProtocol="true">
+        <url>https://www.nab.com.au/</url>
+        <url>https://www.nab.com.au/personal</url>
+        <url>https://www.nab.com.au/business</url>
+        <url>https://www.nab.com.au/corporate</url>
+        <url>https://www.nab.com.au/about-us</url>
+        <!-- Optional but helpful seeds -->
+        <url>https://news.nab.com.au/</url>
+        <url>https://www.nab.com.au/help-and-guidance</url>
+    </startURLs>
+
+    <!-- Crawl limits -->
+    <numThreads>4</numThreads>
+    <maxDocuments>5000</maxDocuments>
+    <maxDepth>8</maxDepth>
+
+    <!-- Politeness -->
+    <delay class="com.norconex.collector.http.delay.impl.GenericDelayResolver"
+            default="3 seconds" />
+
+    <!-- Robots / sitemaps -->
+    <robotsTxt ignore="true" />
+    <sitemapResolver ignore="false" />
+      <!-- ===== COMMITTERS ===== -->
+    <committers>
+        <!-- Local XML mirror (for debugging/visibility) - Updated path -->
+        <committer class="com.norconex.committer.core3.fs.impl.XMLFileCommitter">
+            <directory>/opt/norconex/data/xml-output</directory>
+            <docsPerFile>200</docsPerFile>
+            <splitUpsertDelete>true</splitUpsertDelete>
+            <fileNamePrefix>nab-</fileNamePrefix>
+            <indent>2</indent>
+        </committer>
+
+        <!-- OpenSearch (using ElasticsearchCommitter; API-compatible) -->
+        <!-- Updated host to use Docker service name -->
+        <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+            <nodes>http://opensearch:9200</nodes>
+            <indexName>nab-demo-index</indexName>
+
+            <!-- Optional basic auth
+            <credentials>
+            <username>opensearch_user</username>
+            <password>your_password</password>
+            </credentials>
+            -->
+
+            <ignoreResponseErrors>false</ignoreResponseErrors>
+            <connectionTimeout>30000</connectionTimeout>
+            <socketTimeout>30000</socketTimeout>
+
+            <sourceIdField>document.reference</sourceIdField>
+
+            <fieldMappings>
+            <mapping fromField="document.reference" toField="url" />
+            <mapping fromField="page_title" toField="title" />
+            <mapping fromField="meta_description" toField="description" />
+            <mapping fromField="main_heading" toField="heading" />
+            <mapping fromField="content" toField="content" />
+            </fieldMappings>
+
+            <!-- FSQueue: no <directory> here; it uses the collector workDir -->
+            <queue class="com.norconex.committer.core3.batch.queue.impl.FSQueue">
+            <batchSize>50</batchSize>
+            <maxPerFolder>500</maxPerFolder>
+            <commitLeftoversOnInit>true</commitLeftoversOnInit>
+            <onCommitFailure>
+                <maxRetries>3</maxRetries>
+                <retryDelay>5000</retryDelay> <!-- milliseconds -->
+                <ignoreErrors>false</ignoreErrors>
+            </onCommitFailure>
+            </queue>
+        </committer>
+    </committers>
+    <!-- Reference filters -->
+    <referenceFilters>
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
+            <valueMatcher method="regex">^https?://([a-z0-9-]+\.)*nab\.com\.au(/|$).*</valueMatcher>
+        </filter>
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="exclude">
+            <valueMatcher method="regex">.*/(?:login|signin|register|secure|logout|auth|account|my-nab).*</valueMatcher>
+        </filter>
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
+            css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
+        </filter>
+    </referenceFilters>
+
+    <!-- Link extraction: let the default extractor find many link types -->
+    <linkExtractors>
+        <extractor class="com.norconex.collector.http.link.impl.HtmlLinkExtractor"/>
+    </linkExtractors>
+
+    <!-- Importer handlers (unchanged logic; kept here for completeness) -->
+    <importer>
+        <preParseHandlers>
+        <handler class="com.norconex.importer.handler.tagger.impl.DOMTagger">
+            <dom selector="title" toField="page_title" />
+            <dom selector="h1" toField="main_heading" />
+            <dom selector="meta[name='description']" toField="meta_description" extract="attr(content)" />
+        </handler>
+        </preParseHandlers>
+    </importer>
+
+    <!-- Committer block remains as you have it -->
+    </crawler>
+
+  </crawlers>
+
+</httpcollector>
