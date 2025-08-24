@@ -68,6 +68,17 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>norconex-releases-s01</id>
+            <name>Norconex Releases (s01.oss.sonatype.org)</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/releases/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <modules>

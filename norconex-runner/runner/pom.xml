@@ -25,8 +25,9 @@
             <version>3.1.0</version>
         </dependency>
         <dependency>
-            <groupId>com.norconex.committers</groupId>
+            <groupId>com.norconex.collectors</groupId>
             <artifactId>norconex-committer-elasticsearch</artifactId>
+            <version>5.0.0</version>
         </dependency>
         
         <!-- Logging -->
