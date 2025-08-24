@@ -2,6 +2,12 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+#-----AI imports-----
+from pydantic import BaseModel
+from agents.config_agent import generate_norconex_V3_config
+
+
 import uuid # For generating unique IDs
 import time # For simulating time-based operations
 import threading # For running the simulation in a separate thread
@@ -170,4 +176,26 @@ async def get_crawl_results(run_id: str):
         return job['results']
     else:
         raise HTTPException(status_code=409, detail="Crawl not yet complete or results not available")
+    
+
+class GenConfigRequest(BaseModel):
+    url: str
+    max_depth: int = 3
+    max_documents: int = 500
+    index_name: str = "demo_factory"
+    keep_downloads: bool = True
+
+@app.post("/config/generate")
+async def config_generate(req: GenConfigRequest):
+    """
+    Generates a Norconex v3 XML config using a LangChain agent (OpenAI backend).
+    """
+    xml = generate_norconex_v3_xml(
+        url=req.url,
+        max_depth=req.max_depth,
+        max_documents=req.max_documents,
+        index_name=req.index_name,
+        keep_downloads=req.keep_downloads,
+    )
+    return {"xml": xml, "provider": "openai-langchain"}
 
