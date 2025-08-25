@@ -29,6 +29,11 @@
             <artifactId>norconex-committer-elasticsearch</artifactId>
             <version>5.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.norconex.commons</groupId>
+            <artifactId>norconex-commons-lang</artifactId>
+            <version>2.1.0</version>
+        </dependency>
         
         <!-- Logging -->
         <dependency>
