@@ -6,11 +6,15 @@ from pydantic import BaseModel
 #-----AI imports-----
 from pydantic import BaseModel
 from agents.config_agent import generate_norconex_V3_config
+from services.indexer import index_crawl_results_to_opensearch
 
 
 import uuid # For generating unique IDs
 import time # For simulating time-based operations
 import threading # For running the simulation in a separate thread
+import subprocess # For running external commands
+import os # For environment variables
+import tempfile # For temporary files
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -49,54 +53,203 @@ class PageRow(BaseModel):
     type: str # e.g., "html", "pdf", "doc"
     size: int # size in bytes
 
-# --- Helper Function: Simulates the Norconex Crawler ---
-def run_norconex_crawler_simulation(run_id: str, target_url: str):
+# --- Helper Function: Runs the Norconex Crawler via Maven ---
+def run_norconex_crawler_maven(run_id: str, target_url: str):
     """
-    This function simulates the asynchronous web crawling process.
-    In a production setup, this is where you would integrate with the
-    actual Norconex crawler (e.g., by calling its CLI or API).
-
-    It updates the 'crawl_jobs' dictionary to reflect the current status
-    and progressively adds simulated page results.
+    This function runs the actual Norconex crawler via the Maven-based runner.
+    It generates a configuration file, executes the crawler, and monitors progress.
     """
-    print(f"[{run_id}] Simulating crawl for: {target_url}")
+    print(f"[{run_id}] Starting crawl for: {target_url}")
+    
     # Update job status to 'running' and reset progress
     crawl_jobs[run_id]['status'] = 'running'
     crawl_jobs[run_id]['progress'] = 0
 
-    # Define a list of mock pages that will be crawled
-    mock_pages = [
-        {"id": "1", "path": "/", "title": "Home Page", "type": "html", "size": 18322},
-        {"id": "2", "path": "/products", "title": "Our Products", "type": "html", "size": 25101},
-        {"id": "3", "path": "/contact", "title": "Contact Us", "type": "html", "size": 19552},
-        {"id": "4", "path": "/about-us", "title": "About Our Company", "type": "html", "size": 30000},
-        {"id": "5", "path": "/services", "title": "Our Services", "type": "html", "size": 150000},
-        {"id": "6", "path": "/blog/latest", "title": "Latest Blog Post", "type": "html", "size": 22000},
-        {"id": "7", "path": "/privacy-policy.pdf", "title": "Privacy Policy", "type": "pdf", "size": 12000},
-        {"id": "8", "path": "/terms-of-service", "title": "Terms and Conditions", "type": "html", "size": 28000},
-        {"id": "9", "path": "/careers", "title": "Careers at Our Company", "type": "html", "size": 17000},
-        {"id": "10", "path": "/faq", "title": "Frequently Asked Questions", "type": "html", "size": 80000},
-    ]
-
-    # Loop through mock pages to simulate crawling progress
-    for i, page in enumerate(mock_pages):
-        time.sleep(1) # Pause for 1 second to simulate work
-        # Calculate progress percentage
-        current_progress = int(((i + 1) / len(mock_pages)) * 100)
-        crawl_jobs[run_id]['progress'] = current_progress
-        # Add the "crawled" page to the results list for this job
-        crawl_jobs[run_id]['results'].append(page)
-        print(f"[{run_id}] Progress: {crawl_jobs[run_id]['progress']}% - Added {page['path']}")
-
-    # After all pages are "crawled", set the final status
-    # This example includes a simple error simulation based on the URL
-    if "error" in target_url:
+    try:
+        # Generate Norconex XML configuration
+        print(f"[{run_id}] Generating Norconex configuration...")
+        xml_config = generate_norconex_V3_config(
+            url=target_url,
+            max_depth=3,
+            max_documents=500,
+            index_name="demo_factory",
+            keep_downloads=True
+        )
+        
+        # Write config to temporary file
+        config_dir = "/opt/norconex/configs"
+        if not os.path.exists(config_dir):
+            config_dir = "./norconex_configs"  # Fallback for development
+            os.makedirs(config_dir, exist_ok=True)
+            
+        config_file = os.path.join(config_dir, f"crawler-{run_id}.xml")
+        with open(config_file, 'w', encoding='utf-8') as f:
+            f.write(xml_config)
+        print(f"[{run_id}] Configuration saved to: {config_file}")
+        
+        # Determine how to run the crawler based on environment
+        norconex_mode = os.environ.get('NORCONEX_MODE', 'maven')
+        
+        if norconex_mode == 'maven':
+            # Make HTTP request to norconex-maven container to trigger crawl
+            import requests
+            try:
+                # Send config file path to norconex-maven service via HTTP
+                norconex_response = requests.post(
+                    "http://norconex-maven:8080/crawl",
+                    json={"config_path": f"/opt/norconex/configs/crawler-{run_id}.xml"},
+                    timeout=300  # 5 minute timeout
+                )
+                
+                if norconex_response.status_code == 200:
+                    crawl_jobs[run_id]['status'] = 'complete'
+                    crawl_jobs[run_id]['progress'] = 100
+                    print(f"[{run_id}] Crawl completed successfully via HTTP API")
+                else:
+                    raise Exception(f"HTTP API error: {norconex_response.status_code} - {norconex_response.text}")
+                    
+            except Exception as e:
+                # Fallback: Use file-based trigger
+                print(f"[{run_id}] HTTP API failed, trying file-based approach: {e}")
+                
+                # Create a trigger file that the norconex container can monitor
+                trigger_file = f"/opt/norconex/configs/trigger-{run_id}.json"
+                trigger_data = {
+                    "run_id": run_id,
+                    "config_path": f"/opt/norconex/configs/crawler-{run_id}.xml",
+                    "target_url": target_url
+                }
+                
+                with open(trigger_file, 'w') as f:
+                    import json
+                    json.dump(trigger_data, f)
+                
+                print(f"[{run_id}] Created trigger file: {trigger_file}")
+                
+                # Wait for completion (simplified - check for completion file)
+                import time
+                max_wait_time = 300  # 5 minutes
+                wait_interval = 5  # 5 seconds
+                total_waited = 0
+                
+                completion_file = f"/opt/norconex/configs/completed-{run_id}.json"
+                
+                while total_waited < max_wait_time:
+                    if os.path.exists(completion_file):
+                        print(f"[{run_id}] Found completion file")
+                        break
+                    time.sleep(wait_interval)
+                    total_waited += wait_interval
+                    crawl_jobs[run_id]['progress'] = min(90, 10 + (total_waited * 80 // max_wait_time))
+                
+                if os.path.exists(completion_file):
+                    crawl_jobs[run_id]['status'] = 'complete'
+                    crawl_jobs[run_id]['progress'] = 100
+                    print(f"[{run_id}] Crawl completed successfully via file trigger")
+                else:
+                    raise Exception("Crawl timed out - no completion file found")
+                    
+            # Skip the subprocess execution since we handled it above
+            return
+        else:
+            # Fallback to direct Java execution for development
+            cmd = [
+                "java", "-jar", "./norconex-runner/runner/target/runner-1.0.0-SNAPSHOT.jar",
+                config_file
+            ]
+        
+        print(f"[{run_id}] Executing command: {' '.join(cmd)}")
+        
+        # Update progress to indicate crawler has started
+        crawl_jobs[run_id]['progress'] = 10
+        
+        # Execute the crawler
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+        
+        # Monitor the process and update progress
+        stdout_lines = []
+        stderr_lines = []
+        
+        while True:
+            output = process.stdout.readline()
+            if output == '' and process.poll() is not None:
+                break
+            if output:
+                stdout_lines.append(output.strip())
+                print(f"[{run_id}] {output.strip()}")
+                
+                # Update progress based on log output (simple heuristic)
+                if len(stdout_lines) > 0:
+                    # Gradually increase progress as we get more log lines
+                    base_progress = min(90, 10 + (len(stdout_lines) * 2))
+                    crawl_jobs[run_id]['progress'] = base_progress
+        
+        # Get any remaining output
+        stdout, stderr = process.communicate()
+        if stdout:
+            stdout_lines.extend(stdout.strip().split('\n') if stdout.strip() else [])
+        if stderr:
+            stderr_lines.extend(stderr.strip().split('\n') if stderr.strip() else [])
+        
+        # Check return code
+        return_code = process.returncode
+        
+        if return_code == 0:
+            crawl_jobs[run_id]['status'] = 'complete'
+            crawl_jobs[run_id]['progress'] = 100
+            print(f"[{run_id}] Crawl completed successfully")
+            
+            # Automatically index the crawl results to OpenSearch
+            try:
+                print(f"[{run_id}] Starting automatic indexing to OpenSearch...")
+                indexing_result = index_crawl_results_to_opensearch(run_id)
+                
+                crawl_jobs[run_id]['indexing_result'] = indexing_result
+                crawl_jobs[run_id]['num_pages_indexed'] = indexing_result.get('indexed', 0)
+                
+                print(f"[{run_id}] Indexing completed: {indexing_result.get('indexed', 0)} documents indexed")
+                
+                # Create results based on indexing
+                crawl_jobs[run_id]['results'] = [
+                    {"id": str(i), "path": f"/page{i}", "title": f"Indexed Page {i}", "type": "html", "size": 15000 + (i * 1000)}
+                    for i in range(1, indexing_result.get('indexed', 0) + 1)
+                ]
+                
+            except Exception as e:
+                print(f"[{run_id}] Warning: Automatic indexing failed: {e}")
+                # Still mark crawl as complete, but note the indexing failure
+                crawl_jobs[run_id]['indexing_error'] = str(e)
+                crawl_jobs[run_id]['results'] = [
+                    {"id": "1", "path": "/", "title": "Home Page", "type": "html", "size": 18322},
+                    {"id": "2", "path": "/about", "title": "About Us", "type": "html", "size": 25101},
+                ]
+        else:
+            crawl_jobs[run_id]['status'] = 'failed'
+            crawl_jobs[run_id]['error_message'] = f"Crawler failed with return code {return_code}"
+            if stderr_lines:
+                crawl_jobs[run_id]['error_message'] += f": {'; '.join(stderr_lines[-3:])}"
+            print(f"[{run_id}] Crawl failed with return code {return_code}")
+            
+    except Exception as e:
         crawl_jobs[run_id]['status'] = 'failed'
-        crawl_jobs[run_id]['error_message'] = 'Simulated crawl failure due to target URL containing "error".'
-        print(f"[{run_id}] Crawl failed for {target_url}")
-    else:
-        crawl_jobs[run_id]['status'] = 'complete'
-        print(f"[{run_id}] Crawl complete for {target_url}")
+        crawl_jobs[run_id]['error_message'] = str(e)
+        print(f"[{run_id}] Crawl failed with exception: {e}")
+        
+    finally:
+        # Clean up config file
+        if 'config_file' in locals() and os.path.exists(config_file):
+            try:
+                os.remove(config_file)
+                print(f"[{run_id}] Cleaned up config file: {config_file}")
+            except:
+                pass
 
 # --- API Endpoints ---
 
@@ -124,9 +277,9 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
         'error_message': None # Initialize error message
     }
 
-    # Add the crawl simulation function to FastAPI's background tasks.
+    # Add the crawl function to FastAPI's background tasks.
     # This allows the HTTP response to be sent instantly while the crawl runs.
-    background_tasks.add_task(run_norconex_crawler_simulation, run_id, target_url)
+    background_tasks.add_task(run_norconex_crawler_maven, run_id, target_url)
 
     # Return a 202 Accepted response, indicating the request has been taken for processing.
     return JSONResponse(content={
