@@ -42,12 +42,12 @@ services:
     depends_on:
       opensearch:
         condition: service_healthy
-      norconex-cli-legacy:
-        condition: service_started
+      norconex-maven:
+        condition: service_healthy
     environment:
       OPENSEARCH_HOST: opensearch
       OPENSEARCH_PORT: 9200
-      NORCONEX_MODE: "legacy"
+      NORCONEX_MODE: "maven"
     develop:
       watch:
         - action: sync+restart
@@ -66,22 +66,29 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+      - opensearch
     environment:
       - REACT_APP_BACKEND_URL=http://localhost:5000
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
+      - OPENSEARCH_BASE_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=nab_search
     develop:
       watch:
         - action: sync+restart
           path: ./ai-agent-demo-factory-frontend
           target: /app
 
-  # Norconex CLI (Legacy Direct Distribution) Container
-  norconex-cli-legacy:
+  # Norconex Maven Runner Container
+  norconex-maven:
     build:
-      context: ./norconex
+      context: ./norconex-runner
       dockerfile: Dockerfile
     volumes:
       - ./norconex_data:/opt/norconex/data:rw
       - ./norconex_configs:/opt/norconex/configs:rw
+      - ./norconex_configs:/opt/norconex/logs:rw
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms512m
     healthcheck:
       test: ["CMD", "/usr/local/bin/health-check"]
       interval: 30s
