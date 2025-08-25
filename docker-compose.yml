@@ -37,8 +37,8 @@ services:
       - "5000:5000"
     volumes:
       - ./ai-agent-demo-factory-backend:/app
-      - ./norconex_configs:/opt/norconex/configs:rw
-      - ./norconex_data:/opt/norconex/data:ro
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/data:/opt/norconex/data:ro
     depends_on:
       opensearch:
         condition: service_healthy
@@ -71,7 +71,7 @@ services:
       - REACT_APP_BACKEND_URL=http://localhost:5000
       - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
       - OPENSEARCH_BASE_URL=http://opensearch:9200
-      - OPENSEARCH_INDEX=nab_search
+      - OPENSEARCH_INDEX=demo_factory
     develop:
       watch:
         - action: sync+restart
@@ -84,9 +84,9 @@ services:
       context: ./norconex-runner
       dockerfile: Dockerfile
     volumes:
-      - ./norconex_data:/opt/norconex/data:rw
-      - ./norconex_configs:/opt/norconex/configs:rw
-      - ./norconex_configs:/opt/norconex/logs:rw
+      - ./norconex-runner/data:/opt/norconex/data:rw
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/logs:/opt/norconex/logs:rw
     environment:
       - JAVA_OPTS=-Xmx2g -Xms512m
     healthcheck:
