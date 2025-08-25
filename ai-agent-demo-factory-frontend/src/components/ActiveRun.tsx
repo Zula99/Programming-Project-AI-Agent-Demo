@@ -107,7 +107,7 @@ export default function ActiveRun() {
 				const res = await fetch("/api/search", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ matchAll: true, size: 100 }),
+					body: JSON.stringify({ matchAll: true, size: 5000 }),
 				});
 
 				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
@@ -172,7 +172,7 @@ export default function ActiveRun() {
 			const res = await fetch("/api/search", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ query: q, size: 100 }),
+				body: JSON.stringify({ query: q, size: 5000 }),
 			});
 			if (!res.ok) throw new Error(`Search failed: ${res.status}`);
 			const data: OSSearchResponse = await res.json();
