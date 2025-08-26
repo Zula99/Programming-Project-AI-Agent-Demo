@@ -4,9 +4,10 @@
 import StatusBadge from "./StatusBadge";
 import TabList from "./TabList";
 import SortableTH from "./SortableTH";
-import ProgressBar from "./ProgressBar";
-import { useMemo, useState, ChangeEvent } from "react";
-import {
+
+import { useMemo, useState, useEffect, ChangeEvent, FormEvent } from "react";
+import { 
+
 	HiDownload,
     HiOutlineCheckCircle,
     HiClipboard,
@@ -19,6 +20,23 @@ import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
 
 type RunStatus = "running" | "complete";
 type Tab = "data" | "config" | "logs";
+
+interface OSResult {
+	_id: string;
+	_score: number;
+	_source: {
+		title: string;
+		description: string;
+		url: string;
+		content?: string;
+		metadata?: { depth?: string; contentType?: string };
+	}
+}
+
+interface OSSearchResponse {
+	took: number;
+	hits: { total: { value: number }; hits: OSResult[] };
+}
 
 type PageRow = {
 	id: string;
@@ -45,36 +63,104 @@ function formatKB(bytes: number) {
 	return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+function urlPath(u: string): string {
+	try {
+		const p = new URL(u);
+		return p.pathname || "/";
+	} catch {
+		return "/";
+	}
+}
+
+function inferType(ct?: string, url?: string): PageRow["type"] {
+	const lc = (ct || "").toLowerCase();
+	const u = (url || "").toLowerCase();
+	if (lc.includes("pdf") || u.endsWith(".pdf")) return "pdf";
+	if (lc.includes("html") || lc.includes("text/")) return "html";
+	return "doc";
+}
+
+function mapHitToRow(hit: OSResult): PageRow {
+	const contentLen = hit._source.content?.length ?? 0;
+	return {
+		id: hit._id,
+		path: urlPath(hit._source.url),
+		title: hit._source.title || "Untitled",
+		type: inferType(hit._source.metadata?.contentType, hit._source.url),
+		size: contentLen,
+	};
+}
+
 export default function ActiveRun() {
 	const [activeTab, setActiveTab] = useState<Tab>("data");
 	const [query, setQuery] = useState("");
 	const [sortKey, setSortKey] = useState<keyof Pick<PageRow, "path" | "title" | "type" | "size">>("path");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+	const [rows, setRows] = useState<PageRow[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [searchTime, setSearchTime] = useState<number | null>(null);
+	const [error, setError] = useState<string>("");
+
+	// Initial load, getting some docs from index
+	useEffect(() => {
+		let cancelled = false;
+		(async () => {
+			setLoading(true);
+			setError("");
+
+			try {
+				const res = await fetch("/api/search", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ matchAll: true, size: 100 }),
+				});
+
+				if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+
+				const data: OSSearchResponse = await res.json();
+				if (!cancelled) {
+					setRows(data.hits.hits.map(mapHitToRow));
+					setSearchTime(data.took);
+				}
+			} catch (e) {
+				if (!cancelled) 
+					setError(e instanceof Error ? e.message : "Search failed");
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+		return () => { cancelled = true; };
+	}, []);
 
 	const filtered = useMemo(() => {
-		const q = query.trim().toLowerCase();
-		const rows = q
-		  ? initialRows.filter(
-		      (r) =>
-		        r.path.toLowerCase().includes(q) ||
-		        r.title.toLowerCase().includes(q) ||
-		        r.type.toLowerCase().includes(q)
-		    )
-		  : initialRows;
 
-		const sorted = [...rows].sort((a, b) => {
-		  const av = a[sortKey];
-		  const bv = b[sortKey];
-		  if (typeof av === "number" && typeof bv === "number") {
-		    return sortDir === "asc" ? av - bv : bv - av;
-		  }
-		  const as = String(av).toLowerCase();
-		  const bs = String(bv).toLowerCase();
-		  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
-		});
+  		const q = query.trim().toLowerCase();
+  		const effectiveRows = rows.length ? rows : initialRows;
 
-		return sorted;
-	  }, [query, sortKey, sortDir]);
+  		const dataset = q
+  		  ? effectiveRows.filter(
+  		      (r) =>
+  		        r.path.toLowerCase().includes(q) ||
+  		        r.title.toLowerCase().includes(q) ||
+  		        r.type.toLowerCase().includes(q)
+  		    )
+  		  : effectiveRows;
+		
+  		const sorted = [...dataset].sort((a, b) => {
+  		  const av = a[sortKey];
+  		  const bv = b[sortKey];
+  		  if (typeof av === "number" && typeof bv === "number") {
+  		    return sortDir === "asc" ? av - bv : bv - av;
+  		  }
+  		  const as = String(av).toLowerCase();
+  		  const bs = String(bv).toLowerCase();
+  		  return sortDir === "asc" ? as.localeCompare(bs) : bs.localeCompare(as);
+  		});
+	
+  		return sorted;
+	}, [rows, query, sortKey, sortDir]);
+
+
 
     const toggleSort = (key: keyof Pick<PageRow, "path" | "title" | "type" | "size">) => {
         if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -83,6 +169,28 @@ export default function ActiveRun() {
             setSortDir("asc");
         }
     };
+
+	async function handleSearchSubmit(e: FormEvent) {
+		e.preventDefault();
+		const q = query.trim();
+		if (!q) return;
+		setLoading(true); setError("");
+		try {
+			const res = await fetch("/api/search", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ query: q, size: 100 }),
+			});
+			if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+			const data: OSSearchResponse = await res.json();
+			setRows(data.hits.hits.map(mapHitToRow));
+			setSearchTime(data.took);
+		} catch (e) {
+			setError(e instanceof Error ? e.message : "Search failed");
+		} finally {
+			setLoading(false);
+		}
+	}
 
     return (
         <section className="bg-white border rounded-lg p-4">
@@ -96,7 +204,9 @@ export default function ActiveRun() {
                 </div>
                 <div className="flex items-center gap-2">
                     <StatusBadge status={mockRun.status} />
-                    <span className="hidden sm:inline text-sm text-gray-500">Started {mockRun.startedAt}</span>
+					{searchTime !== null && (
+						<span className="hidden sm:inline text-sm text-gray-500">{loading ? "Searching..." : `Fetched in ${searchTime}ms`}</span>
+					)}
                     <CopyButton value={mockRun.runId} />
                 </div>
             </div>
@@ -131,48 +241,54 @@ export default function ActiveRun() {
             {activeTab === "data" && (
                 <div className="mt-4">
                     {/*Toolbar*/}
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm hover:border-gray-300">
-                            <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-400" />
-                            <input
-                                value={query}
-                                onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-                                placeholder="Filter by path, title, or type"
-                                className="w-full bg-transparent outline-none placeholder:text-gray-400"
-                            />
-                        </div>
-						<button
-							type="button"
-							className="inline-flex items-center gap-2 rounded-lg border border-gray-300
-										bg-white px-3 py-2 text-gray-700 shadow-sm transition-all
-										hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
-										focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
-							title="Filters"
-						>
-							<HiFilter className="h-5 w-5" />
-							Filters
-						</button>
-						<button
-							type="button"
-							className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2
-										font-medium text-white shadow-sm transition-all hover:bg-blue-500
-										hover:shadow-lg focus-visible:outline-none focus-visible:ring-2
-										focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
-							title="Download CSV"
-						>
-							<HiDownload className="h-5 w-5" />
-							CSV
-						</button>
-                    </div>
+
+					<form onSubmit={handleSearchSubmit} className="mb-3 flex flex-wrap items-center gap-2">
+                    	<div className="mb-3 flex flex-wrap items-center gap-2">
+                    	    <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm hover:border-gray-300">
+                    	        <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-400" />
+                    	        <input
+                    	            value={query}
+                    	            onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+                    	            placeholder="Filter by path, title, or type"
+                    	            className="w-full bg-transparent outline-none placeholder:text-gray-400"
+                    	        />
+                    	    </div>
+							<button
+								type="submit"
+								className="inline-flex items-center gap-2 rounded-lg border border-gray-300
+											bg-white px-3 py-2 text-gray-700 shadow-sm transition-all 
+											hover:bg-gray-50 hover:shadow-md focus-visible:outline-none
+											focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
+								title="Query OpenSearch"
+							>
+								<HiArrowPath className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
+							</button>
+							<button
+								type="button"
+								className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 
+											font-medium text-white shadow-sm transition-all hover:bg-blue-500 
+											hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 
+											focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
+								title="Download CSV"
+							>
+								<HiDownload className="h-5 w-5" />
+								CSV
+							</button>
+                    	</div>
+					</form>
+
 
 					{/*Count*/}
 					<div className="mb-2 flex items-center justify-between">
 						<div className="text-sm text-gray-500">
-							<span className="font-medium text-gray-900">Indexed Pages</span>
+							<span className="font-medium text-gray-900">Indexed Pages</span> ({filtered.length})
 						</div>
 						<div className="flex items-center gap-2 text-xs text-gray-500">
-							<HiArrowPath className="h-4 w-4" />
-							updating...
+							{loading ? (
+								<>
+									<HiArrowPath className="h-4 w-4 animate-spin" /> Loading...
+								</>
+							) : null}
 						</div>
 					</div>
 
