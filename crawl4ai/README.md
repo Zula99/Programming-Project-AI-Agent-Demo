@@ -18,3 +18,20 @@ Run in terminal:
 
 Run in terminal: 
 - python firstcrawl.py
+
+# NAB Static Clone
+
+### Run NAB crawler
+- python crawl_nab.py
+
+Should crawl 80 pages successfully.
+
+### Download assets and build the static mirror
+- python build_static_mirror.py
+
+Wait for assets to be downloaded. Should be ~477.
+
+### Deploy static mirror
+- cd output\nab
+- python -m http.server 8000
+- Go to http://localhost:8000/www.nab.com.au/
