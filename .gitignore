@@ -19,6 +19,7 @@ norconex/downloads/
 
 # Crawl4AI Crawler Output
 crawl4ai/crawl-*
+crawl4ai/output/
 
 # Log Files
 *.log

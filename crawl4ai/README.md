@@ -7,6 +7,7 @@ In terminal, cd into crawl4ai folder.
 Run in terminal: 
 - pip install crawl4ai
 - pip install beautifulsoup4
+- pip install beautifulsoup4 aiohttp
 
 ### Setup
 
