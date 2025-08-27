@@ -17,6 +17,9 @@ norconex/cache/
 norconex/temp/
 norconex/downloads/
 
+# Crawl4AI Crawler Output
+crawl4ai/crawl-*
+
 # Log Files
 *.log
 *.log.*

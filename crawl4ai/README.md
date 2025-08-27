@@ -4,12 +4,16 @@ In terminal, cd into crawl4ai folder.
 
 ### Install Crawl4AI
 
-Run in terminal: pip install crawl4ai
+Run in terminal: 
+- pip install crawl4ai
+- pip install beautifulsoup4
 
 ### Setup
 
-Run in terminal: crawl4ai-setup
+Run in terminal: 
+- crawl4ai-setup
 
 ### Test Crawl4AI
 
-Run in terminal: python firstcrawl.py
+Run in terminal: 
+- python firstcrawl.py
