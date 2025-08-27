@@ -1,0 +1,15 @@
+# Crawl4AI SetUp
+
+In terminal, cd into crawl4ai folder.
+
+### Install Crawl4AI
+
+Run in terminal: pip install crawl4ai
+
+### Setup
+
+Run in terminal: crawl4ai-setup
+
+### Test Crawl4AI
+
+Run in terminal: python firstcrawl.py
