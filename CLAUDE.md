@@ -125,3 +125,6 @@ Stores successful crawling patterns:
 - **Comprehensive content coverage** including dynamically rendered content
 - **Learning improvement** - success rate increases over time with pattern recognition
 - **Speed targets**: Recon <10s, Strategy <5s, Full crawl 5-30min, Mirror <5min
+
+### Dont's
+- ## write emoji's into code.
