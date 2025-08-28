@@ -20,6 +20,7 @@ norconex/downloads/
 # Crawl4AI Crawler Output
 crawl4ai/crawl-*
 crawl4ai/output/
+crawl4ai/.agilent_chrome_profile/
 
 # Log Files
 *.log
