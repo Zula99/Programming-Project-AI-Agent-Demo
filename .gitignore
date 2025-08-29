@@ -21,6 +21,10 @@ norconex/downloads/
 crawl4ai/crawl-*
 crawl4ai/output/
 
+# SmartMirrorAgent Output
+ai-agent-demo-factory-backend/crawl4ai-agent/output/
+**/output/agent_crawls/
+
 # Log Files
 *.log
 *.log.*

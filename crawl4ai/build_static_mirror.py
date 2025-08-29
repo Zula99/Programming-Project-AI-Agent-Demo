@@ -165,9 +165,11 @@ def is_asset(url: str) -> bool:
     return e in ASSET_EXT
 
 def make_rel(from_dir: Path, target_path: Path) -> str:
-    """Relative filesystem path from one folder to a file."""
+    """Relative filesystem path from one folder to a file, with forward slashes for browsers."""
     try:
-        return os.path.relpath(target_path, start=from_dir)
+        rel_path = os.path.relpath(target_path, start=from_dir)
+        # Convert Windows backslashes to forward slashes for browser compatibility
+        return rel_path.replace('\\', '/')
     except ValueError:
         # different drives on Windows, just return basename as fallback
         return target_path.name
