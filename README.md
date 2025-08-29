@@ -30,9 +30,37 @@ docker-compose ps
 
 ### 1. Start a Website Crawl
 1. Open http://localhost:3000 in your browser
-2. Enter a target URL (e.g., `https://example.com`)
+2. Enter a target URL (see sample sites below)
 3. Click "Start Crawl"
 4. Monitor real-time progress in the Active Crawl section
+
+#### Sample Sites for Testing
+**Small Sites (Good for Testing)**
+- `https://httpbin.org/` - HTTP testing service with various endpoints
+- `https://example.com/` - Simple single-page site
+- `https://httpstat.us/` - HTTP status code testing site
+- `https://jsonplaceholder.typicode.com/` - Fake REST API for testing
+
+**Documentation Sites (Rich Content)**
+- `https://docs.python.org/3/tutorial/` - Python tutorial documentation
+- `https://developer.mozilla.org/en-US/docs/Web/HTML` - MDN HTML documentation
+- `https://www.w3schools.com/html/` - W3Schools HTML tutorial
+- `https://fastapi.tiangolo.com/` - FastAPI documentation
+
+**News & Content Sites (More Pages)**
+- `https://news.ycombinator.com/` - Hacker News (tech news)
+- `https://www.reuters.com/technology/` - Reuters technology section
+- `https://httparchive.org/` - HTTP Archive reports
+
+**E-commerce (Complex Structure)**
+- `https://books.toscrape.com/` - Fake bookstore for scraping practice
+- `https://scrapeme.live/shop/` - Pokemon e-commerce site for testing
+
+⚠️ **Important Notes:**
+- Start with small sites (httpbin.org, example.com) for initial testing
+- Respect robots.txt and website terms of service
+- Some sites may have rate limiting or anti-bot measures
+- Current config limits: 50 pages max, 2 levels deep, 15-minute timeout
 
 ### 2. Search Crawled Content
 1. Use the search box in the "Crawled Data from OpenSearch" section
@@ -45,6 +73,51 @@ docker-compose ps
 - **Progress Bar**: Visual progress indicator (0-100%)
 - **Duration**: Real-time crawl duration
 - **Pages Indexed**: Count of documents processed
+
+### 4. Clear OpenSearch Index (Re-crawl Same Sites)
+To retry scrapes on the same websites, you need to clear the OpenSearch index:
+
+#### Option A: Delete Entire Index (Recommended)
+```bash
+# Delete the demo_factory index completely
+curl -X DELETE http://localhost:9200/demo_factory
+
+# Verify deletion
+curl http://localhost:9200/_cat/indices?v
+```
+
+#### Option B: Delete All Documents (Keep Index Structure)  
+```bash
+# Delete all documents but preserve index mapping
+curl -X POST http://localhost:9200/demo_factory/_delete_by_query \
+  -H "Content-Type: application/json" \
+  -d '{"query": {"match_all": {}}}'
+
+# Check document count (should be 0)
+curl http://localhost:9200/demo_factory/_count
+```
+
+#### Option C: Delete Specific Domain Documents
+```bash
+# Delete documents from a specific domain only
+curl -X POST http://localhost:9200/demo_factory/_delete_by_query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": {
+      "wildcard": {
+        "url": "*example.com*"
+      }
+    }
+  }'
+```
+
+#### Option D: Complete Reset (Nuclear Option)
+```bash
+# Stop all services, remove data, restart
+docker-compose down
+docker volume rm $(docker volume ls -q | grep opensearch) 2>/dev/null || true
+docker-compose up -d
+```
 
 ## Architecture Overview
 
