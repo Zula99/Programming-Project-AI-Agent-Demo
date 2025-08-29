@@ -4,6 +4,9 @@ import RecentRuns from "@/components/RecentRuns";
 import ActiveRun from "@/components/ActiveRun";
 import SearchResults from "@/components/SearchResults";
 import CrawlController from "@/components/CrawlController";
+import StatsPanel from "@/components/StatsPanel"; 
+import SystemStatus from "@/components/SystemStatus"; 
+
 
 export default function Home() {
   return (
@@ -16,6 +19,8 @@ export default function Home() {
         <div className="lg:col-span-1 space-y-6">
           <RecentRuns />
           <ActiveRun />
+          <StatsPanel />
+          <SystemStatus /> 
         </div>
 
         {/* Right column: Search results and crawl controller */}
