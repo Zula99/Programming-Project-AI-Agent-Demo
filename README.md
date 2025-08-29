@@ -74,10 +74,34 @@ docker-compose ps
 - **Duration**: Real-time crawl duration
 - **Pages Indexed**: Count of documents processed
 
-### 4. Clear OpenSearch Index (Re-crawl Same Sites)
-To retry scrapes on the same websites, you need to clear the OpenSearch index:
+### 4. Clear OpenSearch Index and Norconex State (Re-crawl Same Sites)
 
-#### Option A: Delete Entire Index (Recommended)
+⚠️ **IMPORTANT**: To re-crawl the same websites, you must clear BOTH the OpenSearch index AND Norconex's internal state. Clearing only the OpenSearch index will NOT work because Norconex remembers which URLs it has already processed in its workdir.
+
+#### Complete Clear (Recommended - Required for Re-crawling Same Sites)
+```bash
+# Step 1: Clear Norconex workdir in Docker container
+docker exec programming-project-ai-agent-demo-norconex-maven-1 rm -rf /opt/norconex/data/workdir/*
+
+# Step 2: Clear local repository workdir (CRITICAL - often missed!)
+sudo rm -rf norconex-runner/data/workdir/*
+sudo rm -rf norconex/norconex/workdir/*
+
+# Step 3: Delete OpenSearch index
+curl -X DELETE http://localhost:9200/demo_factory
+
+# Verification
+echo "=== OpenSearch index status ==="
+curl http://localhost:9200/_cat/indices?v
+
+echo -e "\n=== Local workdir contents (should be empty) ==="
+ls -la norconex-runner/data/workdir/ 2>/dev/null || echo "Directory empty"
+
+echo -e "\n=== Docker workdir contents (should be empty) ==="
+docker exec programming-project-ai-agent-demo-norconex-maven-1 ls -la /opt/norconex/data/workdir/
+```
+
+#### Option A: Delete Entire Index Only (Limited - Won't Work for Re-crawling)
 ```bash
 # Delete the demo_factory index completely
 curl -X DELETE http://localhost:9200/demo_factory
@@ -85,6 +109,7 @@ curl -X DELETE http://localhost:9200/demo_factory
 # Verify deletion
 curl http://localhost:9200/_cat/indices?v
 ```
+⚠️ **Note**: This alone will NOT allow re-crawling the same sites. Norconex will still skip URLs it thinks were already processed.
 
 #### Option B: Delete All Documents (Keep Index Structure)  
 ```bash
@@ -111,11 +136,13 @@ curl -X POST http://localhost:9200/demo_factory/_delete_by_query \
   }'
 ```
 
-#### Option D: Complete Reset (Nuclear Option)
+#### Option D: Nuclear Reset (Complete System Reset)
 ```bash
 # Stop all services, remove data, restart
 docker-compose down
 docker volume rm $(docker volume ls -q | grep opensearch) 2>/dev/null || true
+sudo rm -rf norconex-runner/data/workdir/*
+sudo rm -rf norconex/norconex/workdir/*
 docker-compose up -d
 ```
 
