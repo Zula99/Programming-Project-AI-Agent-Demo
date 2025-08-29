@@ -14,6 +14,94 @@ import threading # For running the simulation in a separate thread
 import subprocess # For running external commands
 import os # For environment variables
 import tempfile # For temporary files
+import re # For regex parsing
+
+def extract_crawl_statistics(run_id: str) -> dict:
+    """
+    Extract crawl-specific statistics from Norconex logs for the specific run_id.
+    Returns individual crawl stats, not the entire index stats.
+    """
+    stats = {}
+    try:
+        # Read the trigger log to find the execution summary for this specific run
+        log_file = "/opt/norconex/logs/trigger.log"
+        if not os.path.exists(log_file):
+            print(f"[{run_id}] No trigger log found")
+            return stats
+        
+        with open(log_file, 'r') as f:
+            content = f.read()
+        
+        # Find the section that mentions this specific run_id completion
+        run_pattern = rf'Crawl (?:completed successfully|failed) for {re.escape(run_id)}'
+        run_match = re.search(run_pattern, content)
+        
+        if not run_match:
+            print(f"[{run_id}] Could not find run completion marker in logs")
+            return stats
+        
+        # Work backwards from the completion marker to find the execution summary
+        content_before = content[:run_match.start()]
+        
+        # Look for the most recent execution summary before this completion  
+        # Updated pattern to match the actual log format
+        summary_pattern = r'Execution Summary:\s*\nTotal processed:\s*(\d+)\s*\nSince.*?\n\s*Crawl duration:\s*([^\n]+)\n\s*Avg\. throughput:\s*([^\n]+)\n\s*Event counts:\s*\n((?:\s*[A-Z_]+:\s*\d+\s*\n)*)'
+        
+        matches = list(re.finditer(summary_pattern, content_before, re.MULTILINE | re.DOTALL))
+        if not matches:
+            print(f"[{run_id}] No execution summary found in logs")
+            return stats
+        
+        # Use the most recent execution summary (should be for this run)
+        latest_match = matches[-1]
+        total_processed = int(latest_match.group(1))
+        duration_str = latest_match.group(2).strip()
+        throughput_str = latest_match.group(3).strip()
+        events_section = latest_match.group(4)
+        
+        # Basic stats
+        stats['total_pages_crawled'] = total_processed
+        
+        # Parse event counts from the events section
+        event_patterns = {
+            'pages_indexed': r'DOCUMENT_COMMITTED_UPSERT:\s*(\d+)',
+            'pages_fetched': r'DOCUMENT_FETCHED:\s*(\d+)', 
+            'pages_processed': r'DOCUMENT_PROCESSED:\s*(\d+)',
+            'pages_queued': r'DOCUMENT_QUEUED:\s*(\d+)',
+            'urls_extracted': r'URLS_EXTRACTED:\s*(\d+)',
+            'pages_rejected': r'REJECTED_FILTER:\s*(\d+)',
+        }
+        
+        for stat_name, pattern in event_patterns.items():
+            match = re.search(pattern, events_section)
+            if match:
+                stats[stat_name] = int(match.group(1))
+        
+        # Parse throughput 
+        throughput_match = re.search(r'([0-9.]+)\s+processed/seconds', throughput_str)
+        if throughput_match:
+            stats['avg_throughput'] = float(throughput_match.group(1))
+        
+        # Parse duration
+        if 'minute' in duration_str and 'second' in duration_str:
+            duration_match = re.search(r'(\d+)\s+minutes?\s+and\s+(\d+)\s+seconds?', duration_str)
+            if duration_match:
+                minutes = int(duration_match.group(1))
+                seconds = int(duration_match.group(2))
+                stats['norconex_duration_seconds'] = minutes * 60 + seconds
+        elif 'second' in duration_str:
+            duration_match = re.search(r'(\d+)\s+seconds?', duration_str)
+            if duration_match:
+                stats['norconex_duration_seconds'] = int(duration_match.group(1))
+        
+        print(f"[{run_id}] Extracted crawl stats: {stats}")
+        
+    except Exception as e:
+        print(f"[{run_id}] Failed to extract crawl statistics: {e}")
+        import traceback
+        print(f"[{run_id}] Traceback: {traceback.format_exc()}")
+    
+    return stats
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -172,6 +260,15 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
                 if norconex_response.status_code == 200:
                     crawl_jobs[run_id]['status'] = 'complete'
                     crawl_jobs[run_id]['progress'] = 100
+                    crawl_jobs[run_id]['completed_at'] = time.time()
+                    
+                    # Calculate final stats
+                    duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
+                    crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
+                    
+                    # Extract real crawl statistics from logs
+                    crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
+                    
                     print(f"[{run_id}] Crawl completed successfully via HTTP API")
                 else:
                     raise Exception(f"HTTP API error: {norconex_response.status_code} - {norconex_response.text}")
@@ -213,6 +310,15 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
                 if os.path.exists(completion_file):
                     crawl_jobs[run_id]['status'] = 'complete'
                     crawl_jobs[run_id]['progress'] = 100
+                    crawl_jobs[run_id]['completed_at'] = time.time()
+                    
+                    # Calculate final stats
+                    duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
+                    crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
+                    
+                    # Extract real crawl statistics from logs
+                    crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
+                    
                     print(f"[{run_id}] Crawl completed successfully via file trigger")
                     
                     # Documents are committed directly to OpenSearch by ElasticsearchCommitter
@@ -221,7 +327,32 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
                     crawl_jobs[run_id]['num_pages_indexed'] = "direct"
                         
                 else:
-                    raise Exception("Crawl timed out - no completion file found")
+                    # Check for failure file
+                    failure_file = f"/opt/norconex/configs/failed-{run_id}.json"
+                    if os.path.exists(failure_file):
+                        crawl_jobs[run_id]['status'] = 'failed'
+                        crawl_jobs[run_id]['completed_at'] = time.time()
+                        
+                        # Calculate duration even for failed runs
+                        duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
+                        crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
+                        
+                        # Extract partial crawl statistics from logs
+                        crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
+                        
+                        # Read failure details
+                        try:
+                            with open(failure_file, 'r') as f:
+                                import json
+                                failure_data = json.load(f)
+                                crawl_jobs[run_id]['error_message'] = failure_data.get('error', 'Unknown error')
+                                crawl_jobs[run_id]['failure_details'] = failure_data
+                        except Exception as e:
+                            crawl_jobs[run_id]['error_message'] = f"Crawl failed but could not read failure details: {e}"
+                        
+                        print(f"[{run_id}] Crawl failed - partial data may be available")
+                    else:
+                        raise Exception("Crawl timed out - no completion or failure file found")
                     
             # Skip the subprocess execution since we handled it above
             return
@@ -323,7 +454,20 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
         'progress': 0,
         'results': [],
         'started_at': time.time(), # Record start time
-        'error_message': None # Initialize error message
+        'completed_at': None,
+        'error_message': None, # Initialize error message
+        'stats': {
+            'total_pages_crawled': 0,
+            'pages_indexed': 0,
+            'pages_skipped': 0,
+            'total_size_bytes': 0,
+            'avg_page_size_bytes': 0,
+            'crawl_duration_seconds': 0,
+            'domains_found': set(),
+            'file_types': {},
+            'max_depth_reached': 0,
+            'errors_encountered': 0
+        }
     }
 
     # Add the crawl function to FastAPI's background tasks.
@@ -349,6 +493,11 @@ async def get_crawl_status(run_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Crawl run not found")
 
+    # Convert sets to lists for JSON serialization
+    stats = job.get('stats', {}).copy()
+    if 'domains_found' in stats and isinstance(stats['domains_found'], set):
+        stats['domains_found'] = list(stats['domains_found'])
+    
     # Return the current status details of the job
     return JSONResponse(content={
         "run_id": run_id,
@@ -356,8 +505,10 @@ async def get_crawl_status(run_id: str):
         "status": job['status'],
         "progress": job['progress'],
         "started_at": job['started_at'],
+        "completed_at": job.get('completed_at'),
         "num_pages_indexed": len(job['results']), # Count of pages currently indexed
-        "error_message": job.get('error_message') # Get error message if exists
+        "error_message": job.get('error_message'), # Get error message if exists
+        "stats": stats
     })
 
 @app.get("/results/{run_id}", response_model=list[PageRow])
