@@ -39,6 +39,7 @@ services:
       - ./ai-agent-demo-factory-backend:/app
       - ./norconex-runner/configs:/opt/norconex/configs:rw
       - ./norconex-runner/data:/opt/norconex/data:ro
+      - ./norconex-runner/logs:/opt/norconex/logs:ro
     depends_on:
       opensearch:
         condition: service_healthy
