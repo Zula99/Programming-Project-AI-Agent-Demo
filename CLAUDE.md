@@ -158,14 +158,21 @@ Stores successful crawling patterns:
 ## Future Implementation Ideas
 
 ### Docker Deployment Solution
-**Problem**: Windows path length limits causing content loss
-**Solution**: Containerized deployment eliminates filesystem limitations
+**Problem**: Windows path length limits causing content loss and Windows script encoding errors
+**Solution**: Containerized deployment eliminates filesystem limitations and character encoding issues
 ```dockerfile
 FROM python:3.11-slim
 # Linux filesystem = no Windows path limits!
+# UTF-8 encoding by default = no Windows charmap codec errors
 # Consistent cross-platform deployment
 # Easy demo: docker run smart-mirror-agent nab.com.au
 ```
+
+**Additional Benefits**:
+- Fixes Windows charmap codec errors with Unicode characters
+- Eliminates Windows-specific script execution issues
+- Consistent UTF-8 encoding across all operations
+- Better handling of special characters in crawled content
 
 ### AI-Powered Content Classification
 **Problem**: Rule-based URL filtering too rigid - missing valuable content
