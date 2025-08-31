@@ -82,17 +82,17 @@ class SmartMirrorAgentIntegrated:
         process_start = time.time()
         self.session_stats['start_time'] = process_start
         
-        self.logger.info(f"🚀 Starting SmartMirrorAgent processing for: {url}")
+        self.logger.info(f" Starting SmartMirrorAgent processing for: {url}")
         
         try:
             # Step 1: Quick Reconnaissance (Target: <10s)
             recon_start = time.time()
-            self.logger.info("🔍 Phase 1: Site Reconnaissance")
+            self.logger.info(" Phase 1: Site Reconnaissance")
             
             recon_results = await self.reconnaissance.analyze_site(url)
             recon_time = time.time() - recon_start
             
-            self.logger.info(f"📊 Reconnaissance completed in {recon_time:.2f}s")
+            self.logger.info(f" Reconnaissance completed in {recon_time:.2f}s")
             self.logger.info(f"   Site Type: {recon_results.site_type}")
             self.logger.info(f"   Frameworks: {recon_results.frameworks}")
             self.logger.info(f"   JS Complexity: {recon_results.js_complexity:.2f}")
@@ -100,7 +100,7 @@ class SmartMirrorAgentIntegrated:
             
             # Step 2: Check Learning Memory for Similar Patterns
             memory_start = time.time()
-            self.logger.info("🧠 Phase 2: Memory Pattern Matching")
+            self.logger.info(" Phase 2: Memory Pattern Matching")
             
             similar_patterns = await self.learning_system.find_similar_patterns(url, recon_results)
             strategy_recommendation = await self.learning_system.recommend_strategy(url, recon_results)
@@ -115,7 +115,7 @@ class SmartMirrorAgentIntegrated:
             
             # Step 3: Final Strategy Selection
             selected_strategy = self._select_final_strategy(recon_results, strategy_recommendation)
-            self.logger.info(f"🎯 Selected Strategy: {selected_strategy}")
+            self.logger.info(f" Selected Strategy: {selected_strategy}")
             
             # Track strategy usage
             strategy_name = selected_strategy.name
@@ -123,7 +123,7 @@ class SmartMirrorAgentIntegrated:
             
             # Step 4: Adaptive Crawling with Quality Monitoring
             crawl_start = time.time()
-            self.logger.info("🕸️ Phase 3: Adaptive Crawling")
+            self.logger.info(" Phase 3: Adaptive Crawling")
             
             crawl_success, crawl_data = await self.adaptive_crawler.crawl_with_strategy(
                 url, selected_strategy, max_pages
@@ -132,21 +132,21 @@ class SmartMirrorAgentIntegrated:
             crawl_time = time.time() - crawl_start
             crawl_stats = self.adaptive_crawler.get_crawl_statistics()
             
-            self.logger.info(f"📈 Crawling completed in {crawl_time:.2f}s")
+            self.logger.info(f"   Crawling completed in {crawl_time:.2f}s")
             self.logger.info(f"   Pages crawled: {crawl_stats['pages_crawled']}")
             self.logger.info(f"   Success rate: {crawl_stats['success_rate']:.2%}")
             self.logger.info(f"   Total assets: {crawl_stats['total_assets']}")
             
             # Step 5: Comprehensive Quality Assessment
             quality_start = time.time()
-            self.logger.info("⚡ Phase 4: Quality Assessment")
+            self.logger.info(" Phase 4: Quality Assessment")
             
             quality_metrics = await self.quality_monitor.assess_crawl_quality(crawl_data)
             quality_time = time.time() - quality_start
             
             recommendation = self.quality_monitor.get_quality_recommendation(quality_metrics)
             
-            self.logger.info(f"📊 Quality assessment completed in {quality_time:.2f}s")
+            self.logger.info(f"   Quality assessment completed in {quality_time:.2f}s")
             self.logger.info(f"   Overall Score: {quality_metrics.overall_score:.2f}")
             self.logger.info(f"   Content: {quality_metrics.content_completeness:.2f}")
             self.logger.info(f"   Assets: {quality_metrics.asset_coverage:.2f}")
@@ -157,7 +157,7 @@ class SmartMirrorAgentIntegrated:
             # Step 6: Learning Storage (if successful)
             learning_start = time.time()
             if quality_metrics.overall_score >= 0.7:
-                self.logger.info("💾 Phase 5: Learning Pattern Storage")
+                self.logger.info(" Phase 5: Learning Pattern Storage")
                 
                 crawl_config = strategy_recommendation[1] if strategy_recommendation else {}
                 pattern_id = await self.learning_system.store_successful_pattern(
@@ -165,14 +165,14 @@ class SmartMirrorAgentIntegrated:
                 )
                 
                 learning_time = time.time() - learning_start
-                self.logger.info(f"   Stored learning pattern: {pattern_id}")
+                self.logger.info(f" Stored learning pattern: {pattern_id}")
             else:
                 learning_time = time.time() - learning_start
-                self.logger.info("⚠️ Quality below threshold - no pattern stored")
+                self.logger.info(" Quality below threshold - no pattern stored")
             
             # Step 7: Static Mirror Building (placeholder)
             mirror_start = time.time()
-            self.logger.info("🏗️ Phase 6: Static Mirror Building")
+            self.logger.info(" Phase 6: Static Mirror Building")
             
             mirror_path = await self._build_static_mirror(crawl_data, url)
             mirror_time = time.time() - mirror_start
@@ -225,13 +225,13 @@ class SmartMirrorAgentIntegrated:
                 'learning_stored': quality_metrics.overall_score >= 0.7
             }
             
-            self.logger.info(f"✅ Processing completed successfully in {total_time:.2f}s")
-            self.logger.info(f"🎯 Target achieved: 90% success rate goal - Current quality: {quality_metrics.overall_score:.1%}")
+            self.logger.info(f" Processing completed successfully in {total_time:.2f}s")
+            self.logger.info(f" Target achieved: 90% success rate goal - Current quality: {quality_metrics.overall_score:.1%}")
             
             return results
             
         except Exception as e:
-            self.logger.error(f"❌ Processing failed: {e}")
+            self.logger.error(f" Processing failed: {e}")
             return {
                 'success': False,
                 'error': str(e),
@@ -313,22 +313,22 @@ class SmartMirrorAgentIntegrated:
     def _get_performance_summary(self, success_rate: float, avg_quality: float) -> str:
         """Get performance summary against targets"""
         if success_rate >= 0.9 and avg_quality >= 0.9:
-            return "🎯 EXCELLENT - Both targets achieved!"
+            return " EXCELLENT - Both targets achieved!"
         elif success_rate >= 0.9 or avg_quality >= 0.9:
-            return "✅ GOOD - One target achieved"
+            return " GOOD - One target achieved"
         elif success_rate >= 0.8 or avg_quality >= 0.8:
-            return "👍 ACCEPTABLE - Close to targets"
+            return " ACCEPTABLE - Close to targets"
         else:
-            return "⚠️ NEEDS IMPROVEMENT - Below targets"
+            return " NEEDS IMPROVEMENT - Below targets"
     
     async def process_multiple_urls(self, urls: List[str], max_pages_per_url: int = 20) -> Dict[str, Any]:
         """Process multiple URLs and provide aggregate statistics"""
         
-        self.logger.info(f"🚀 Starting batch processing of {len(urls)} URLs")
+        self.logger.info(f" Starting batch processing of {len(urls)} URLs")
         
         results = []
         for i, url in enumerate(urls, 1):
-            self.logger.info(f"📍 Processing URL {i}/{len(urls)}: {url}")
+            self.logger.info(f" Processing URL {i}/{len(urls)}: {url}")
             
             result = await self.process_url(url, max_pages_per_url)
             results.append(result)
@@ -364,10 +364,10 @@ class SmartMirrorAgentIntegrated:
             'session_stats': self.get_session_statistics()
         }
         
-        self.logger.info(f"✅ Batch processing completed")
-        self.logger.info(f"📊 Success Rate: {success_rate:.1%}")
-        self.logger.info(f"⭐ Average Quality: {avg_quality:.1%}")
-        self.logger.info(f"⏱️ Average Time: {avg_processing_time:.1f}s per URL")
+        self.logger.info(f" Batch processing completed")
+        self.logger.info(f" Success Rate: {success_rate:.1%}")
+        self.logger.info(f" Average Quality: {avg_quality:.1%}")
+        self.logger.info(f" Average Time: {avg_processing_time:.1f}s per URL")
         
         return batch_summary
 
