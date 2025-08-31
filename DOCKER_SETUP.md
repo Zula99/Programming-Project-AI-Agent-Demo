@@ -56,17 +56,17 @@ docker-compose exec ai-agent-demo python run_agent.py
 
 ## Key Benefits
 
-### ✅ **Fixes Windows Issues**
+###  **Fixes Windows Issues**
 - **UTF-8 encoding** by default - no more charmap codec errors
 - **No path length limits** - Windows filesystem restrictions eliminated
 - **Consistent environment** - same behavior across all operating systems
 
-### ✅ **Browser Automation Ready**
+###  **Browser Automation Ready**
 - **Playwright + Chromium** pre-installed and configured
 - **Headless browsing** optimized for server environments
 - **JavaScript rendering** works reliably
 
-### ✅ **Developer Friendly**
+###  **Developer Friendly**
 - **Volume mounts** for live code editing
 - **Persistent output** - crawled data saved to host
 - **Easy debugging** - interactive shell access
