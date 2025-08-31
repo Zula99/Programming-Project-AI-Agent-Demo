@@ -1,70 +1,49 @@
 version: '3.8'
 
 services:
-  # OpenSearch Service
-  opensearch:
-    image: opensearchproject/opensearch:2.14.0 
-    container_name: opensearch 
-    ports:
-      - "9200:9200" # Exposes HTTP API for backend/frontend
-      - "9600:9600" # Exposes Transport layer
+  ai-agent-demo:
+    build: .
+    container_name: smart-mirror-agent
     environment:
-      # Required for single-node development setup (DO NOT use these settings in production)
-      - discovery.type=single-node
-      - cluster.name=opensearch-cluster # Name for your OpenSearch cluster
-      - node.name=opensearch-node1    # Name for this specific node
-      # - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # Allocate memory for OpenSearch (adjust as needed)
-      - bootstrap.memory_lock=true # Prevents Java heap from being swapped to disk (recommended for performance)
-      # - OPENSEARCH_INITIAL_ADMIN_PASSWORD=DemoPass123! # Uncomment and set if you need security features
-      - DISABLE_SECURITY_PLUGIN=true # Uncomment to disable security plugin for easier development
-    # ulimits: # Recommended ulimits for OpenSearch to prevent file descriptor issues
-    #   memlock:
-    #     soft: -1
-    #     hard: -1
-    #   nofile:
-    #     soft: 65536
-    #     hard: 65536
+      - PYTHONIOENCODING=utf-8
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+      # Add API keys when needed
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
-      - opensearch_data:/usr/share/opensearch/data # Persistent volume for OpenSearch data
-
-  # FastAPI Backend Service
-  backend:
-    build:
-      context: ./backend # Docker will look for Dockerfile in ./backend/
-      dockerfile: Dockerfile
+      # Mount output directory to host for persistent storage
+      - ./output:/app/output
+      # Mount source code for development (optional)
+      - ./ai-agent-demo-factory-backend:/app/backend
+      - ./crawl4ai:/app/crawl4ai
+      # Mount config files
+      - ./CLAUDE.md:/app/CLAUDE.md
     ports:
-      - "5000:5000" # Maps host port 5000 to container port 5000
-    volumes:
-      - ./backend:/app # Mounts local backend code into the container for live reloading
-    depends_on:
-      - opensearch 
-    environment:
-      # Pass OpenSearch host and port as environment variables to the backend
-      # 'opensearch' is the service name, which acts as a hostname within the Docker network
-      OPENSEARCH_HOST: opensearch
-      OPENSEARCH_PORT: 9200
-    develop: # Docker Compose Watch configuration for live reloading during development
-      watch:
-        - action: sync+restart 
-          path: ./backend        
+      # Expose port for future web interface
+      - "8080:8080"
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - ai-agent-network
 
-  # React Frontend Service
-  frontend:
-    build:
-      context: ./ai-agent-demo-factory-frontend 
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000" 
-    volumes:
-      - ./frontend:/app # Mounts local frontend code for live reloading
-      - /app/node_modules # Important: Prevents host's node_modules from overwriting container's
-    depends_on:
-      - backend # Backend starts before the frontend 
-    develop: # Docker Compose Watch configuration for live reloading
-      watch:
-        - action: sync+restart
-          path: ./frontend
+  # Future: Add database service when learning system is implemented
+  # ai-agent-db:
+  #   image: postgres:15-alpine
+  #   container_name: ai-agent-database
+  #   environment:
+  #     - POSTGRES_DB=ai_agent_patterns
+  #     - POSTGRES_USER=aiagent
+  #     - POSTGRES_PASSWORD=secure_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - ai-agent-network
 
-# Define named volumes for persistent data storage
-volumes:
-  opensearch_data: {} # Volume for OpenSearch data persistence
+networks:
+  ai-agent-network:
+    driver: bridge
+
+# volumes:
+#   postgres_data:
