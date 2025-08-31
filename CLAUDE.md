@@ -201,7 +201,244 @@ async def is_url_demo_worthy(url, title, meta_description) -> (worthy, confidenc
 
 **Target**: Most intelligent demo site builder with AI-driven content curation
 
+### Learning System Implementation Strategy
+**Problem**: Current learning system is conceptual - needs concrete implementation details
+**Solution**: Structured learning database with pattern recognition and adaptive strategy selection
+
+#### Phase 1: Basic Learning Infrastructure
+```python
+@dataclass
+class SitePattern:
+    domain: str
+    site_type: str  # "banking", "ecommerce", "corporate", "news"
+    framework_detected: List[str]  # ["react", "angular", "wordpress"]
+    successful_config: Dict[str, Any]
+    quality_score: float
+    pages_crawled: int
+    failure_patterns: List[str]
+    timestamp: datetime
+    
+class LearningDatabase:
+    def store_crawl_result(self, pattern: SitePattern):
+        # Store successful/failed patterns
+    def find_similar_sites(self, domain: str) -> List[SitePattern]:
+        # Match by domain similarity, framework, structure
+    def get_best_strategy(self, site_info: Dict) -> Dict[str, Any]:
+        # Return optimized config based on learned patterns
+```
+
+#### Phase 2: Framework Detection & Site Fingerprinting
+```python
+def detect_site_characteristics(url: str, html_sample: str) -> Dict[str, Any]:
+    return {
+        "cms": detect_cms(html_sample),  # WordPress, Drupal, AEM
+        "framework": detect_js_framework(html_sample),  # React, Vue, Angular
+        "site_type": classify_site_type(url, html_sample),  # Banking, retail, corporate
+        "complexity_score": assess_js_complexity(html_sample),
+        "api_patterns": detect_api_endpoints(html_sample),
+        "asset_structure": analyze_asset_patterns(html_sample)
+    }
+```
+
+#### Phase 3: Adaptive Strategy Selection
+```python
+class StrategyLearner:
+    def select_crawl_strategy(self, site_characteristics: Dict) -> CrawlConfig:
+        # Query learning database for similar sites
+        similar_sites = self.db.find_similar_sites(site_characteristics)
+        
+        if similar_sites:
+            # Use weighted average of successful configs
+            return self.blend_successful_configs(similar_sites)
+        else:
+            # Use conservative defaults for unknown site types
+            return self.get_safe_defaults(site_characteristics)
+    
+    def update_from_results(self, config: CrawlConfig, results: Dict):
+        # Store success/failure patterns for future learning
+        pattern = SitePattern.from_crawl_results(config, results)
+        self.db.store_pattern(pattern)
+```
+
+#### Phase 4: Real-time Learning & Adaptation
+```python
+class AdaptiveCrawler:
+    def __init__(self):
+        self.learner = StrategyLearner()
+        self.quality_monitor = QualityMonitor()
+    
+    async def crawl_with_learning(self, url: str):
+        # 1. Detect site characteristics
+        site_info = await self.reconnaissance(url)
+        
+        # 2. Get learned strategy
+        config = self.learner.select_crawl_strategy(site_info)
+        
+        # 3. Crawl with real-time monitoring
+        results = await self.adaptive_crawl(config, site_info)
+        
+        # 4. Learn from results
+        self.learner.update_from_results(config, results)
+        
+        return results
+```
+
+#### Implementation Benefits:
+- **Faster strategy selection** - no manual tuning for new sites
+- **Improving success rates** - learns from both successes and failures  
+- **Site-type specialization** - banking sites vs e-commerce vs news
+- **Failure recovery** - learns what doesn't work and avoids it
+- **Configuration optimization** - fine-tunes parameters over time
+
+### AI Enhancement Strategy (Hybrid Approach)
+**Problem**: Current system is algorithmic/rule-based, not true "AI Agent" despite project name
+**Solution**: Layer AI API calls on top of existing solid foundation - enhance rather than replace
+
+#### Phase 1: AI Content Classification Layer
+```python
+class AIContentClassifier:
+    def __init__(self, llm_client):
+        self.llm_client = llm_client
+        self.fallback_classifier = HeuristicClassifier()  # Keep existing logic
+    
+    async def is_page_demo_worthy(self, url: str, content: str, context: str = "business") -> tuple[bool, float, str]:
+        try:
+            prompt = f"""
+            Analyze this webpage for demo site value:
+            URL: {url}
+            Content: {content[:1000]}
+            Demo Context: {context}
+            
+            Rate worthiness (0-100), explain reasoning, focus on client impression value.
+            Return: score, reasoning
+            """
+            
+            response = await self.llm_client.classify(prompt)
+            return self.parse_ai_response(response)
+        except Exception:
+            # Fallback to existing heuristic classification
+            return self.fallback_classifier.classify(url, content)
+```
+
+#### Phase 2: AI Strategy Refinement Layer  
+```python
+class AIStrategyOptimizer:
+    async def refine_crawl_strategy(self, base_strategy: Dict, site_info: Dict) -> Dict:
+        prompt = f"""
+        Base crawling strategy from pattern matching: {base_strategy}
+        Site characteristics: {site_info}
+        
+        Optimize this strategy for maximum demo quality:
+        - Adjust max_pages for site complexity
+        - Optimize request_gap for site responsiveness  
+        - Fine-tune JS rendering settings
+        - Suggest priority URL patterns
+        
+        Return optimized JSON configuration.
+        """
+        
+        ai_refinements = await self.llm_client.optimize(prompt)
+        return self.merge_strategies(base_strategy, ai_refinements)
+```
+
+#### Phase 3: AI Site Analysis Layer
+```python
+class AISiteAnalyzer:
+    async def analyze_site_characteristics(self, url: str, html_sample: str) -> Dict:
+        # Combine existing detection with AI analysis
+        heuristic_analysis = self.detect_site_characteristics(url, html_sample)
+        
+        ai_analysis = await self.llm_analyze_site(url, html_sample)
+        
+        return self.combine_analyses(heuristic_analysis, ai_analysis)
+```
+
+#### Hybrid Architecture Benefits:
+- **True AI Agent** - uses LLM APIs for intelligent decision making
+- **Reliability** - falls back to heuristics if AI fails
+- **Cost Efficiency** - AI only where it adds most value
+- **Incremental Migration** - can add AI layers gradually
+- **Best of Both** - speed of algorithms + intelligence of AI
+
+#### Learning Database Schema:
+```sql
+-- Site patterns table
+CREATE TABLE site_patterns (
+    id INTEGER PRIMARY KEY,
+    domain TEXT,
+    site_type TEXT,
+    framework_detected TEXT,  -- JSON array
+    successful_config TEXT,   -- JSON config
+    quality_score REAL,
+    pages_crawled INTEGER,
+    failure_patterns TEXT,    -- JSON array  
+    created_at TIMESTAMP
+);
+
+-- Performance metrics table  
+CREATE TABLE crawl_metrics (
+    pattern_id INTEGER REFERENCES site_patterns(id),
+    metric_name TEXT,
+    metric_value REAL,
+    created_at TIMESTAMP
+);
+```
+
 ## Current Issues to Address
+
+### Critical Issues (Must Fix)
+
+#### Windows Encoding Errors → Mirror Visual Issues
+**Problem**: `'charmap' codec can't encode character '\u2192'` causes crawl failures, resulting in broken mirrors with oversized background elements
+**Root Cause**: Windows charmap codec can't handle Unicode characters (arrows, quotes, symbols) common in modern websites
+**Impact**: 
+- CommBank and other Unicode-heavy sites fail completely
+- Partial crawls create broken mirrors with dominant fallback elements (yellow triangles)
+- Demos look unprofessional for client presentations
+**Solution**: Docker deployment provides UTF-8 consistency and eliminates Windows filesystem limitations
+**Status**: 🔴 Critical - single fix resolves multiple symptoms
+
+#### Hardcoded Dependencies (FIXED ✅)
+**Problem**: build_static_mirror.py had hardcoded "nab.com.au" domain and output paths
+**Solution**: Refactored to use dynamic domain/output parameters via new API functions
+**Status**: ✅ Fixed - mirror builder now fully generic for any domain
+
+### Enhancement Issues (AI Agent Alignment)
+
+#### AI Integration Gap
+**Problem**: Current system is algorithmic/rule-based, not true "AI Agent" despite project name
+**Impact**: System doesn't use AI APIs for decision making, misaligned with project goals
+**Solution**: Hybrid approach - layer AI API calls on existing solid foundation
+**Implementation Plan**:
+- Phase 1: AI content classification layer
+- Phase 2: AI strategy refinement layer  
+- Phase 3: AI site analysis layer
+**Status**: 🔵 Enhancement - detailed implementation strategy documented
+
+#### Learning System Implementation
+**Problem**: Learning system is conceptual, lacks concrete data structures and algorithms
+**Impact**: No improvement over time, requires manual strategy tuning for each new site type
+**Solution**: Structured learning database with pattern recognition and adaptive strategy selection
+**Implementation**: SitePattern dataclass, LearningDatabase, SQL schema defined
+**Status**: 🔵 Enhancement - ready for implementation
+
+### Performance Issues
+
+#### Asset Download Reliability
+**Problem**: CDN 403 errors, malformed URLs, robots.txt blocking reduce mirror visual fidelity
+**Root Cause**: External CDN restrictions, Windows path separator issues in URLs
+**Impact**: Missing CSS, images, fonts make demos look broken
+**Solution**: Enhanced asset downloading with better URL normalization and error handling
+**Status**: 🟡 Partially Fixed - improved but needs Docker deployment for full resolution
+
+#### Content Classification Intelligence
+**Problem**: Rule-based URL filtering too rigid, missing valuable business content
+**Example**: NAB business pages like `/business/loans/commercial/agriculture` filtered out
+**Impact**: Important demo-worthy content excluded, reducing completeness
+**Solution**: AI-powered content worthiness classification (part of AI integration plan)
+**Status**: 🔵 Future Enhancement - depends on AI integration
+
+### Optimization Issues
 
 ### Duplicate Content Detection
 **Problem**: Agent may crawl similar/duplicate pages reducing demo quality
