@@ -11,12 +11,12 @@ from collections import defaultdict
 from bs4 import BeautifulSoup
 
 # === SETTINGS ===
-DOMAIN                = "nab.com.au"                # treat any *.nab.com.au as internal
-OUTPUT_ROOT           = Path("output/nab")          # where crawl saved pages
+DOMAIN                = None                         # will be set dynamically at runtime
+OUTPUT_ROOT           = None                        # will be set dynamically at runtime
 REQUEST_GAP_SECONDS   = 0.15                        # polite delay between asset fetches
 CONCURRENCY           = 8                           # parallel asset downloads
-RESPECT_ROBOTS        = True                        # honor robots for asset URLs
-MIRROR_EXTERNAL_ASSETS= False                       # only nab.com.au by default
+RESPECT_ROBOTS        = False                        # honor robots for asset URLs
+MIRROR_EXTERNAL_ASSETS= True                        # download CDN assets for better demos
 STRIP_SCRIPTS         = False                       # set True to remove <script> tags
 REWRITE_CSS_URLS      = True                        # rewrite url(...) in CSS to local paths
 MAX_WINDOWS_PATH      = 250 if os.name == "nt" else 4096 # Windows max path workaround
@@ -24,7 +24,8 @@ RETRIES               = 2                           # retry asset fetches this m
 TIMEOUT_TOTAL         = 45                          # seconds total timeout for asset fetch
 MIRROR_EXTERNAL_ASSETS = True
 FORCE_MIRROR_PATH_PREFIXES = ("/etc.clientlibs/",)
-OVERRIDE_ROBOTS_EXTS  = {".css", ".js", ".mjs", ".woff", ".woff2", ".ttf", ".otf"}
+OVERRIDE_ROBOTS_EXTS  = {".css", ".js", ".mjs", ".woff", ".woff2", ".ttf", ".otf", 
+                         ".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp", ".ico", ".eot"}
 
 
 _invalid = re.compile(r"[^a-z0-9._-]+")
@@ -224,7 +225,15 @@ def absolutize(base_url: str, href: str | None) -> str | None:
         return None
     if href.startswith(("mailto:", "tel:", "javascript:", "#")):
         return None
-    return url_canon(urllib.parse.urljoin(base_url, href))
+    
+    # Normalize Windows-style backslashes to forward slashes before URL joining
+    # This fixes malformed paths like "..\..\..\_assets\file.woff2"
+    normalized_href = href.replace('\\', '/')
+    
+    # Fix malformed relative paths like "../..-cdn-fonts" -> "../../cdn/fonts"
+    normalized_href = re.sub(r'\.\.-.\.\.', '../..', normalized_href)
+    
+    return url_canon(urllib.parse.urljoin(base_url, normalized_href))
 
 def rewrite_html(page_url: str, page_dir: Path, soup: BeautifulSoup,
                  page_map: dict[str, Path], asset_map: dict[str, Path]) -> None:
@@ -319,15 +328,43 @@ def rewrite_css_urls(css_text: str, css_url: str, css_path: Path, asset_map: dic
     return out
 
 
+# --- CONFIGURATION ---
+def configure_mirror_builder(domain: str, output_root: Path):
+    """Configure the mirror builder with dynamic domain and output path"""
+    global DOMAIN, OUTPUT_ROOT
+    DOMAIN = domain
+    OUTPUT_ROOT = output_root
+    print(f"Configured mirror builder: domain={domain}, output={output_root}")
+
+async def build_mirror_for_domain(domain: str, output_root: Path) -> Path:
+    """
+    Public API function for the MirrorBuilder to call
+    
+    Args:
+        domain: The domain being mirrored (e.g., 'commbank.com.au')
+        output_root: Path where crawled pages are stored
+        
+    Returns:
+        Path to the generated mirror root
+    """
+    await main(domain=domain, output_root=output_root)
+    return OUTPUT_ROOT
+
 # --- MAIN BUILD ---
-async def main():
+async def main(domain: str = "nab.com.au", output_root: Path = None):
+    # Configure the builder with dynamic parameters
+    if output_root is None:
+        output_root = Path("output") / domain.replace("www.", "").replace(".", "_")
+    
+    configure_mirror_builder(domain, output_root)
+    
     # Build robots
     robots = build_robots(f"https://{DOMAIN}/")
 
     # Collect crawled pages
     page_map = collect_pages()  # canon_url -> Path(dir)
     if not page_map:
-        print("No crawled pages found under output/nab/. Run your crawler first.")
+        print(f"No crawled pages found under {OUTPUT_ROOT}/. Run your crawler first.")
         return
     print(f"Found {len(page_map)} crawled pages.")
 
@@ -429,7 +466,7 @@ async def main():
             if robots and is_same_site(url) and not robots_exempt:
                 try:
                     if not robots.can_fetch(headers["User-Agent"], url):
-                        print(f"🚫 robots.txt disallows asset: {url}")
+                        print(f" robots.txt disallows asset: {url}")
                         return
                 except Exception:
                     pass

@@ -59,43 +59,17 @@ class MirrorBuilder:
             print(f"Building static mirror for {domain}")
             print(f"Source: {output_root}")
             
-            # Import and run the mirror builder with dynamic configuration
-            # We need to temporarily modify the global variables in the build script
-            from build_static_mirror import (
-                main as build_main, 
-                OUTPUT_ROOT as original_output,
-                DOMAIN as original_domain,
-                CONCURRENCY as original_concurrency,
-                REQUEST_GAP_SECONDS as original_gap,
-                MIRROR_EXTERNAL_ASSETS as original_external,
-                STRIP_SCRIPTS as original_strip,
-                REWRITE_CSS_URLS as original_rewrite
+            # Import and use the new dynamic API
+            from build_static_mirror import build_mirror_for_domain
+            
+            # Build the mirror using the clean API
+            mirror_root = await build_mirror_for_domain(
+                domain=clean_domain,
+                output_root=output_root
             )
             
-            # Temporarily patch the constants
-            import build_static_mirror
-            build_static_mirror.OUTPUT_ROOT = output_root
-            build_static_mirror.DOMAIN = clean_domain
-            build_static_mirror.CONCURRENCY = concurrency
-            build_static_mirror.REQUEST_GAP_SECONDS = request_gap
-            build_static_mirror.MIRROR_EXTERNAL_ASSETS = mirror_external_assets
-            build_static_mirror.STRIP_SCRIPTS = strip_scripts
-            build_static_mirror.REWRITE_CSS_URLS = rewrite_css_urls
-            
-            # Build the mirror
-            await build_main()
-            
-            # Restore original constants
-            build_static_mirror.OUTPUT_ROOT = original_output
-            build_static_mirror.DOMAIN = original_domain
-            build_static_mirror.CONCURRENCY = original_concurrency
-            build_static_mirror.REQUEST_GAP_SECONDS = original_gap
-            build_static_mirror.MIRROR_EXTERNAL_ASSETS = original_external
-            build_static_mirror.STRIP_SCRIPTS = original_strip
-            build_static_mirror.REWRITE_CSS_URLS = original_rewrite
-            
             # Store results
-            self.last_mirror_path = str(output_root.resolve())
+            self.last_mirror_path = str(mirror_root.resolve())
             self.last_mirror_stats = {
                 "mirror_path": self.last_mirror_path,
                 "domain": domain,
