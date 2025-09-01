@@ -1,32 +1,84 @@
-# run_agent.py - Interactive SmartMirrorAgent runner
+# run_agent.py - SmartMirrorAgent runner (interactive and CLI modes)
 import asyncio
 import logging
 import sys
+import argparse
 from pathlib import Path
 from smart_mirror_agent import SmartMirrorAgent
+from crawl_logger import CrawlSession
 
-# Setup logging
+# Setup logging  
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def get_user_input():
+import http.server
+import socketserver
+import threading
+import os
+
+def start_mirror_server(mirror_path):
+    """Start HTTP server to serve the mirror"""
+    try:
+        # Get the output directory containing all mirrors
+        output_dir = Path(mirror_path).parent.parent  # Go up to agent_crawls level
+        port = 8000
+        
+        # Change to output directory
+        original_dir = os.getcwd()
+        os.chdir(output_dir)
+        
+        # Create and start server
+        handler = http.server.SimpleHTTPRequestHandler
+        httpd = socketserver.TCPServer(("", port), handler)
+        
+        print(f"\n   Mirror server started on http://localhost:{port}")
+        print(f"   Mirror available at: http://localhost:{port}/{Path(mirror_path).parent.name}/{Path(mirror_path).name}/")
+        print(f"   Press Ctrl+C to stop server")
+        print("\n" + "=" * 60)
+        
+        # Serve forever (blocking)
+        httpd.serve_forever()
+        
+    except KeyboardInterrupt:
+        print(f"\n   Stopping server...")
+        httpd.shutdown()
+        os.chdir(original_dir)
+    except Exception as e:
+        print(f"   Could not start server: {e}")
+        os.chdir(original_dir)
+
+def normalize_url(url):
+    """Normalize URL format"""
+    if not url:
+        return None
+        
+    url = url.strip()
+    if not url.startswith(('http://', 'https://')):
+        url = f"https://{url}"
+        if not url.startswith('https://www.') and '://' not in url[8:]:
+            # Add www. if it looks like a main domain
+            url = url.replace('https://', 'https://www.')
+    return url
+
+def get_user_input(preset_url=None):
     """Get target site from user - agent decides everything else"""
     print("=" * 60)
     print(" SmartMirrorAgent - Autonomous Demo Site Builder")
     print("=" * 60)
     print()
     
-    # Get target site only
-    while True:
-        site = input("Enter target website (e.g., nab.com.au, example.com): ").strip()
-        if site:
-            # Add https:// if not present
-            if not site.startswith(('http://', 'https://')):
-                site = f"https://{site}"
-                if not site.startswith('https://www.') and not '://' in site[8:]:
-                    # Add www. if it looks like a main domain
-                    site = site.replace('https://', 'https://www.')
-            break
-        print(" Please enter a valid website")
+    if preset_url:
+        # URL provided via command line - auto-fill but show what we're using
+        site = normalize_url(preset_url)
+        print(f"Target URL provided: {site}")
+        print()
+    else:
+        # Interactive input
+        while True:
+            site = input("Enter target website (e.g., nab.com.au, example.com): ").strip()
+            if site:
+                site = normalize_url(site)
+                break
+            print(" Please enter a valid website")
     
     print(f" Target: {site}")
     print(" Agent will automatically determine:")
@@ -36,6 +88,33 @@ def get_user_input():
     print()
     
     return site
+
+def parse_arguments():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description='SmartMirrorAgent - Autonomous Demo Site Builder',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Interactive mode
+  python run_agent.py
+
+  # Auto-fill URL mode  
+  python run_agent.py nab.com.au
+  python run_agent.py https://www.commbank.com.au
+  
+  # Docker usage
+  docker run smart-mirror-agent nab.com.au
+        """
+    )
+    
+    parser.add_argument(
+        'url', 
+        nargs='?',
+        help='Target website URL (e.g., nab.com.au, example.com). Auto-fills the input but keeps interactive display.'
+    )
+    
+    return parser.parse_args()
 
 async def run_agent_interactive():
     """Run the agent with user input"""
@@ -50,15 +129,48 @@ async def run_agent_interactive():
         print(" Agent operating autonomously...")
         print()
         
-        # Create agent
-        agent = SmartMirrorAgent(memory_path="interactive_agent_memory.json")
+        # Start comprehensive logging
+        with CrawlSession(target_url, "./output/logs") as logger:
+            logger.log_phase("INITIALIZATION", f"Target: {target_url}")
+            
+            # Create agent
+            agent = SmartMirrorAgent(memory_path="interactive_agent_memory.json")
+            
+            try:
+                print(" Processing website...")
+                logger.log_phase("CRAWLING", "Starting autonomous crawl process")
+                
+                # Run the agent - it decides everything
+                success, metrics, mirror_path = await agent.process_url(target_url)
+                
+                logger.log_phase("QUALITY_ASSESSMENT", "Analyzing crawl quality")
+                
+                # Log metrics
+                if metrics:
+                    metrics_dict = {
+                        "success": success,
+                        "content_completeness": getattr(metrics, 'content_completeness', 'N/A'),
+                        "asset_coverage": getattr(metrics, 'asset_coverage', 'N/A'),
+                        "navigation_integrity": getattr(metrics, 'navigation_integrity', 'N/A'),
+                        "visual_fidelity": getattr(metrics, 'visual_fidelity', 'N/A'),
+                        "overall_score": getattr(metrics, 'overall_score', 'N/A'),
+                        "site_coverage": getattr(metrics, 'site_coverage', 'N/A'),
+                        "mirror_path": mirror_path or 'N/A'
+                    }
+                    logger.log_metrics(metrics_dict)
+                
+                logger.log_phase("RESULTS", "Displaying crawl results")
+                
+            except Exception as e:
+                logger.log_error(e, "agent_process")
+                success, metrics, mirror_path = False, None, None
+            finally:
+                # Ensure agent resources are cleaned up
+                if hasattr(agent, 'cleanup'):
+                    await agent.cleanup()
+                    logger.log_phase("CLEANUP", "Agent resources cleaned up")
         
-        print(" Processing website...")
-        
-        # Run the agent - it decides everything
-        success, metrics, mirror_path = await agent.process_url(target_url)
-        
-        # Display results
+        # Display results (after logging context ends)
         print("\n" + "=" * 60)
         print(" RESULTS")
         print("=" * 60)
@@ -68,17 +180,20 @@ async def run_agent_interactive():
         else:
             print(" Crawl failed or had issues")
         
-        print(f"\n Quality Metrics:")
-        print(f"   Overall Score:        {metrics.overall_score:.1%}")
-        print(f"   Content Completeness: {metrics.content_completeness:.1%}")
-        print(f"   Asset Coverage:       {metrics.asset_coverage:.1%}")
-        print(f"   Navigation Integrity: {metrics.navigation_integrity:.1%}")
-        print(f"   Visual Fidelity:      {metrics.visual_fidelity:.1%}")
-        print(f"   Site Coverage:        {metrics.site_coverage:.1%} (90% target)")
-        print(f"   URL Quality Ratio:    {metrics.url_quality_ratio:.1%} ({metrics.total_filtered_urls} filtered)")
+        if metrics:
+            print(f"\n Quality Metrics:")
+            print(f"   Overall Score:        {metrics.overall_score:.1%}")
+            print(f"   Content Completeness: {metrics.content_completeness:.1%}")
+            print(f"   Asset Coverage:       {metrics.asset_coverage:.1%}")
+            print(f"   Navigation Integrity: {metrics.navigation_integrity:.1%}")
+            print(f"   Visual Fidelity:      {metrics.visual_fidelity:.1%}")
+            print(f"   Site Coverage:        {metrics.site_coverage:.1%} (90% target)")
+            print(f"   URL Quality Ratio:    {metrics.url_quality_ratio:.1%} ({metrics.total_filtered_urls} filtered)")
+        else:
+            print(f"\n Quality Metrics: Not available due to crawl failure")
         
-        # Show filtering breakdown if significant
-        if metrics.total_filtered_urls > 5:
+        # Show filtering breakdown if significant  
+        if metrics and hasattr(metrics, 'total_filtered_urls') and metrics.total_filtered_urls > 5:
             print(f"\n Smart Filtering Results:")
             if metrics.filtering_breakdown:
                 sorted_filters = sorted(metrics.filtering_breakdown.items(), key=lambda x: x[1], reverse=True)
@@ -88,17 +203,18 @@ async def run_agent_interactive():
                         print(f"   {category_name}: {count} URLs")
         
         # Quality interpretation
-        score = metrics.overall_score
-        if score >= 0.9:
-            print("\n EXCELLENT! Achieved 90%+ target success rate")
-        elif score >= 0.8:
-            print("\n GOOD performance")
-        elif score >= 0.7:
-            print("\n  ACCEPTABLE - minor improvements needed")
-        elif score >= 0.6:
-            print("\n NEEDS WORK - significant improvements needed")
-        else:
-            print("\n FAILED - major strategy revision required")
+        if metrics and hasattr(metrics, 'overall_score'):
+            score = metrics.overall_score
+            if score >= 0.9:
+                print("\n EXCELLENT! Achieved 90%+ target success rate")
+            elif score >= 0.8:
+                print("\n GOOD performance")
+            elif score >= 0.7:
+                print("\n  ACCEPTABLE - minor improvements needed")
+            elif score >= 0.6:
+                print("\n NEEDS WORK - significant improvements needed")
+            else:
+                print("\n FAILED - major strategy revision required")
         
         # Show crawl details
         if hasattr(agent.crawler, 'get_crawl_summary'):
@@ -131,11 +247,11 @@ async def run_agent_interactive():
                     for name, path in entries.items():
                         print(f"   {name}: {path}")
                         
-                    # Show how to serve
-                    print(f"\n To view the mirror:")
-                    print(f"   1. cd {Path(mirror_path).parent}")
-                    print(f"   2. python -m http.server 8000")
-                    print(f"   3. Open browser to: http://localhost:8000/{Path(mirror_path).name}/")
+                    # Start HTTP server automatically
+                    start_mirror_server(mirror_path)
+                else:
+                    # Fallback if no entry points
+                    start_mirror_server(mirror_path)
         
         print("\n" + "=" * 60)
         
@@ -143,17 +259,28 @@ async def run_agent_interactive():
         print()
         run_another = input("Run another site? (y/n): ").strip().lower()
         if run_another in ('y', 'yes'):
-            await run_agent_interactive()
+            return True  # Signal to continue
         else:
             print("\n Thanks for using SmartMirrorAgent!")
+            return False  # Signal to exit
             
     except KeyboardInterrupt:
         print("\n\n⏹  Cancelled by user")
+        return False
     except Exception as e:
         print(f"\n Error: {e}")
         import traceback
         traceback.print_exc()
+        return False
+
+async def main():
+    """Main loop to handle multiple crawls without recursion"""
+    print("Starting SmartMirrorAgent Interactive Mode...")
+    
+    while True:
+        continue_crawling = await run_agent_interactive()
+        if not continue_crawling:
+            break
 
 if __name__ == "__main__":
-    print("Starting SmartMirrorAgent Interactive Mode...")
-    asyncio.run(run_agent_interactive())
+    asyncio.run(main())

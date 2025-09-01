@@ -13,15 +13,18 @@ services:
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Mount output directory to host for persistent storage
-      - ./output:/app/output
+      - ./ai-agent-demo-factory-backend/crawl4ai-agent/output:/app/backend/crawl4ai-agent/output
+      # Mount logs directory to host for persistent log storage
+      - ./logs:/app/backend/crawl4ai-agent/output/logs
       # Mount source code for development (optional)
       - ./ai-agent-demo-factory-backend:/app/backend
       - ./crawl4ai:/app/crawl4ai
       # Mount config files
       - ./CLAUDE.md:/app/CLAUDE.md
     ports:
-      # Expose port for future web interface
-      - "8080:8080"
+      # Expose port for viewing static mirrors
+      - "8000:8000"
+
     stdin_open: true
     tty: true
     restart: unless-stopped

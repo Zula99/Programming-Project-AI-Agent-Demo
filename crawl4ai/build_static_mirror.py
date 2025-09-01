@@ -19,7 +19,8 @@ RESPECT_ROBOTS        = False                        # honor robots for asset UR
 MIRROR_EXTERNAL_ASSETS= True                        # download CDN assets for better demos
 STRIP_SCRIPTS         = False                       # set True to remove <script> tags
 REWRITE_CSS_URLS      = True                        # rewrite url(...) in CSS to local paths
-MAX_WINDOWS_PATH      = 250 if os.name == "nt" else 4096 # Windows max path workaround
+# Docker runs on Linux - no path length limits needed
+MAX_PATH_LENGTH = 4096  # Linux filesystem limit (much higher than needed)
 RETRIES               = 2                           # retry asset fetches this many times on failure
 TIMEOUT_TOTAL         = 45                          # seconds total timeout for asset fetch
 MIRROR_EXTERNAL_ASSETS = True
@@ -149,8 +150,8 @@ def asset_local_path(asset_url: str) -> Path:
 
     target = (OUTPUT_ROOT / host).joinpath(*segs[:-1], filename)
 
-    # Windows MAX_PATH guard → hashed fallback
-    if len(str(target)) >= MAX_WINDOWS_PATH and os.name == "nt":
+    # Only hash extremely long paths (very rare in practice)
+    if len(str(target)) >= MAX_PATH_LENGTH:
         ext = _ext_of(asset_url) or ""
         hashed = _sha1(asset_url)
         target = OUTPUT_ROOT / host / "_assets" / (hashed + ext)

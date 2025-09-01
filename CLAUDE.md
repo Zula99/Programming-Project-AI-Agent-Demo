@@ -295,30 +295,107 @@ class AdaptiveCrawler:
 **Solution**: Layer AI API calls on top of existing solid foundation - enhance rather than replace
 
 #### Phase 1: AI Content Classification Layer
+**Goal**: Replace rigid rule-based filtering with intelligent demo worthiness detection
+**Approach**: Universal classifier for demo factory - works across all industries without configuration
+
 ```python
 class AIContentClassifier:
     def __init__(self, llm_client):
         self.llm_client = llm_client
         self.fallback_classifier = HeuristicClassifier()  # Keep existing logic
     
-    async def is_page_demo_worthy(self, url: str, content: str, context: str = "business") -> tuple[bool, float, str]:
+    async def is_content_demo_worthy(self, url: str, content: str, title: str = "") -> tuple[bool, float, str]:
+        """Universal demo worthiness - optimized for demo factory speed & search quality"""
         try:
             prompt = f"""
-            Analyze this webpage for demo site value:
+            Analyze this content for demo website value (any industry):
             URL: {url}
+            Title: {title}
             Content: {content[:1000]}
-            Demo Context: {context}
             
-            Rate worthiness (0-100), explain reasoning, focus on client impression value.
+            Key questions:
+            - Would this content showcase the site well in a demo?
+            - Is this useful for search functionality/AI chatbot responses?
+            - Does this represent valuable site content to potential customers?
+            - Or is this technical junk/spam/admin/tracking content?
+            
+            Examples of HIGH value:
+            - Product pages, service descriptions, about pages
+            - Business PDFs (annual reports, brochures, guides)
+            - Main navigation content, key landing pages
+            - Content that would impress in a client demonstration
+            
+            Examples of LOW value:
+            - Debug logs, temp files, backup pages
+            - Admin panels, internal tools, API endpoints
+            - Tracking pixels, analytics, session management
+            - Duplicate/auto-generated spam content
+            
+            Rate 0-100 for demo worthiness. Focus on search/demo quality.
             Return: score, reasoning
             """
             
             response = await self.llm_client.classify(prompt)
             return self.parse_ai_response(response)
         except Exception:
-            # Fallback to existing heuristic classification
+            # Fallback to enhanced heuristic classification
             return self.fallback_classifier.classify(url, content)
+
+    def _enhanced_business_value_scoring(self, url: str, content: str, title: str) -> float:
+        """Enhanced heuristic scoring for demo worthiness (fallback method)"""
+        score = 0.5  # baseline
+        text = f"{url} {title} {content}".lower()
+        
+        # Universal high-value indicators
+        demo_value_terms = [
+            'product', 'service', 'about', 'contact', 'pricing', 'solution',
+            'feature', 'benefit', 'overview', 'home', 'main', 'landing'
+        ]
+        
+        # Boost for demo-worthy content
+        for term in demo_value_terms:
+            if term in text:
+                score += 0.15
+                break
+        
+        # File type intelligence (universal approach)
+        if url.endswith('.pdf'):
+            # Smart PDF classification
+            if any(keyword in text for keyword in 
+                  ['report', 'guide', 'brochure', 'whitepaper', 'manual', 'overview']):
+                score += 0.3  # Valuable business document
+            elif any(keyword in text for keyword in 
+                    ['debug', 'log', 'temp', 'cache', 'backup']):
+                score -= 0.4  # Technical junk PDF
+        
+        # Penalize technical/admin content (universal)
+        junk_indicators = ['debug', 'admin', 'internal', '_temp', 'cache', 'log']
+        if any(term in text for term in junk_indicators):
+            score -= 0.3
+        
+        return max(0.0, min(1.0, score))
 ```
+
+**Why Universal Approach for Demo Factory:**
+- **Speed**: Works on any client site immediately - no industry configuration needed
+- **Search Quality**: Prioritizes content that makes search/chatbot functionality impressive
+- **Demo Focus**: Optimizes for "wow factor" in client presentations
+- **Comprehensive Coverage**: Better to include too much searchable content than too little
+- **Cross-Industry**: Banking Monday, e-commerce Tuesday, healthcare Wednesday
+
+**Implementation Notes:**
+- **File Location**: Create `crawl4ai/ai_content_classifier.py`
+- **Integration Point**: Replace `is_url_demo_worthy()` calls in crawler
+- **API Options**: OpenAI, Claude, or local LLM (Ollama)
+- **Fallback**: Enhanced heuristic classifier maintains quality without API dependency
+- **Performance**: Batch API calls, cache results for similar URLs
+- **Cost Control**: Rate limiting, content truncation, fallback thresholds
+
+**Benefits Over Current Rule-Based Filtering:**
+- **Smarter PDF handling**: "Annual-Report-2024.pdf" ✅ vs "debug-temp.pdf" ❌
+- **Business content detection**: "/business/loans/commercial/agriculture" ✅
+- **Context awareness**: Same URL judged differently based on surrounding content
+- **Reduced false negatives**: Current rigid rules miss valuable demo content
 
 #### Phase 2: AI Strategy Refinement Layer  
 ```python

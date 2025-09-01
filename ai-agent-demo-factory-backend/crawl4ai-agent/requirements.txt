@@ -16,7 +16,7 @@ pandas>=1.5.0
 numpy>=1.24.0
 
 # Learning and memory
-sqlite3  # Built-in Python module
+# sqlite3 is built-in to Python
 json5>=0.9.0
 
 # Web crawling enhancement

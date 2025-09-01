@@ -187,10 +187,15 @@ class AdaptiveCrawler:
                     crawled_urls.add(current_url)
                     
                     # Crawl with JavaScript rendering
+                    # Banking sites need longer wait times for complex JS loading
+                    delay = 2.0
+                    if any(bank in current_url.lower() for bank in ['commbank', 'nab.com.au', 'westpac', 'anz']):
+                        delay = 8.0  # Much longer wait for banking sites
+                    
                     result = await crawler.arun(
                         url=current_url,
                         wait_for=config.get('wait_for', 'networkidle'),
-                        delay_before_return_html=2.0,
+                        delay_before_return_html=delay,
                         screenshot=True,
                         bypass_cache=True
                     )

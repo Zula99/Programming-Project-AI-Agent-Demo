@@ -9,22 +9,12 @@ ENV LC_ALL=C.UTF-8
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install basic system dependencies 
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
     xvfb \
-    # For Playwright browser automation
-    libnss3-dev \
-    libatk-bridge2.0-dev \
-    libdrm-dev \
-    libxcomposite-dev \
-    libxdamage-dev \
-    libxrandr-dev \
-    libgbm-dev \
-    libxss-dev \
-    libasound2-dev \
     # For crawling and processing
     libxml2-dev \
     libxslt1-dev \
@@ -37,25 +27,34 @@ RUN apt-get update && apt-get install -y \
 COPY ai-agent-demo-factory-backend/crawl4ai-agent/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers
+# Create Playwright browser cache directory and set environment
+RUN mkdir -p /app/.cache/ms-playwright && chmod 777 /app/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
+
+# Install Playwright browsers and system dependencies as root
 RUN playwright install chromium
-RUN playwright install-deps chromium
+RUN playwright install-deps chromium || echo "Some deps failed but continuing..."
 
 # Copy the application code
 COPY ai-agent-demo-factory-backend/ /app/backend/
 COPY crawl4ai/ /app/crawl4ai/
 COPY CLAUDE.md /app/
-COPY README.md /app/ 2>/dev/null || true
+# Copy application files
+# Note: README.md is optional, build will continue if not found
 
 # Create output directory with proper permissions
 RUN mkdir -p /app/output && chmod 777 /app/output
 
 # Set Python path to include our modules
 ENV PYTHONPATH=/app/backend:/app/crawl4ai:/app
+# Set crawl4ai database path to writable location
+ENV CRAWL4AI_BASE_DIRECTORY=/app/output/.crawl4ai
 
 # Create a non-root user for security
-RUN groupadd -r aiagent && useradd -r -g aiagent aiagent
+RUN groupadd -r aiagent && useradd -r -g aiagent -d /app aiagent
 RUN chown -R aiagent:aiagent /app
+# Create home directory for crawl4ai database
+RUN mkdir -p /home/aiagent && chown -R aiagent:aiagent /home/aiagent
 USER aiagent
 
 # Default working directory for crawl operations

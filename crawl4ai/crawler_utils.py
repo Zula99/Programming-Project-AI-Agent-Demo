@@ -103,22 +103,22 @@ def is_demo_worthy_url(url: str) -> tuple[bool, str]:
     path = parsed.path.lower()
     query = parsed.query.lower()
     
-    # Check path length (likely auto-generated if too long)
-    if len(path) > 120:
+    # Check for extremely long paths (likely auto-generated/spam)
+    if len(path) > 300:  # Much more generous limit for business URLs
         return False, "path_too_long"
     
     # Check query string complexity (tracking/session URLs)
     if len(query) > 100:
         return False, "complex_query"
     
-    # Skip obvious non-content paths
+    # Skip technical/backend paths (but allow business content)
     skip_path_patterns = [
         '/api/', '/cgi-bin/', '/internal/', '/admin/', '/_',
         '/tracking/', '/analytics/', '/pixel/', '/beacon/',
-        '/download/', '/pdf/', '/export/', '/print/',
         '/ajax/', '/json/', '/xml/', '/rss/', '/feed/',
         '/oauth/', '/auth/', '/login/', '/logout/', '/session/',
-        '/forms/submit/', '/handlers/', '/processors/'
+        '/forms/submit/', '/handlers/', '/processors/',
+        # Keep: /download/, /pdf/, /export/, /print/ - these might have business value
     ]
     
     for pattern in skip_path_patterns:
@@ -137,10 +137,12 @@ def is_demo_worthy_url(url: str) -> tuple[bool, str]:
             return False, "tracking_params"
     
     # Skip file extensions that aren't useful for demos
+    # Keep: .pdf (might have valuable business docs), .doc/.docx, .ppt/.pptx (business content)
     useless_extensions = [
-        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
         '.zip', '.rar', '.tar', '.gz', '.exe', '.dmg', '.msi',
-        '.xml', '.json', '.csv', '.txt', '.log', '.tmp'
+        '.xml', '.json', '.csv', '.log', '.tmp', '.bak',
+        # Technical files
+        '.js.map', '.css.map', '.woff', '.woff2', '.eot', '.ttf'
     ]
     
     for ext in useless_extensions:
