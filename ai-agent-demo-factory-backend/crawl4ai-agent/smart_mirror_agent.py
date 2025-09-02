@@ -292,12 +292,26 @@ class SmartMirrorAgent:
             self.logger.info(f"   Request delay: {request_gap}s")
             self.logger.info(f"   Strategy: {strategy.value}")
             
+            # Get browser configuration from strategy
+            strategy_config = self.strategy_to_config(strategy)
+            
             success, crawl_data = await self.crawler.crawl_website(
                 url=url,
                 max_pages=max_pages,
                 request_gap=request_gap,
-                user_agent="Mozilla/5.0 (compatible; SmartMirrorAgent/1.0)",
-                respect_robots=False  # Demo sites ignore robots.txt
+                user_agent=strategy_config.get('user_agent', "Mozilla/5.0 (compatible; SmartMirrorAgent/1.0)"),
+                respect_robots=False,  # Demo sites ignore robots.txt
+                # Pass browser configuration
+                timeout=strategy_config.get('timeout', 30),
+                wait_for=strategy_config.get('wait_for', 'networkidle'),
+                headless=strategy_config.get('headless', True),
+                screenshot=strategy_config.get('screenshot', False),
+                javascript=strategy_config.get('javascript', True),
+                max_concurrent=strategy_config.get('max_concurrent', 5),
+                # Anti-detection features
+                stealth_mode=strategy_config.get('stealth_mode', False),
+                realistic_viewport=strategy_config.get('realistic_viewport', True),
+                extra_headers=strategy_config.get('extra_headers', {})
             )
             
             # Add reconnaissance data to crawl results
@@ -338,23 +352,53 @@ class SmartMirrorAgent:
         """Convert strategy enum to crawler configuration"""
         configs = {
             CrawlStrategy.BASIC_HTTP: {
+                'timeout': 10,
+                'max_concurrent': 10,
+                'delay': 0.5,
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                 "max_pages": 50,
-                "request_gap": 0.8,
+                "request_gap": 0.5,
                 "respect_robots": False
             },
             CrawlStrategy.JAVASCRIPT_RENDER: {
+                'timeout': 30,
+                'max_concurrent': 5,
+                'delay': 1.0,
+                'wait_for': 'networkidle',
+                'javascript': True,
                 "max_pages": 100,
                 "request_gap": 1.0,
                 "respect_robots": False
             },
             CrawlStrategy.FULL_BROWSER: {
+                'timeout': 45,
+                'max_concurrent': 3,
+                'delay': 2.0,  # Adjusted for CommBank testing
+                'headless': False,  # Non-headless for anti-detection
+                'wait_for': 'networkidle',
+                'screenshot': True,
+                'stealth_mode': True,  # Enable anti-detection
+                'realistic_viewport': True,
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'extra_headers': {
+                    'Accept-Language': 'en-AU,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none'
+                },
                 "max_pages": 80,
-                "request_gap": 1.2,
+                "request_gap": 2.0,  # Use delay value for request_gap
                 "respect_robots": False
             },
             CrawlStrategy.HYBRID: {
+                'timeout': 20,
+                'max_concurrent': 7,
+                'delay': 1.0,
+                'adaptive': True,
                 "max_pages": 120,
-                "request_gap": 0.6,
+                "request_gap": 1.0,
                 "respect_robots": False
             }
         }
@@ -532,8 +576,8 @@ class SmartMirrorAgent:
         
         # Final sample size with reasonable bounds
         sample_size = max(base_sample, section_minimum)
-        sample_size = min(sample_size, 200)  # Maximum 200 pages
-        sample_size = max(sample_size, 15)   # Minimum 15 pages
+        sample_size = min(sample_size, 50)  # Maximum 200 pages @CLAUDE This sets max page limit for crawl
+        sample_size = max(sample_size, 15)   # Minimum 15 pages @CLAUDE This sets minimum page limit for crawl
         
         return sample_size
     

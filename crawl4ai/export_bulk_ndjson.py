@@ -92,7 +92,7 @@ def main():
             out.append(json.dumps(doc, ensure_ascii=False))
 
     Path("bulk.ndjson").write_text("\n".join(out) + "\n", encoding="utf-8")
-    print(f"✅ Wrote {len(out)//2} docs to bulk.ndjson")
+    print(f" Wrote {len(out)//2} docs to bulk.ndjson")
 
 if __name__ == "__main__":
     main()

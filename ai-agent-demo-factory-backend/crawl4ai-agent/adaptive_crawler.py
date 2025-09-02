@@ -61,7 +61,7 @@ class AdaptiveCrawler:
             CrawlStrategy.FULL_BROWSER: {
                 'timeout': 45,
                 'max_concurrent': 3,
-                'delay': 2.0,
+                'delay': 2.0, #Adjust this for commbank testing 
                 'headless': True,
                 'wait_for': 'networkidle',
                 'screenshot': True

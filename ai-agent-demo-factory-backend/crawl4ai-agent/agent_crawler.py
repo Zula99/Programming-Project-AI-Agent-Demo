@@ -25,7 +25,18 @@ class AgentCrawler:
                           request_gap: float = 0.6,
                           user_agent: str = "Mozilla/5.0 (compatible; SmartMirrorAgent/1.0)",
                           respect_robots: bool = False,  # Demo sites - ignore robots.txt
-                          output_path: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
+                          output_path: Optional[str] = None,
+                          # Browser configuration for JS-heavy sites
+                          timeout: int = 30,
+                          wait_for: str = 'networkidle',
+                          headless: bool = True,
+                          screenshot: bool = False,
+                          javascript: bool = True,
+                          max_concurrent: int = 5,
+                          # Anti-detection features
+                          stealth_mode: bool = False,
+                          realistic_viewport: bool = True,
+                          extra_headers: Optional[Dict[str, str]] = None) -> Tuple[bool, Dict[str, Any]]:
         """
         Crawl a website with the specified configuration
         
@@ -66,7 +77,18 @@ class AgentCrawler:
                 request_gap=request_gap,
                 user_agent=user_agent,
                 respect_robots=respect_robots,
-                start_url=url
+                start_url=url,
+                # Browser configuration
+                timeout=timeout,
+                wait_for=wait_for,
+                headless=headless,
+                screenshot=screenshot,
+                javascript=javascript,
+                max_concurrent=max_concurrent,
+                # Anti-detection features
+                stealth_mode=stealth_mode,
+                realistic_viewport=realistic_viewport,
+                extra_headers=extra_headers or {}
             )
             
             print(f"Starting crawl of {url} (max {max_pages} pages)")

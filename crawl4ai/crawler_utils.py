@@ -9,6 +9,19 @@ from collections import deque
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Any, Tuple
 from dataclasses import dataclass
+import asyncio
+import logging
+
+# AI Classification imports (with fallback if not available)
+try:
+    import sys
+    sys.path.append(str(Path(__file__).parent.parent / "ai-agent-demo-factory-backend" / "crawl4ai-agent"))
+    from ai_content_classifier import AIContentClassifier, HeuristicClassifier, ClassificationResult
+    from ai_config import get_ai_config
+    AI_AVAILABLE = True
+except ImportError as e:
+    AI_AVAILABLE = False
+    print(f"AI classification not available: {e}")
 
 # Enable long paths on Windows
 if os.name == 'nt':
@@ -39,6 +52,17 @@ class CrawlConfig:
     user_agent: str = "Mozilla/5.0 (compatible; Crawl4AI-Agent/1.0)"
     respect_robots: bool = True
     start_url: Optional[str] = None
+    # Browser configuration for JS-heavy sites
+    timeout: int = 30
+    wait_for: str = 'networkidle'  # 'networkidle', 'domcontentloaded', 'load'
+    headless: bool = True
+    screenshot: bool = False
+    javascript: bool = True
+    max_concurrent: int = 5
+    # Anti-detection features
+    stealth_mode: bool = False
+    realistic_viewport: bool = True
+    extra_headers: dict = None
 
 # URL helpers
 DROP_QUERY_KEYS = {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid","_ga","_gl"}
@@ -161,6 +185,126 @@ def is_demo_worthy_url(url: str) -> tuple[bool, str]:
     
     return True, ""
 
+# AI-Enhanced Classification Functions
+
+_ai_classifier = None  # Global classifier instance
+_logger = logging.getLogger(__name__)
+
+def get_ai_classifier() -> Optional[AIContentClassifier]:
+    """Get or create the global AI classifier instance"""
+    global _ai_classifier
+    if not AI_AVAILABLE:
+        return None
+        
+    if _ai_classifier is None:
+        try:
+            config = get_ai_config()
+            _ai_classifier = AIContentClassifier(
+                api_key=config.openai_api_key or config.anthropic_api_key,
+                model=config.preferred_model
+            )
+        except Exception as e:
+            _logger.warning(f"Could not initialize AI classifier: {e}")
+            return None
+    
+    return _ai_classifier
+
+async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "") -> tuple[bool, str, dict]:
+    """
+    AI-enhanced URL worthiness check with fallback to heuristics
+    
+    Returns:
+        (is_worthy, reason, classification_details)
+    """
+    classification_details = {
+        'method': 'unknown',
+        'confidence': 0.0,
+        'reasoning': '',
+        'ai_available': AI_AVAILABLE
+    }
+    
+    # First, check basic technical filters (these are still useful)
+    basic_worthy, basic_reason = is_demo_worthy_url(url)
+    if not basic_worthy:
+        classification_details.update({
+            'method': 'basic_filter',
+            'confidence': 0.9,
+            'reasoning': f'Failed basic filter: {basic_reason}'
+        })
+        return False, basic_reason, classification_details
+    
+    # Try AI classification if available
+    ai_classifier = get_ai_classifier()
+    if ai_classifier:
+        try:
+            result: ClassificationResult = await ai_classifier.classify_content(url, content, title)
+            classification_details.update({
+                'method': result.method_used,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning
+            })
+            
+            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+            
+        except Exception as e:
+            _logger.warning(f"AI classification failed for {url}: {e}")
+            # Fall through to heuristic
+    
+    # Fallback to enhanced heuristic (better than just basic filters)
+    if AI_AVAILABLE:
+        try:
+            heuristic_classifier = HeuristicClassifier()
+            result = heuristic_classifier.classify(url, content, title)
+            classification_details.update({
+                'method': result.method_used,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning
+            })
+            
+            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+            
+        except Exception as e:
+            _logger.warning(f"Heuristic classification failed for {url}: {e}")
+    
+    # Final fallback to basic filters (already passed above)
+    classification_details.update({
+        'method': 'basic_only',
+        'confidence': 0.7,
+        'reasoning': 'Only basic filtering applied'
+    })
+    return True, "", classification_details
+
+def is_demo_worthy_url_sync(url: str, content: str = "", title: str = "") -> tuple[bool, str]:
+    """
+    Synchronous version of AI-enhanced URL worthiness check
+    Uses heuristics only (no async AI calls)
+    """
+    # Basic technical filters first
+    basic_worthy, basic_reason = is_demo_worthy_url(url)
+    if not basic_worthy:
+        return False, basic_reason
+    
+    # Try enhanced heuristic if available
+    if AI_AVAILABLE:
+        try:
+            heuristic_classifier = HeuristicClassifier()
+            result = heuristic_classifier.classify(url, content, title)
+            # Return simple reason for worthy URLs, full reasoning for filtered URLs
+            if result.is_worthy:
+                return True, ""
+            else:
+                # Extract just the key reason, not the full "Heuristic: ..." text
+                reason = result.reasoning.replace("Heuristic: ", "").split(";")[0].split(",")[0]
+                # Don't return generic messages as filter reasons
+                if "default scoring" in reason.lower() or not reason.strip():
+                    reason = "filtered"
+                return False, reason
+        except Exception as e:
+            _logger.warning(f"Heuristic classification failed for {url}: {e}")
+    
+    # Fallback to basic (already passed)
+    return True, ""
+
 def to_abs(base: str, href: str | None) -> str | None:
     """Convert relative URL to absolute"""
     if not href:
@@ -239,6 +383,7 @@ class CrawlResult:
     content_type: str = ""
     links: Set[str] = None
     error: Optional[str] = None
+    ai_classification: Optional[Dict[str, Any]] = None
     
     def __post_init__(self):
         if self.links is None:
@@ -250,13 +395,64 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
         if config.request_gap > 0:
             time.sleep(config.request_gap)
             
-        result = await crawler.arun(url)
+        # Configure page-level settings for JS-heavy sites
+        arun_kwargs = {
+            'timeout': config.timeout * 1000,  # Convert to milliseconds
+            'wait_for': config.wait_for,
+            'screenshot': config.screenshot
+        }
+        
+        # Add stealth mode if enabled
+        if config.stealth_mode:
+            # Try to apply stealth via custom JS injection
+            stealth_js = """
+            // Basic anti-detection measures
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            Object.defineProperty(navigator, 'languages', {get: () => ['en-AU', 'en']});
+            window.chrome = {runtime: {}};
+            """
+            arun_kwargs['js_code'] = [stealth_js]
+        
+        # Filter out None values and invalid parameters
+        arun_kwargs = {k: v for k, v in arun_kwargs.items() if v is not None}
+        
+        result = await crawler.arun(url, **arun_kwargs)
         
         # Extract content
         raw_html = getattr(result, "raw_html", None) or getattr(result, "html", None) or ""
         content_md = getattr(result, "markdown", None) or getattr(result, "clean_text", "") or ""
         title = getattr(result, "title", "") or ""
         content_type = getattr(result, "content_type", "") or ""
+        
+        # AI Content Classification - analyze actual page content
+        ai_worthy = True  # default to worthy
+        ai_reasoning = ""
+        ai_confidence = 0.7
+        
+        if AI_AVAILABLE:
+            try:
+                # Use AI to classify the actual page content
+                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title)
+                ai_worthy = is_worthy
+                ai_reasoning = details.get('reasoning', reason)
+                ai_confidence = details.get('confidence', 0.7)
+                
+                # Log AI decisions for monitoring
+                _logger.info(f"AI Classification: {url} -> {'WORTHY' if ai_worthy else 'FILTERED'} ({ai_confidence:.2f}) - {ai_reasoning[:100]}")
+                
+                # If AI says not worthy, skip this page entirely
+                if not ai_worthy:
+                    return CrawlResult(
+                        url=url,
+                        success=False,
+                        error=f"AI classified as not demo-worthy: {ai_reasoning}",
+                        ai_classification={'worthy': False, 'reasoning': ai_reasoning, 'confidence': ai_confidence}
+                    )
+                    
+            except Exception as e:
+                _logger.warning(f"AI classification failed for {url}: {e}, proceeding with content")
+                # Continue with page if AI fails
         
         # Extract links
         links = extract_links(raw_html, url)
@@ -268,7 +464,8 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
             markdown=content_md,
             title=title,
             content_type=content_type,
-            links=links
+            links=links,
+            ai_classification={'worthy': ai_worthy, 'reasoning': ai_reasoning, 'confidence': ai_confidence}
         )
         
     except Exception as e:
@@ -363,7 +560,40 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     
     total_urls_discovered = 0
     
-    async with AsyncWebCrawler(user_agent=config.user_agent) as crawler:
+    # Configure crawler with browser settings for JS-heavy sites
+    crawler_config = {
+        'user_agent': config.user_agent,
+        'headless': config.headless,
+        'timeout': config.timeout
+    }
+    
+    # Add JS-specific settings if needed
+    if config.javascript:
+        crawler_config['wait_for'] = config.wait_for
+    
+    # Add stealth mode settings  
+    if config.stealth_mode:
+        # Check for playwright-stealth availability
+        try:
+            import playwright_stealth
+            _logger.info("Playwright-stealth available - enabling anti-detection")
+            crawler_config.update({
+                'viewport_width': 1920 if config.realistic_viewport else None,
+                'viewport_height': 1080 if config.realistic_viewport else None,
+                'stealth_mode': True  # Custom flag for our stealth implementation
+            })
+        except ImportError as e:
+            _logger.warning(f"Playwright-stealth not available ({e}) - using basic anti-detection")
+            crawler_config.update({
+                'viewport_width': 1920 if config.realistic_viewport else None,
+                'viewport_height': 1080 if config.realistic_viewport else None,
+            })
+    
+    # Add extra headers for anti-detection
+    if config.extra_headers:
+        crawler_config['extra_headers'] = config.extra_headers
+    
+    async with AsyncWebCrawler(**crawler_config) as crawler:
         while q and pages_crawled < config.max_pages:
             url = q.popleft()
             if url in seen:
@@ -380,8 +610,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 filtered_urls["binary_files"] += 1
                 continue
             
-            # Smart URL filtering
-            is_worthy, filter_reason = is_demo_worthy_url(url)
+            # Smart URL filtering (enhanced with AI heuristics)
+            is_worthy, filter_reason = is_demo_worthy_url_sync(url)
             if not is_worthy:
                 filtered_urls[filter_reason] += 1
                 print(f"  ⏭️  Skipped {url} ({filter_reason})")
@@ -426,7 +656,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     if looks_binary(link_url):
                         continue
                         
-                    is_worthy, _ = is_demo_worthy_url(link_url)
+                    is_worthy, _ = is_demo_worthy_url_sync(link_url)
                     if is_worthy:
                         worthy_links.append(link_url)
                 
