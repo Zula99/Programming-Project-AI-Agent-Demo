@@ -576,8 +576,8 @@ class SmartMirrorAgent:
         
         # Final sample size with reasonable bounds
         sample_size = max(base_sample, section_minimum)
-        sample_size = min(sample_size, 50)  # Maximum 200 pages @CLAUDE This sets max page limit for crawl
-        sample_size = max(sample_size, 15)   # Minimum 15 pages @CLAUDE This sets minimum page limit for crawl
+        sample_size = min(sample_size, 10)  # Maximum 200 pages @CLAUDE This sets max page limit for crawl
+        sample_size = max(sample_size, 10)   # Minimum 15 pages @CLAUDE This sets minimum page limit for crawl
         
         return sample_size
     
