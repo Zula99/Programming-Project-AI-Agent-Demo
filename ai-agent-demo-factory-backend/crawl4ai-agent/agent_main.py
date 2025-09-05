@@ -43,7 +43,7 @@ class SmartMirrorAgentIntegrated:
     Fully integrated SmartMirrorAgent with all capabilities
     
     Flow: URL Input → Check Memory → Quick Recon → Strategy Selection → 
-          Adaptive Crawl → Quality Monitoring → Mirror Build → Learning Storage
+          Adaptive Crawl → Quality Monitoring → Learning Storage
     """
     
     def __init__(self, output_dir: str = "./agent_output", memory_db: str = "agent_learning.db"):
@@ -170,14 +170,9 @@ class SmartMirrorAgentIntegrated:
                 learning_time = time.time() - learning_start
                 self.logger.info(" Quality below threshold - no pattern stored")
             
-            # Step 7: Static Mirror Building (placeholder)
-            mirror_start = time.time()
-            self.logger.info(" Phase 6: Static Mirror Building")
-            
-            mirror_path = await self._build_static_mirror(crawl_data, url)
-            mirror_time = time.time() - mirror_start
-            
-            self.logger.info(f"   Mirror built at: {mirror_path}")
+            # Output path available for OpenSearch indexing
+            output_path = str(crawl_data.output_dir) if crawl_data.output_dir else ''
+            self.logger.info(f" Output ready at: {output_path}")
             
             # Calculate total processing time
             total_time = time.time() - process_start
@@ -196,7 +191,6 @@ class SmartMirrorAgentIntegrated:
                     'crawling': crawl_time,
                     'quality_assessment': quality_time,
                     'learning_storage': learning_time,
-                    'mirror_building': mirror_time
                 },
                 'reconnaissance': {
                     'site_type': recon_results.site_type.value,
@@ -220,7 +214,7 @@ class SmartMirrorAgentIntegrated:
                     'overall_score': quality_metrics.overall_score
                 },
                 'recommendation': recommendation,
-                'mirror_path': mirror_path,
+                'output_path': output_path,
                 'similar_patterns_found': len(similar_patterns),
                 'learning_stored': quality_metrics.overall_score >= 0.7
             }
@@ -258,26 +252,6 @@ class SmartMirrorAgentIntegrated:
         # Priority 4: Reconnaissance recommendation
         return recon_results.recommended_strategy
     
-    async def _build_static_mirror(self, crawl_data: CrawlData, base_url: str) -> str:
-        """Build static mirror from crawled data (placeholder implementation)"""
-        
-        # This would integrate with the existing build_static_mirror.py
-        # For now, return a placeholder path
-        
-        mirror_dir = self.output_dir / "mirrors" / f"mirror_{int(time.time())}"
-        mirror_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Save crawl data as JSON for now
-        with open(mirror_dir / "crawl_data.json", 'w') as f:
-            json.dump({
-                'base_url': crawl_data.base_url,
-                'total_pages': crawl_data.total_pages,
-                'failed_pages': crawl_data.failed_pages,
-                'assets_summary': {k: len(v) for k, v in crawl_data.assets.items()},
-                'timestamp': datetime.now().isoformat()
-            }, f, indent=2)
-        
-        return str(mirror_dir)
     
     def _update_session_stats(self, quality_score: float, processing_time: float, success: bool):
         """Update session statistics"""
@@ -409,7 +383,7 @@ async def main():
             print(f"Quality Score: {result['quality_metrics']['overall_score']:.1%}")
             print(f"Processing Time: {result['processing_time']['total']:.1f}s")
             print(f"Strategy Used: {result['strategy']['selected']}")
-            print(f"Mirror Path: {result['mirror_path']}")
+            print(f"Output Path: {result['output_path']}")
 
 
 if __name__ == "__main__":

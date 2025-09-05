@@ -36,7 +36,15 @@ class AgentCrawler:
                           # Anti-detection features
                           stealth_mode: bool = False,
                           realistic_viewport: bool = True,
-                          extra_headers: Optional[Dict[str, str]] = None) -> Tuple[bool, Dict[str, Any]]:
+                          extra_headers: Optional[Dict[str, str]] = None,
+                          additional_wait: float = 0.0,
+                          # Enhanced JS rendering features
+                          wait_for_selector: Optional[str] = None,
+                          selector_timeout: int = 10000,
+                          auto_scroll: bool = False,
+                          scroll_delay: int = 1000,
+                          post_load_delay: int = 0,
+                          js_code: Optional[List[str]] = None) -> Tuple[bool, Dict[str, Any]]:
         """
         Crawl a website with the specified configuration
         
@@ -85,10 +93,18 @@ class AgentCrawler:
                 screenshot=screenshot,
                 javascript=javascript,
                 max_concurrent=max_concurrent,
+                additional_wait=additional_wait,
                 # Anti-detection features
                 stealth_mode=stealth_mode,
                 realistic_viewport=realistic_viewport,
-                extra_headers=extra_headers or {}
+                extra_headers=extra_headers or {},
+                # Enhanced JS rendering features
+                wait_for_selector=wait_for_selector,
+                selector_timeout=selector_timeout,
+                auto_scroll=auto_scroll,
+                scroll_delay=scroll_delay,
+                post_load_delay=post_load_delay,
+                js_code=js_code or []
             )
             
             print(f"Starting crawl of {url} (max {max_pages} pages)")

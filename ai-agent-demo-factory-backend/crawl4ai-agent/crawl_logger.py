@@ -13,7 +13,7 @@ import threading
 
 class CrawlLogger:
     """
-    Comprehensive logging system that captures all output during crawl/mirror process.
+    Comprehensive logging system that captures all output during crawl process.
     Automatically saves logs with domain-based naming and incremental numbering.
     """
     

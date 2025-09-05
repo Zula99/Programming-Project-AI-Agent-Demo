@@ -79,7 +79,7 @@ __pycache__/
 env/
 venv/
 .venv/
-
+.claude/
 # Node.js
 node_modules/
 npm-debug.log*

@@ -55,6 +55,7 @@ class CrawlConfig:
     # Browser configuration for JS-heavy sites
     timeout: int = 30
     wait_for: str = 'networkidle'  # 'networkidle', 'domcontentloaded', 'load'
+    additional_wait: float = 0.0  # Extra wait after wait_for condition (for heavy JS)
     headless: bool = True
     screenshot: bool = False
     javascript: bool = True
@@ -63,6 +64,13 @@ class CrawlConfig:
     stealth_mode: bool = False
     realistic_viewport: bool = True
     extra_headers: dict = None
+    # Enhanced JS rendering features
+    wait_for_selector: Optional[str] = None  # CSS selector to wait for
+    selector_timeout: int = 10000  # Timeout for selector wait (ms)
+    auto_scroll: bool = False  # Auto-scroll to trigger lazy loading
+    scroll_delay: int = 1000  # Delay between scroll actions (ms)
+    post_load_delay: int = 0  # Extra delay after all loading (ms)
+    js_code: Optional[List[str]] = None  # JavaScript code to execute
 
 # URL helpers
 DROP_QUERY_KEYS = {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid","_ga","_gl"}
@@ -384,6 +392,7 @@ class CrawlResult:
     links: Set[str] = None
     error: Optional[str] = None
     ai_classification: Optional[Dict[str, Any]] = None
+    html_type: str = "raw"  # "raw" or "rendered"
     
     def __post_init__(self):
         if self.links is None:
@@ -399,12 +408,24 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
         arun_kwargs = {
             'timeout': config.timeout * 1000,  # Convert to milliseconds
             'wait_for': config.wait_for,
-            'screenshot': config.screenshot
+            'screenshot': config.screenshot,
+            'extract_format': 'html'  # Force rendered HTML instead of markdown
         }
+        
+        # Add wait for specific selector if configured
+        if config.wait_for_selector:
+            arun_kwargs['wait_for_selector'] = config.wait_for_selector
+            arun_kwargs['selector_timeout'] = config.selector_timeout
+        
+        # Add post-load delay for JS completion
+        if config.post_load_delay > 0:
+            arun_kwargs['post_load_delay'] = config.post_load_delay
+        
+        # Build JS code list for execution
+        js_code_list = []
         
         # Add stealth mode if enabled
         if config.stealth_mode:
-            # Try to apply stealth via custom JS injection
             stealth_js = """
             // Basic anti-detection measures
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
@@ -412,18 +433,64 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
             Object.defineProperty(navigator, 'languages', {get: () => ['en-AU', 'en']});
             window.chrome = {runtime: {}};
             """
-            arun_kwargs['js_code'] = [stealth_js]
+            js_code_list.append(stealth_js)
+        
+        # Add auto-scroll if enabled (triggers lazy loading)
+        if config.auto_scroll:
+            scroll_js = """
+            // Auto-scroll to trigger lazy loading
+            console.log('Starting auto-scroll for lazy loading...');
+            
+            // Scroll to bottom
+            window.scrollTo(0, document.body.scrollHeight);
+            await new Promise(r => setTimeout(r, {scroll_delay}));
+            
+            // Scroll to middle  
+            window.scrollTo(0, document.body.scrollHeight / 2);
+            await new Promise(r => setTimeout(r, {scroll_delay}));
+            
+            // Scroll back to top
+            window.scrollTo(0, 0);
+            await new Promise(r => setTimeout(r, {scroll_delay}));
+            
+            console.log('Auto-scroll complete');
+            """.format(scroll_delay=config.scroll_delay)
+            js_code_list.append(scroll_js)
+        
+        # Add custom JS code if provided
+        if config.js_code:
+            js_code_list.extend(config.js_code)
+        
+        # Set js_code if we have any
+        if js_code_list:
+            arun_kwargs['js_code'] = js_code_list
         
         # Filter out None values and invalid parameters
         arun_kwargs = {k: v for k, v in arun_kwargs.items() if v is not None}
         
         result = await crawler.arun(url, **arun_kwargs)
         
-        # Extract content
-        raw_html = getattr(result, "raw_html", None) or getattr(result, "html", None) or ""
+        # Additional wait for heavy JS apps (after networkidle)
+        if config.additional_wait > 0:
+            print(f"⏱️ Additional wait: {config.additional_wait}s for JS completion")
+            await asyncio.sleep(config.additional_wait)
+        
+        # Extract content - prioritize rendered HTML over raw HTML for JS-heavy sites
+        rendered_html = getattr(result, "html", None) or getattr(result, "cleaned_html", None)
+        raw_html = getattr(result, "raw_html", None)
+        
+        # For JS-heavy sites, use rendered HTML if available, otherwise fall back to raw_html
+        final_html = rendered_html if rendered_html else raw_html or ""
+        
         content_md = getattr(result, "markdown", None) or getattr(result, "clean_text", "") or ""
         title = getattr(result, "title", "") or ""
         content_type = getattr(result, "content_type", "") or ""
+        
+        # Log which HTML we're using for debugging
+        if rendered_html and rendered_html != raw_html:
+            print(f"✅ Using rendered HTML (post-JS) for {url}")
+        else:
+            print(f"⚠️  Using raw HTML (pre-JS) for {url}")
         
         # AI Content Classification - analyze actual page content
         ai_worthy = True  # default to worthy
@@ -454,18 +521,19 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
                 _logger.warning(f"AI classification failed for {url}: {e}, proceeding with content")
                 # Continue with page if AI fails
         
-        # Extract links
-        links = extract_links(raw_html, url)
+        # Extract links from the final HTML (rendered if available)
+        links = extract_links(final_html, url)
         
         return CrawlResult(
             url=url,
             success=True,
-            raw_html=raw_html,
+            raw_html=final_html,  # Use rendered HTML instead of raw
             markdown=content_md,
             title=title,
             content_type=content_type,
             links=links,
-            ai_classification={'worthy': ai_worthy, 'reasoning': ai_reasoning, 'confidence': ai_confidence}
+            ai_classification={'worthy': ai_worthy, 'reasoning': ai_reasoning, 'confidence': ai_confidence},
+            html_type="rendered" if rendered_html and rendered_html != raw_html else "raw"
         )
         
     except Exception as e:
@@ -483,14 +551,20 @@ def save_crawl_result(result: CrawlResult, config: CrawlConfig) -> Optional[Path
         
         md_path = folder / "index.md"
         meta_path = folder / "meta.json"
-        html_path = folder / "raw.html"
+        raw_html_path = folder / "raw.html"
+        rendered_html_path = folder / "index.html"
         
         # Write files
         with md_path.open("w", encoding="utf-8") as f:
             f.write(result.markdown)
         
         if result.raw_html:
-            with html_path.open("w", encoding="utf-8") as f:
+            # Save to index.html for rendered content (post-JS)
+            with rendered_html_path.open("w", encoding="utf-8") as f:
+                f.write(result.raw_html)
+            
+            # Also save to raw.html for backwards compatibility
+            with raw_html_path.open("w", encoding="utf-8") as f:
                 f.write(result.raw_html)
         
         meta = {
@@ -499,6 +573,7 @@ def save_crawl_result(result: CrawlResult, config: CrawlConfig) -> Optional[Path
             "fetched_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "content_type": result.content_type,
             "bytes_html": len(result.raw_html) if result.raw_html else 0,
+            "html_type": result.html_type,
             "success": result.success,
             "error": result.error
         }

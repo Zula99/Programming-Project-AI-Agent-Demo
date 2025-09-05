@@ -1,5 +1,5 @@
 """
-SmartMirrorAgent - Core adaptive agent for web crawling and mirroring
+SmartMirrorAgent - Core adaptive agent for web crawling and content processing
 
 Single adaptive agent with learning capabilities and memory system for
 achieving 90% visual fidelity and content coverage across all site types.
@@ -21,7 +21,6 @@ from pathlib import Path
 import urllib.parse
 import time
 from agent_crawler import AgentCrawler
-from mirror_builder import MirrorBuilder
 
 
 class SiteType(Enum):
@@ -103,10 +102,10 @@ class ReconResults:
 
 class SmartMirrorAgent:
     """
-    Single adaptive agent for intelligent web crawling and mirroring
+    Single adaptive agent for intelligent web crawling and content processing
     
     Flow: URL Input → Check Memory → Quick Recon → Strategy Selection → 
-          Adaptive Crawl → Quality Monitoring → Mirror Build → Learning Storage
+          Adaptive Crawl → Quality Monitoring → Learning Storage
     """
     
     def __init__(self, memory_path: str = "agent_memory.json"):
@@ -114,7 +113,6 @@ class SmartMirrorAgent:
         self.memory_path = Path(memory_path)
         self.site_memory: List[SitePattern] = []
         self.crawler = AgentCrawler()
-        self.mirror_builder = MirrorBuilder()
         self.load_memory()
         
     def load_memory(self):
@@ -166,7 +164,7 @@ class SmartMirrorAgent:
         Returns:
             success: bool - Whether crawling succeeded
             metrics: QualityMetrics - Quality assessment
-            mirror_path: str - Path to generated mirror
+            output_path: str - Path to crawled data (for OpenSearch indexing)
         """
         self.logger.info(f"Processing URL: {url}")
         
@@ -185,16 +183,16 @@ class SmartMirrorAgent:
         # Step 5: Quality assessment
         quality_metrics = await self.assess_quality(crawl_data)
         
-        # Step 6: Mirror building
-        mirror_path = ""
+        # Step 6: Get output path for OpenSearch indexing
+        output_path = ""
         if crawl_success:
-            mirror_path = await self.build_mirror(crawl_data)
+            output_path = crawl_data.get("output_path", "")
             
         # Step 7: Learning - store successful patterns
         if quality_metrics.overall_score >= 0.7:
             await self.store_learning(url, recon_results, strategy, quality_metrics, crawl_data)
             
-        return crawl_success, quality_metrics, mirror_path
+        return crawl_success, quality_metrics, output_path
         
     def find_similar_pattern(self, url: str) -> Optional[SitePattern]:
         """Find similar successful patterns in memory"""
@@ -304,6 +302,7 @@ class SmartMirrorAgent:
                 # Pass browser configuration
                 timeout=strategy_config.get('timeout', 30),
                 wait_for=strategy_config.get('wait_for', 'networkidle'),
+                additional_wait=strategy_config.get('additional_wait', 0.0),
                 headless=strategy_config.get('headless', True),
                 screenshot=strategy_config.get('screenshot', False),
                 javascript=strategy_config.get('javascript', True),
@@ -311,7 +310,14 @@ class SmartMirrorAgent:
                 # Anti-detection features
                 stealth_mode=strategy_config.get('stealth_mode', False),
                 realistic_viewport=strategy_config.get('realistic_viewport', True),
-                extra_headers=strategy_config.get('extra_headers', {})
+                extra_headers=strategy_config.get('extra_headers', {}),
+                # Enhanced JS rendering parameters (if supported by AgentCrawler)
+                wait_for_selector=strategy_config.get('wait_for_selector'),
+                selector_timeout=strategy_config.get('selector_timeout', 10000),
+                auto_scroll=strategy_config.get('auto_scroll', False),
+                scroll_delay=strategy_config.get('scroll_delay', 1000),
+                post_load_delay=strategy_config.get('post_load_delay', 0),
+                js_code=strategy_config.get('js_code', [])
             )
             
             # Add reconnaissance data to crawl results
@@ -361,35 +367,62 @@ class SmartMirrorAgent:
                 "respect_robots": False
             },
             CrawlStrategy.JAVASCRIPT_RENDER: {
-                'timeout': 30,
-                'max_concurrent': 5,
-                'delay': 1.0,
+                'timeout': 45,  # Increased for JS rendering
+                'max_concurrent': 4,
+                'delay': 1.5,
                 'wait_for': 'networkidle',
                 'javascript': True,
+                'additional_wait': 2.0,  # Extra wait for JS completion
+                'post_load_delay': 2000,  # 2 seconds after loading
+                'auto_scroll': True,  # Trigger lazy loading
+                'js_code': [
+                    'window.scrollTo(0, document.body.scrollHeight);',
+                    'await new Promise(r => setTimeout(r, 500));',
+                    'window.scrollTo(0, 0);'
+                ],
                 "max_pages": 100,
-                "request_gap": 1.0,
+                "request_gap": 1.5,
                 "respect_robots": False
             },
             CrawlStrategy.FULL_BROWSER: {
-                'timeout': 45,
-                'max_concurrent': 3,
-                'delay': 2.0,  # Adjusted for CommBank testing
-                'headless': False,  # Non-headless for anti-detection
+                'timeout': 90,  # Increased for heavy JS apps like CommBank
+                'max_concurrent': 2,  # Reduced to avoid overwhelming JS-heavy sites
+                'delay': 4.0,  # Increased delay for JS loading
+                'headless': True,  # Fixed: should be headless for production
                 'wait_for': 'networkidle',
+                'additional_wait': 3.0,  # Artificial wait after networkidle for JS/lazy content
                 'screenshot': True,
                 'stealth_mode': True,  # Enable anti-detection
                 'realistic_viewport': True,
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'viewport': {'width': 1920, 'height': 1080},  # Ensure large enough for hero sections
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
                 'extra_headers': {
                     'Accept-Language': 'en-AU,en;q=0.9',
                     'Accept-Encoding': 'gzip, deflate, br',
                     'DNT': '1',
                     'Sec-Fetch-Dest': 'document',
                     'Sec-Fetch-Mode': 'navigate',
-                    'Sec-Fetch-Site': 'none'
+                    'Sec-Fetch-Site': 'none',
+                    # Force specific A/B test variation for Money Plan hero
+                    'X-Forwarded-For': '203.217.5.1',  # Australia IP to avoid geo-targeting
+                    'Cache-Control': 'no-cache',
+                    'Cookie': 'mbox=PC#1234567890.31_0#1999999999|session#1234567890-123456#1999999999'  # Force specific mbox experience
                 },
+                # Enhanced JS rendering settings
+                'wait_for_selector': '.hero-container, .app.homepage, main.honeycomb',  # Wait for CommBank main elements
+                'selector_timeout': 10000,  # 10 second timeout for selector wait
+                'auto_scroll': True,  # Enable auto-scroll to trigger lazy loading
+                'scroll_delay': 1000,  # Wait between scroll actions
+                'post_load_delay': 3000,  # Extra 3 seconds after all loading for JS to finish
+                'js_code': [
+                    # Auto-scroll to trigger lazy loading
+                    'window.scrollTo(0, document.body.scrollHeight);',
+                    'await new Promise(r => setTimeout(r, 1000));',  # Wait 1s
+                    'window.scrollTo(0, 0);',  # Scroll back to top
+                    'await new Promise(r => setTimeout(r, 500));',   # Wait 0.5s
+                ],
                 "max_pages": 80,
-                "request_gap": 2.0,  # Use delay value for request_gap
+                "request_gap": 4.0,  # Increased for JS stability
                 "respect_robots": False
             },
             CrawlStrategy.HYBRID: {
@@ -576,8 +609,8 @@ class SmartMirrorAgent:
         
         # Final sample size with reasonable bounds
         sample_size = max(base_sample, section_minimum)
-        sample_size = min(sample_size, 10)  # Maximum 200 pages @CLAUDE This sets max page limit for crawl
-        sample_size = max(sample_size, 10)   # Minimum 15 pages @CLAUDE This sets minimum page limit for crawl
+        sample_size = min(sample_size, 1)  # Maximum 200 pages @CLAUDE This sets max page limit for crawl
+        sample_size = max(sample_size, 1)   # Minimum 15 pages @CLAUDE This sets minimum page limit for crawl
         
         return sample_size
     
@@ -715,29 +748,6 @@ class SmartMirrorAgent:
             self.logger.error(f"Quality assessment failed: {e}")
             return QualityMetrics()
         
-    async def build_mirror(self, crawl_data: Dict[str, Any]) -> str:
-        """Build static mirror from crawled data"""
-        try:
-            if not crawl_data.get("successful", False):
-                self.logger.warning("Cannot build mirror - crawl was not successful")
-                return ""
-            
-            # Build the static mirror
-            mirror_path = await self.mirror_builder.build_static_mirror(
-                crawl_data=crawl_data,
-                concurrency=8,
-                request_gap=0.15,
-                mirror_external_assets=True,
-                strip_scripts=False,  # Keep scripts for demo functionality
-                rewrite_css_urls=True
-            )
-            
-            self.logger.info(f"Static mirror built at: {mirror_path}")
-            return mirror_path
-            
-        except Exception as e:
-            self.logger.error(f"Mirror building failed: {e}")
-            return ""
         
     async def store_learning(self, url: str, recon: ReconResults, strategy: CrawlStrategy, 
                            metrics: QualityMetrics, crawl_data: Dict[str, Any]):
@@ -752,9 +762,9 @@ if __name__ == "__main__":
     
     # Test with a URL
     async def test():
-        success, metrics, mirror_path = await agent.process_url("https://www.nab.com.au")
+        success, metrics, output_path = await agent.process_url("https://www.nab.com.au")
         print(f"Success: {success}")
         print(f"Quality Score: {metrics.overall_score}")
-        print(f"Mirror Path: {mirror_path}")
+        print(f"Output Path: {output_path}")
         
     # asyncio.run(test())

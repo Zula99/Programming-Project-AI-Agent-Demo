@@ -10,41 +10,8 @@ from crawl_logger import CrawlSession
 # Setup logging  
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-import http.server
-import socketserver
-import threading
-import os
 
-def start_mirror_server(mirror_path):
-    """Start HTTP server to serve the mirror"""
-    try:
-        # Get the output directory containing all mirrors
-        output_dir = Path(mirror_path).parent.parent  # Go up to agent_crawls level
-        port = 8000
-        
-        # Change to output directory
-        original_dir = os.getcwd()
-        os.chdir(output_dir)
-        
-        # Create and start server
-        handler = http.server.SimpleHTTPRequestHandler
-        httpd = socketserver.TCPServer(("", port), handler)
-        
-        print(f"\n   Mirror server started on http://localhost:{port}")
-        print(f"   Mirror available at: http://localhost:{port}/{Path(mirror_path).parent.name}/{Path(mirror_path).name}/")
-        print(f"   Press Ctrl+C to stop server")
-        print("\n" + "=" * 60)
-        
-        # Serve forever (blocking)
-        httpd.serve_forever()
-        
-    except KeyboardInterrupt:
-        print(f"\n   Stopping server...")
-        httpd.shutdown()
-        os.chdir(original_dir)
-    except Exception as e:
-        print(f"   Could not start server: {e}")
-        os.chdir(original_dir)
+
 
 def normalize_url(url):
     """Normalize URL format"""
@@ -141,7 +108,7 @@ async def run_agent_interactive():
                 logger.log_phase("CRAWLING", "Starting autonomous crawl process")
                 
                 # Run the agent - it decides everything
-                success, metrics, mirror_path = await agent.process_url(target_url)
+                success, metrics, output_path = await agent.process_url(target_url)
                 
                 logger.log_phase("QUALITY_ASSESSMENT", "Analyzing crawl quality")
                 
@@ -155,7 +122,7 @@ async def run_agent_interactive():
                         "visual_fidelity": getattr(metrics, 'visual_fidelity', 'N/A'),
                         "overall_score": getattr(metrics, 'overall_score', 'N/A'),
                         "site_coverage": getattr(metrics, 'site_coverage', 'N/A'),
-                        "mirror_path": mirror_path or 'N/A'
+                        "output_path": output_path or 'N/A'
                     }
                     logger.log_metrics(metrics_dict)
                 
@@ -163,7 +130,7 @@ async def run_agent_interactive():
                 
             except Exception as e:
                 logger.log_error(e, "agent_process")
-                success, metrics, mirror_path = False, None, None
+                success, metrics, output_path = False, None, None
             finally:
                 # Ensure agent resources are cleaned up
                 if hasattr(agent, 'cleanup'):
@@ -226,32 +193,11 @@ async def run_agent_interactive():
             print(f"   Pages with content: {summary.get('pages_with_content', 0)}")
             print(f"   Unique links:      {summary.get('unique_links_found', 0)}")
         
-        # Show mirror info
-        if success and mirror_path:
-            print(f"\n  Static Mirror:")
-            print(f"   Location: {mirror_path}")
-            
-            # Get entry points
-            if hasattr(agent.mirror_builder, 'get_entry_point_suggestions'):
-                import urllib.parse
-                parsed = urllib.parse.urlsplit(target_url)
-                domain = parsed.netloc.lower()
-                if domain.startswith("www."):
-                    domain = domain[4:]
-                    
-                crawl_data = {"domain": domain, "url": target_url}
-                entries = agent.mirror_builder.get_entry_point_suggestions(crawl_data)
-                
-                if entries:
-                    print(f"\n Entry Points:")
-                    for name, path in entries.items():
-                        print(f"   {name}: {path}")
-                        
-                    # Start HTTP server automatically
-                    start_mirror_server(mirror_path)
-                else:
-                    # Fallback if no entry points
-                    start_mirror_server(mirror_path)
+        # Show output path for OpenSearch indexing
+        if success and output_path:
+            print(f"\n  Crawl Output:")
+            print(f"   Location: {output_path}")
+            print(f"   Ready for: OpenSearch indexing, Proxy system")
         
         print("\n" + "=" * 60)
         

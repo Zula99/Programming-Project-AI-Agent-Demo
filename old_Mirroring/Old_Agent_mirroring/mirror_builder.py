@@ -120,26 +120,39 @@ class MirrorBuilder:
             if clean_domain.startswith("www."):
                 clean_domain = clean_domain[4:]
             
-            # Try different possible entry points
-            possible_entries = [
-                mirror_root / f"www.{clean_domain}" / "index.html",
-                mirror_root / clean_domain / "index.html",
-                mirror_root / domain / "index.html"
+            # Try different possible entry points - prefer index.mirror.html when available
+            base_paths = [
+                mirror_root / f"www.{clean_domain}",
+                mirror_root / clean_domain,
+                mirror_root / domain
             ]
             
-            for entry in possible_entries:
-                if entry.exists():
-                    suggestions["homepage"] = str(entry)
+            for base_path in base_paths:
+                # Prefer index.mirror.html if it exists
+                mirror_entry = base_path / "index.mirror.html"
+                regular_entry = base_path / "index.html"
+                
+                if mirror_entry.exists():
+                    suggestions["homepage"] = str(mirror_entry)
+                    break
+                elif regular_entry.exists():
+                    suggestions["homepage"] = str(regular_entry)
                     break
         
-        # Find other common entry points
+        # Find other common entry points - prefer mirror files
         if mirror_root.exists():
             # Look for common pages
             common_pages = ["about", "contact", "products", "services", "help"]
             for page in common_pages:
-                page_paths = list(mirror_root.rglob(f"*/{page}/index.html"))
-                if page_paths:
-                    suggestions[page] = str(page_paths[0])
+                # First try to find index.mirror.html files
+                mirror_paths = list(mirror_root.rglob(f"*/{page}/index.mirror.html"))
+                if mirror_paths:
+                    suggestions[page] = str(mirror_paths[0])
+                else:
+                    # Fall back to regular index.html files
+                    page_paths = list(mirror_root.rglob(f"*/{page}/index.html"))
+                    if page_paths:
+                        suggestions[page] = str(page_paths[0])
         
         return suggestions
 

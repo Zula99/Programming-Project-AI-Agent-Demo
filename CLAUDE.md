@@ -27,19 +27,18 @@ AI Agent Demo Factory - Creates demo versions of client websites with integrated
 - Saves raw HTML, markdown, and metadata in folder structure
 - Currently respects robots.txt (but will ignore for demo purposes)
 
-### Static Mirroring (`crawl4ai/build_static_mirror.py`)
-- Converts crawled content to offline-browseable mirror
-- Downloads and localizes assets (CSS, JS, images, fonts) 
-- Rewrites URLs to point to local files
-- Handles CSS dependencies and @import statements
-- Creates index.html files in folder structure matching URLs
+### Content Processing & OpenSearch Integration
+- Crawled content saved as structured markdown and metadata
+- Ready for OpenSearch indexing via `export_bulk_ndjson.py`
+- Prepared for live proxy system serving
+- Content classification and quality assessment
 
 ## Key Performance Targets
 
 ### Dual 90% Success Targets
 
-#### 90% Demo Mirror Quality
-**Goal**: Achieve 90% quality score for demo mirror across all site types (JS-heavy and static)
+#### 90% Demo Quality
+**Goal**: Achieve 90% quality score for demo content across all site types (JS-heavy and static)
 
 **Quality Components**:
 - **Content Completeness** (35%): Representative content depth and coverage
@@ -284,11 +283,21 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - Maintains system reliability during AI service outages
 - Combines speed of algorithms with intelligence of AI decision making
 
+**US-055: Live Proxy Demo System** 🚀 NEW PRIORITY
+As a demo factory operator I want a live proxy system that serves cached content in real-time So that demos are faster, more interactive, and don't require static file hosting
+- Proxy server intercepts requests to demo domain (e.g., `demo-nab.localhost:8000`)
+- Serves cached content from SmartMirrorAgent crawl results with sub-200ms response times
+- Falls back to live site for uncached content with graceful handling
+- Real-time injection of search bar and chatbot into all demo pages
+- Works with existing crawl output and OpenSearch integration
+- Replaces static mirroring with dynamic proxy approach for better performance
+
 **Implementation Phases:**
 - **Phase 1**: AI Content Classification Layer (US-049) ✅ COMPLETED
-- **Phase 2**: AI Strategy Optimization Layer (US-050) 🔄 NEXT PRIORITY  
-- **Phase 3**: AI Site Analysis Layer (US-051)
-- **Phase 4**: Complete Hybrid System Integration (US-052)
+- **Phase 2**: Live Proxy Demo System (US-055) 🔄 NEXT PRIORITY
+- **Phase 3**: AI Strategy Optimization Layer (US-050)  
+- **Phase 4**: AI Site Analysis Layer (US-051)
+- **Phase 5**: Complete Hybrid System Integration (US-052)
 
 **Success Criteria:**
 - 90% demo mirror quality score across all site types
@@ -296,3 +305,4 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - True AI Agent functionality using LLM APIs for decisions
 - Learning improvement in success rates over time
 - Reliable fallback during AI service issues
+- I'll do the crawling my self from now on

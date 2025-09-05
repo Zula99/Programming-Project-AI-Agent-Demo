@@ -278,3 +278,57 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - Learning improvement in success rates over time
 - Reliable fallback during AI service issues
 
+### EPIC-05: Live Proxy System (NEW PRIORITY)
+**Status:** NEXT IMPLEMENTATION
+**Description:** Replace static mirroring with live proxy system for better performance and real-time demo enhancements
+
+**US-055: Live Proxy Demo System**
+As a demo factory operator I want a live proxy system that serves cached content in real-time So that demos are faster, more interactive, and don't require static file hosting
+
+**Core Proxy Functionality:**
+- ✅ Proxy server intercepts requests to demo domain (e.g., `demo-nab.localhost:8000`)
+- ✅ Serves cached content from SmartMirrorAgent crawl results
+- ✅ Falls back to live site for uncached content
+- ✅ Maintains visual fidelity and navigation integrity
+
+**Content Serving:**
+- ✅ Loads HTML from cached `index.md` files (converted to HTML)
+- ✅ Serves cached assets (CSS, JS, images) with proper MIME types
+- ✅ Rewrites internal URLs to proxy domain for seamless navigation
+- ✅ Handles both absolute and relative URL rewriting
+
+**Real-time Enhancements:**
+- ✅ Injects custom search bar into all pages
+- ✅ Adds chatbot widget to demo pages
+- ✅ Overlays custom CSS for demo branding
+- ✅ Preserves original functionality while adding demo features
+
+**Performance & Reliability:**
+- ✅ Sub-200ms response times for cached content
+- ✅ Redis/Memory caching layer for fast content retrieval
+- ✅ Graceful fallback when cache misses occur
+- ✅ Content TTL management for freshness
+
+**Integration:**
+- ✅ Works with existing SmartMirrorAgent crawl output
+- ✅ Supports OpenSearch integration via `export_bulk_ndjson.py`
+- ✅ Compatible with Docker deployment
+- ✅ Easy demo domain configuration (`demo-{site}.localhost`)
+
+**Technical Implementation:**
+
+**Proxy Architecture:**
+```
+Request → Proxy Server → Cache Check → Content Serve/Enhancement
+                    ↓
+               Live Fallback (if cache miss)
+```
+
+**Benefits over Static Mirroring:**
+- ⚡ **Faster demos** - No file generation wait time
+- 🔄 **Real-time updates** - Content can be refreshed without rebuilding
+- 💾 **Lower storage** - No duplicate static files
+- 🎨 **Dynamic enhancements** - Live injection of demo features
+- 🔍 **Better search** - Direct OpenSearch integration
+- 📱 **Responsive** - Handles dynamic content better
+
