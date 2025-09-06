@@ -6,9 +6,42 @@ import argparse
 from pathlib import Path
 from smart_mirror_agent import SmartMirrorAgent
 from crawl_logger import CrawlSession
+import httpx
+import uuid
 
 # Setup logging  
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+async def auto_configure_proxy(target_url: str, run_id: str = None):
+    """Auto-configure proxy server when crawl completes successfully"""
+    if not run_id:
+        run_id = str(uuid.uuid4())
+    
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post("http://localhost:8000/auto-configure", json={
+                "target_url": target_url,
+                "run_id": run_id,
+                "enabled": True
+            })
+            
+            if response.status_code == 200:
+                print(f"\n🚀 Auto-Proxy Configured!")
+                print(f"   Proxy URL: http://localhost:8000/proxy/")
+                print(f"   Target: {target_url}")
+                print(f"   Run ID: {run_id}")
+                return True
+            else:
+                print(f"\n⚠️  Proxy configuration failed: {response.status_code}")
+                return False
+                
+    except httpx.ConnectError:
+        print(f"\n⚠️  Proxy server not running (http://localhost:8000)")
+        print(f"   Start with: python ai-agent-demo-factory-backend/Proxy/proxy_server.py")
+        return False
+    except Exception as e:
+        print(f"\n⚠️  Proxy configuration error: {e}")
+        return False
 
 
 
@@ -142,6 +175,9 @@ async def run_agent_interactive():
         print(" RESULTS")
         print("=" * 60)
         
+        # Debug auto-proxy trigger conditions
+        print(f"\n DEBUG: success={success}, output_path={output_path}")
+        
         if success:
             print(" Crawl completed successfully!")
         else:
@@ -198,6 +234,10 @@ async def run_agent_interactive():
             print(f"\n  Crawl Output:")
             print(f"   Location: {output_path}")
             print(f"   Ready for: OpenSearch indexing, Proxy system")
+            
+            # Auto-configure proxy for successful crawls
+            crawl_id = str(uuid.uuid4())
+            await auto_configure_proxy(target_url, crawl_id)
         
         print("\n" + "=" * 60)
         

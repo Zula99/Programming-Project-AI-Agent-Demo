@@ -57,6 +57,9 @@ RUN chown -R aiagent:aiagent /app
 RUN mkdir -p /home/aiagent && chown -R aiagent:aiagent /home/aiagent
 USER aiagent
 
+# Expose proxy port
+EXPOSE 8000
+
 # Default working directory for crawl operations
 WORKDIR /app/backend/crawl4ai-agent
 
@@ -64,5 +67,5 @@ WORKDIR /app/backend/crawl4ai-agent
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; print('AI Agent System Ready'); sys.exit(0)"
 
-# Default command - interactive mode
-CMD ["python", "run_agent.py"]
+# Default command - start proxy server (crawler available via exec)
+CMD ["python", "/app/backend/Proxy/proxy_server.py"]

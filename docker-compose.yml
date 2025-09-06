@@ -22,7 +22,7 @@ services:
       # Mount config files
       - ./CLAUDE.md:/app/CLAUDE.md
     ports:
-      # Expose port for viewing static mirrors
+      # Expose port for proxy server (replaces static mirrors)
       - "8000:8000"
 
     stdin_open: true

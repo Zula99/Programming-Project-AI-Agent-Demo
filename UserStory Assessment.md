@@ -278,57 +278,19 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - Learning improvement in success rates over time
 - Reliable fallback during AI service issues
 
-### EPIC-05: Live Proxy System (NEW PRIORITY)
-**Status:** NEXT IMPLEMENTATION
-**Description:** Replace static mirroring with live proxy system for better performance and real-time demo enhancements
+**US-57: Set Up and Configure Reverse Proxy** ✅ COMPLETED
+As a demo factory operator, I want to set up a reverse proxy that dynamically forwards requests to any target site so that I can easily inject our overlay without needing to create static mirrors.
+- ✅ The reverse proxy routes incoming requests to the specified target site based on a configurable target URL
+- 🔄 The proxy supports HTML response modification for search bar and chatbot overlay injection (ready for implementation)
+- ✅ We can change the target site easily without restarting the proxy via `/auto-configure` endpoint
+- ✅ The proxy operates with minimal latency overhead and includes security measures like CSP removal and CORS handling
+- ✅ Docker integration allows automatic proxy startup on `docker-compose up`
+- ✅ Auto-configuration integration triggers when crawler completes successfully
+- ✅ Universal URL rewriting ensures proper styling and navigation across all site types
 
-**US-055: Live Proxy Demo System**
-As a demo factory operator I want a live proxy system that serves cached content in real-time So that demos are faster, more interactive, and don't require static file hosting
-
-**Core Proxy Functionality:**
-- ✅ Proxy server intercepts requests to demo domain (e.g., `demo-nab.localhost:8000`)
-- ✅ Serves cached content from SmartMirrorAgent crawl results
-- ✅ Falls back to live site for uncached content
-- ✅ Maintains visual fidelity and navigation integrity
-
-**Content Serving:**
-- ✅ Loads HTML from cached `index.md` files (converted to HTML)
-- ✅ Serves cached assets (CSS, JS, images) with proper MIME types
-- ✅ Rewrites internal URLs to proxy domain for seamless navigation
-- ✅ Handles both absolute and relative URL rewriting
-
-**Real-time Enhancements:**
-- ✅ Injects custom search bar into all pages
-- ✅ Adds chatbot widget to demo pages
-- ✅ Overlays custom CSS for demo branding
-- ✅ Preserves original functionality while adding demo features
-
-**Performance & Reliability:**
-- ✅ Sub-200ms response times for cached content
-- ✅ Redis/Memory caching layer for fast content retrieval
-- ✅ Graceful fallback when cache misses occur
-- ✅ Content TTL management for freshness
-
-**Integration:**
-- ✅ Works with existing SmartMirrorAgent crawl output
-- ✅ Supports OpenSearch integration via `export_bulk_ndjson.py`
-- ✅ Compatible with Docker deployment
-- ✅ Easy demo domain configuration (`demo-{site}.localhost`)
-
-**Technical Implementation:**
-
-**Proxy Architecture:**
-```
-Request → Proxy Server → Cache Check → Content Serve/Enhancement
-                    ↓
-               Live Fallback (if cache miss)
-```
-
-**Benefits over Static Mirroring:**
-- ⚡ **Faster demos** - No file generation wait time
-- 🔄 **Real-time updates** - Content can be refreshed without rebuilding
-- 💾 **Lower storage** - No duplicate static files
-- 🎨 **Dynamic enhancements** - Live injection of demo features
-- 🔍 **Better search** - Direct OpenSearch integration
-- 📱 **Responsive** - Handles dynamic content better
-
+**US-56: Injecting Search Bar with Indexed Data**
+As a demo factory operator, I want to inject a search bar into the proxied site that uses the indexed data from the scrape so that users can search the mirrored content directly.
+- We need to ensure the search bar appears on every proxied page at a predefined location in the DOM.
+- The search bar must be connected to the indexed data gathered from the site so that all search queries return results from the scraped content.
+- We need to verify that when a user enters a query, the search bar returns accurate results from the scraped index and displays them properly.
+- The injected search functionality should not noticeably slow down the loading or performance of the proxied site.

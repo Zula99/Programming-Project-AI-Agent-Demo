@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import uuid # For generating unique IDs
 import time # For simulating time-based operations
 import threading # For running the simulation in a separate thread
+import httpx # For auto-proxy integration
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -42,6 +43,20 @@ class PageRow(BaseModel):
     title: str
     type: str # e.g., "html", "pdf", "doc"
     size: int # size in bytes
+
+# --- Helper Function: Auto-configure proxy after crawl ---
+async def auto_configure_proxy(run_id: str, target_url: str):
+    """Auto-configure proxy server when crawl completes"""
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post("http://localhost:8001/auto-configure", json={
+                "target_url": target_url,
+                "run_id": run_id,
+                "enabled": True
+            })
+        print(f"[{run_id}] Auto-proxy configured for {target_url}")
+    except Exception as e:
+        print(f"[{run_id}] Failed to configure auto-proxy: {e}")
 
 # --- Helper Function: Simulates the Norconex Crawler ---
 def run_norconex_crawler_simulation(run_id: str, target_url: str):
