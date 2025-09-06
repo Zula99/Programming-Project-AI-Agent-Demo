@@ -75,15 +75,28 @@ def rewrite_urls_in_html(html_content: str, target_url: str, proxy_base: str = "
     parsed_target = urlparse(target_url)
     target_base = f"{parsed_target.scheme}://{parsed_target.netloc}"
     
-    # Add base tag for relative URLs
+    # Handle base tag for relative URLs (but be careful with existing navigation)
     head = soup.find('head')
     if head:
-        # Remove existing base tags
-        for base_tag in head.find_all('base'):
-            base_tag.decompose()
-        # Add proxy base tag
-        base_tag = soup.new_tag('base', href=f"{proxy_base}/")
-        head.insert(0, base_tag)
+        # Remove existing base tags that might conflict
+        existing_base = head.find('base')
+        if existing_base:
+            # If there's already a base tag, leave it but make sure it points to target domain through proxy
+            current_base = existing_base.get('href', '')
+            if current_base and not current_base.startswith(proxy_base):
+                if current_base.startswith('http'):
+                    # Absolute base URL - convert to proxy
+                    parsed_base = urlparse(current_base)
+                    if parsed_base.netloc in [parsed_target.netloc, f"www.{parsed_target.netloc}"]:
+                        proxy_base_url = f"{proxy_base}{parsed_base.path}"
+                        existing_base['href'] = proxy_base_url
+                elif current_base.startswith('/'):
+                    # Relative base URL - convert to proxy
+                    existing_base['href'] = f"{proxy_base}{current_base}"
+        else:
+            # Only add base tag if there wasn't one originally
+            # This prevents breaking sites that don't expect a base tag
+            pass
         
     
     # Rewrite common URL attributes
@@ -95,10 +108,10 @@ def rewrite_urls_in_html(html_content: str, target_url: str, proxy_base: str = "
     
     for tag_name, attr in url_attrs:
         for tag in soup.find_all(tag_name, {attr: True}):
-            original_url = tag[attr]
+            original_url = tag[attr].strip()
             
-            # Skip javascript:, mailto:, tel:, data: URLs
-            if any(original_url.startswith(prefix) for prefix in ['javascript:', 'mailto:', 'tel:', 'data:', '#']):
+            # Skip empty URLs, javascript:, mailto:, tel:, data: URLs
+            if not original_url or any(original_url.startswith(prefix) for prefix in ['javascript:', 'mailto:', 'tel:', 'data:', '#']):
                 continue
                 
             # Convert to absolute URL first
@@ -107,17 +120,28 @@ def rewrite_urls_in_html(html_content: str, target_url: str, proxy_base: str = "
             elif original_url.startswith('/'):
                 absolute_url = f"{target_base}{original_url}"
             elif not original_url.startswith(('http://', 'https://')):
+                # Handle relative URLs properly
                 absolute_url = urljoin(target_url, original_url)
             else:
                 absolute_url = original_url
             
-            # Rewrite to proxy URL if it's from the same domain (including www variants)
+            # Parse the absolute URL
             parsed_abs = urlparse(absolute_url)
-            target_domains = [parsed_target.netloc, f"www.{parsed_target.netloc}"]
+            
+            # Define target domains (main domain and www variant)
+            target_domains = [parsed_target.netloc]
             if parsed_target.netloc.startswith('www.'):
                 target_domains.append(parsed_target.netloc[4:])  # Remove www.
+            else:
+                target_domains.append(f"www.{parsed_target.netloc}")  # Add www.
             
-            if parsed_abs.netloc in target_domains:
+            # Always rewrite URLs that belong to the target domain OR have no domain (relative URLs)
+            should_rewrite = (
+                not parsed_abs.netloc or  # Relative URLs with no domain
+                parsed_abs.netloc in target_domains  # Same domain URLs
+            )
+            
+            if should_rewrite:
                 proxy_url = f"{proxy_base}{parsed_abs.path}"
                 if parsed_abs.query:
                     proxy_url += f"?{parsed_abs.query}"
@@ -127,6 +151,9 @@ def rewrite_urls_in_html(html_content: str, target_url: str, proxy_base: str = "
                 # Debug logging for URL rewriting
                 print(f"REWRITE: {original_url} -> {proxy_url}")
                 tag[attr] = proxy_url
+            else:
+                # Debug: log URLs we're NOT rewriting
+                print(f"NOT REWRITING (external domain): {original_url} -> {parsed_abs.netloc}")
     
     return str(soup)
 
@@ -261,6 +288,46 @@ async def proxy_request(request: Request, path: str):
     except httpx.RequestError as e:
         logger.error(f"Proxy error: {e}")
         return Response(f"Proxy error: {str(e)}", status_code=502)
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def catch_all_proxy(request: Request, path: str):
+    """Catch-all handler for requests that don't match /proxy/ prefix"""
+    if not proxy_config["enabled"] or not proxy_config["target_url"]:
+        return Response("Proxy not configured", status_code=503)
+    
+    # Skip if this is a proxy request (shouldn't happen but safety check)
+    if path.startswith("proxy/"):
+        return Response("Invalid proxy path", status_code=400)
+    
+    # Handle requests that don't start with /proxy/ by forwarding to target
+    target_url = f"{proxy_config['target_url']}/{path}"
+    if request.url.query:
+        target_url += f"?{request.url.query}"
+    
+    logger.info(f"Catch-all proxying: {request.method} {target_url}")
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+            
+            response = await client.request(
+                method=request.method,
+                url=target_url,
+                headers=headers,
+                content=await request.body()
+            )
+            
+            clean_headers = clean_response_headers(dict(response.headers))
+            
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=clean_headers
+            )
+            
+    except httpx.RequestError as e:
+        logger.error(f"Catch-all proxy error: {e}")
+        return Response(f"Resource not found: {path}", status_code=404)
 
 if __name__ == "__main__":
     import uvicorn
