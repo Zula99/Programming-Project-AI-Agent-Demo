@@ -1,6 +1,6 @@
 """
 AI Content Classifier for Demo Worthiness
-Replaces rigid rule-based URL filtering with intelligent content assessment.
+Two-stage system: Site type detection + site-specific content evaluation
 """
 import asyncio
 import logging
@@ -9,6 +9,26 @@ from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
+from enum import Enum
+
+class BusinessSiteType(Enum):
+    """Business-focused site categories for demo content evaluation"""
+    BANKING = "banking"
+    ECOMMERCE = "ecommerce" 
+    NEWS = "news"
+    CORPORATE = "corporate"
+    PORTFOLIO = "portfolio"
+    EDUCATIONAL = "educational"
+    HEALTHCARE = "healthcare"
+    GOVERNMENT = "government"
+    NON_PROFIT = "nonprofit"
+    ENTERTAINMENT = "entertainment"
+    REAL_ESTATE = "realestate"
+    LEGAL = "legal"
+    RESTAURANT = "restaurant"
+    TECHNOLOGY = "technology"
+    PERSONAL = "personal"
+    UNKNOWN = "unknown"
 
 @dataclass
 class ClassificationResult:
@@ -18,11 +38,181 @@ class ClassificationResult:
     reasoning: str
     method_used: str  # "ai", "heuristic", "cache"
     
+class BusinessSiteDetector:
+    """Detects business site type using heuristics for targeted content evaluation"""
+    
+    # Business site type patterns
+    BUSINESS_PATTERNS = {
+        BusinessSiteType.BANKING: ["bank", "banking", "financial institution", "loan", "mortgage", "credit card", "investment banking", "wealth management"],
+        BusinessSiteType.ECOMMERCE: ["shop", "store", "cart", "checkout", "product", "buy", "marketplace", "retail"],
+        BusinessSiteType.NEWS: ["news", "article", "blog", "post", "story", "journalism", "media"],
+        BusinessSiteType.HEALTHCARE: ["health", "medical", "doctor", "clinic", "hospital", "dentist", "pharmacy"],
+        BusinessSiteType.EDUCATIONAL: ["school", "university", "course", "learning", "education", "training"],
+        BusinessSiteType.GOVERNMENT: ["gov", ".gov", "government", "council", "state", "federal", "municipal"],
+        BusinessSiteType.LEGAL: ["law", "legal", "attorney", "lawyer", "court", "justice", "litigation"],
+        BusinessSiteType.REAL_ESTATE: ["property", "realestate", "homes", "rent", "real estate", "housing"],
+        BusinessSiteType.RESTAURANT: ["restaurant", "food", "dining", "menu", "cafe", "bar", "catering"],
+        BusinessSiteType.TECHNOLOGY: ["tech", "software", "saas", "api", "cloud", "app", "platform", "scientific", "instruments", "diagnostics", "life sciences", "chemical", "biotechnology", "engineering", "innovation"],
+        BusinessSiteType.NON_PROFIT: ["nonprofit", "charity", "foundation", "donate", "volunteer", "cause"],
+        BusinessSiteType.ENTERTAINMENT: ["entertainment", "movie", "music", "game", "streaming", "media"],
+        BusinessSiteType.PORTFOLIO: ["portfolio", "designer", "freelancer", "agency", "creative", "work"],
+    }
+    
+    def detect_site_type(self, url: str, title: str = "", content: str = "") -> BusinessSiteType:
+        """
+        Detect business site type using enhanced keyword scoring system
+        Uses weighted scoring: URL (3pts) > Title (2pts) > Content (1pt)
+        """
+        url_lower = url.lower()
+        title_lower = title.lower() 
+        content_lower = content.lower()
+        
+        # Initialize scores for each site type
+        scores = {site_type: 0 for site_type in BusinessSiteType}
+        
+        # Score each site type based on pattern matches
+        for site_type, patterns in self.BUSINESS_PATTERNS.items():
+            for pattern in patterns:
+                # URL matches (highest weight - most reliable)
+                if pattern in url_lower:
+                    scores[site_type] += 3
+                
+                # Title matches (medium weight - page purpose)  
+                if pattern in title_lower:
+                    scores[site_type] += 2
+                
+                # Content matches (lowest weight - can be noisy)
+                if pattern in content_lower:
+                    scores[site_type] += 1
+        
+        # Find the site type with highest score
+        max_score = max(scores.values())
+        
+        # If we have a clear winner with decent score
+        if max_score >= 2:  # At least one title match or multiple content matches
+            winning_types = [site_type for site_type, score in scores.items() if score == max_score]
+            
+            # If tied, use tiebreaker logic
+            if len(winning_types) == 1:
+                return winning_types[0]
+            else:
+                # Tiebreaker: prefer more specific types over general ones
+                priority_order = [
+                    BusinessSiteType.BANKING, BusinessSiteType.HEALTHCARE, 
+                    BusinessSiteType.LEGAL, BusinessSiteType.EDUCATIONAL,
+                    BusinessSiteType.GOVERNMENT, BusinessSiteType.TECHNOLOGY,
+                    BusinessSiteType.ECOMMERCE, BusinessSiteType.NEWS,
+                    BusinessSiteType.RESTAURANT, BusinessSiteType.REAL_ESTATE,
+                    BusinessSiteType.NON_PROFIT, BusinessSiteType.ENTERTAINMENT,
+                    BusinessSiteType.PORTFOLIO, BusinessSiteType.CORPORATE,
+                    BusinessSiteType.PERSONAL
+                ]
+                for site_type in priority_order:
+                    if site_type in winning_types:
+                        return site_type
+        
+        # Fallback to domain extension analysis
+        if url_lower.endswith('.edu') or 'university' in title_lower or 'college' in title_lower:
+            return BusinessSiteType.EDUCATIONAL
+        elif url_lower.endswith('.gov') or '.gov/' in url_lower:
+            return BusinessSiteType.GOVERNMENT
+        elif url_lower.endswith('.org') or 'nonprofit' in content_lower:
+            return BusinessSiteType.NON_PROFIT
+        
+        # Secondary content analysis for low-score cases
+        combined_text = f"{url_lower} {title_lower} {content_lower}"
+        if any(word in combined_text for word in ["company", "business", "services", "solutions", "corporate"]):
+            return BusinessSiteType.CORPORATE
+        elif any(word in combined_text for word in ["personal", "blog", "about me", "my", "portfolio"]):
+            return BusinessSiteType.PERSONAL
+        
+        return BusinessSiteType.UNKNOWN
+    
+    def detect_site_type_with_confidence(self, url: str, title: str = "", content: str = "") -> dict:
+        """
+        Enhanced detection that returns site type with confidence and score details
+        """
+        url_lower = url.lower()
+        title_lower = title.lower() 
+        content_lower = content.lower()
+        
+        # Initialize scores for each site type
+        scores = {site_type: 0 for site_type in BusinessSiteType}
+        match_details = {site_type: [] for site_type in BusinessSiteType}
+        
+        # Score each site type based on pattern matches
+        for site_type, patterns in self.BUSINESS_PATTERNS.items():
+            for pattern in patterns:
+                # URL matches (highest weight - most reliable)
+                if pattern in url_lower:
+                    scores[site_type] += 3
+                    match_details[site_type].append(f"URL:{pattern}")
+                
+                # Title matches (medium weight - page purpose)  
+                if pattern in title_lower:
+                    scores[site_type] += 2
+                    match_details[site_type].append(f"Title:{pattern}")
+                
+                # Content matches (lowest weight - can be noisy)
+                if pattern in content_lower:
+                    scores[site_type] += 1
+                    match_details[site_type].append(f"Content:{pattern}")
+        
+        # Find the site type with highest score
+        max_score = max(scores.values()) if scores.values() else 0
+        
+        # Apply same logic as detect_site_type but with more detail
+        if max_score >= 2:
+            winning_types = [site_type for site_type, score in scores.items() if score == max_score]
+            
+            if len(winning_types) == 1:
+                final_type = winning_types[0]
+            else:
+                # Same tiebreaker logic
+                priority_order = [
+                    BusinessSiteType.BANKING, BusinessSiteType.HEALTHCARE, 
+                    BusinessSiteType.LEGAL, BusinessSiteType.EDUCATIONAL,
+                    BusinessSiteType.GOVERNMENT, BusinessSiteType.TECHNOLOGY,
+                    BusinessSiteType.ECOMMERCE, BusinessSiteType.NEWS,
+                    BusinessSiteType.RESTAURANT, BusinessSiteType.REAL_ESTATE,
+                    BusinessSiteType.NON_PROFIT, BusinessSiteType.ENTERTAINMENT,
+                    BusinessSiteType.PORTFOLIO, BusinessSiteType.CORPORATE,
+                    BusinessSiteType.PERSONAL
+                ]
+                final_type = BusinessSiteType.UNKNOWN
+                for site_type in priority_order:
+                    if site_type in winning_types:
+                        final_type = site_type
+                        break
+        else:
+            # Apply fallback logic
+            final_type = self.detect_site_type(url, title, content)
+            max_score = 1  # Fallback score
+        
+        # Calculate confidence based on score and clarity of match
+        if max_score >= 5:
+            confidence = "HIGH"
+        elif max_score >= 3:
+            confidence = "MEDIUM" 
+        elif max_score >= 2:
+            confidence = "LOW"
+        else:
+            confidence = "FALLBACK"
+        
+        return {
+            'site_type': final_type,
+            'confidence': confidence,
+            'score': max_score,
+            'all_scores': scores,
+            'matches': match_details[final_type] if final_type in match_details else []
+        }
+
 class HeuristicClassifier:
     """Fallback classifier using enhanced heuristic rules"""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.site_detector = BusinessSiteDetector()
         
     def classify(self, url: str, content: str = "", title: str = "") -> ClassificationResult:
         """Enhanced heuristic classification for demo worthiness"""
@@ -93,6 +283,7 @@ class AIContentClassifier:
         self.api_key = api_key
         self.model = model
         self.logger = logging.getLogger(__name__)
+        self.site_detector = BusinessSiteDetector()
         self.fallback_classifier = HeuristicClassifier()
         
         # Simple cache for repeated URLs
@@ -172,8 +363,9 @@ class AIContentClassifier:
                 # Look for WORTHY: true/false - be more explicit about parsing
                 if "worthy:" in content.lower():
                     worthy_part = content.lower().split("worthy:")[1].strip()
-                    # Extract just the first word after "worthy:"
+                    # Extract just the first word after "worthy:" and clean punctuation
                     worthy_word = worthy_part.split()[0] if worthy_part.split() else ""
+                    worthy_word = worthy_word.replace(',', '').replace('.', '').replace(';', '')
                     
                     if worthy_word in ['false', 'no', '0']:
                         is_worthy = False
@@ -182,7 +374,8 @@ class AIContentClassifier:
                         is_worthy = True  
                         self.logger.info(f"Parsed WORTHY as TRUE from: {worthy_word}")
                     else:
-                        self.logger.warning(f"Unclear WORTHY value: {worthy_word}, defaulting to TRUE")
+                        self.logger.warning(f"Unclear WORTHY value: {worthy_word}, defaulting to FALSE for safety")
+                        is_worthy = False  # Default to FALSE for safety
                 
                 # Look for CONFIDENCE: number
                 if "confidence:" in content.lower():
@@ -288,40 +481,421 @@ class AIContentClassifier:
         return self.fallback_classifier.classify(url, content, title)
     
     def _create_ai_prompt(self, url: str, content: str, title: str) -> str:
-        """Create AI prompt for content classification"""
-        content_preview = content[:1000] if content else "No content provided"
+        """Create site-specific AI prompt for content classification"""
+        content_preview = content[:800] if content else "No content provided"
         
-        return f"""
-        Analyze this content for CLIENT DEMO value. This is for showcasing a website to potential clients/customers:
+        # Detect site type first
+        site_type = self.site_detector.detect_site_type(url, title, content)
+        # Get detailed detection info for debugging
+        detection_info = self.site_detector.detect_site_type_with_confidence(url, title, content)
+        site_type = detection_info['site_type']
+        confidence = detection_info['confidence'] 
+        score = detection_info['score']
+        
+        self.logger.info(f"🔍 Site type detected for {url}: {site_type.value} (confidence: {confidence}, score: {score})")
+        
+        # Get site-specific prompt
+        return self._get_site_specific_prompt(site_type, url, title, content_preview)
+    
+    def _get_site_specific_prompt(self, site_type: BusinessSiteType, url: str, title: str, content: str) -> str:
+        """Generate specialized prompts based on detected site type"""
+        
+        base_info = f"""
         URL: {url}
         Title: {title}
-        Content Preview: {content_preview}
+        Content Preview: {content}
+        Site Type: {site_type.value}
+        """
         
-        DEMO PERSPECTIVE: What would impress someone evaluating this website/service?
+        if site_type == BusinessSiteType.BANKING:
+            return base_info + """
+        BANKING SITE DEMO EVALUATION:
+        This is a financial/banking website. Focus on professional demonstration value.
+        
+        HIGH VALUE for banking demos:
+        - Core banking services (accounts, loans, mortgages, credit cards)
+        - Business banking solutions (commercial lending, corporate accounts)
+        - Digital banking features (online banking, mobile apps, security)
+        - Investment and financial advisory services
+        - Customer support and branch information
+        - About us, careers, investor relations (credibility)
+        
+        LOW VALUE for banking demos:
+        - Legal compliance pages (unless main regulatory info)
+        - Technical documentation, API docs
+        - Individual rate pages without context
+        - Generic marketing fluff without substance
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.ECOMMERCE:
+            return base_info + """
+        E-COMMERCE SITE DEMO EVALUATION:
+        This is an online retail/shopping website. Focus on shopping experience and features.
+        
+        HIGH VALUE for e-commerce demos:
+        - Product categories and main collections (not individual products)
+        - Shopping features (cart, checkout, search, filters)
+        - Customer service (returns, shipping, support)
+        - About us, company story, brand information
+        - Customer reviews and testimonials systems
+        - Account/profile management features
+        
+        LOW VALUE for e-commerce demos:
+        - Individual product pages (unless showcasing key products)
+        - Specific pricing without context
+        - Legal pages, shipping details only
+        - Duplicate product variants
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.CORPORATE:
+            return base_info + """
+        CORPORATE WEBSITE DEMO EVALUATION:
+        This is a business/corporate website. Focus on company capabilities and professionalism.
+        
+        HIGH VALUE for corporate demos:
+        - Services and solutions offered
+        - Company information and leadership
+        - Case studies, client success stories
+        - Industry expertise and insights
+        - Contact information and locations
+        - Careers and company culture
+        
+        LOW VALUE for corporate demos:
+        - Legal compliance pages only
+        - Press releases without context
+        - Internal employee resources
+        - Generic contact forms without content
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.PERSONAL:
+            return base_info + """
+        PERSONAL/SIMPLE SITE DEMO EVALUATION:
+        This appears to be a personal or simple website. Be more permissive - focus on main content.
+        
+        HIGH VALUE for personal site demos:
+        - Main content and key information
+        - About pages and personal information
+        - Work samples, projects, or creations
+        - Contact information
+        - Any substantial content that shows the site's purpose
+        
+        LOW VALUE for personal site demos:
+        - Broken links or empty pages
+        - Pure placeholder content
+        - Technical error pages
+        
+        BE LIBERAL: Most content on personal sites has demo value. When in doubt, include it.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.TECHNOLOGY:
+            return base_info + """
+        TECHNOLOGY & SCIENCE COMPANY DEMO EVALUATION:
+        This is a technology, science, or engineering company. Evaluate for professional demonstration value across all tech sectors.
+        
+        HIGH VALUE for technology/science demos:
+        - Products, instruments, and solutions (software, hardware, scientific equipment)
+        - Technology platforms, services, and capabilities
+        - Research & development innovations and breakthroughs
+        - Industry applications (life sciences, diagnostics, chemical, medical, manufacturing)
+        - Case studies, customer success stories, and applications
+        - Scientific publications, whitepapers, and technical resources
+        - About us, leadership, expertise, and company capabilities
+        - Support, training, and service offerings
+        
+        LOW VALUE for technology demos:
+        - Pure API documentation without business context
+        - Legal compliance pages only
+        - Internal developer tools without explanation
+        - Generic marketing fluff without technical substance
+        
+        STRONG BIAS TOWARD INCLUSION: Technology and science companies should showcase their innovations and capabilities.
+        Most technical content has demonstration value.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.NEWS:
+            return base_info + """
+        NEWS & MEDIA SITE DEMO EVALUATION:
+        This is a news, media, or journalism website. Focus on content diversity and editorial quality.
+        
+        HIGH VALUE for news/media demos:
+        - Diverse article topics and news categories (politics, business, sports, lifestyle, technology)
+        - Editorial sections, opinion pieces, and investigative journalism
+        - Multimedia content (videos, podcasts, interactive content)
+        - Breaking news and current events coverage
+        - Local news and community coverage
+        - About us, editorial team, and journalism standards
+        - Archive sections showing content breadth
+        
+        LOW VALUE for news demos:
+        - Duplicate or very similar stories
+        - Purely promotional content without news value
+        - Outdated news without historical significance
+        - Pure social media feeds without editorial content
+        
+        MODERATE BIAS TOWARD INCLUSION: Include diverse content types that showcase editorial range and quality.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.PORTFOLIO:
+            return base_info + """
+        PORTFOLIO & CREATIVE SITE DEMO EVALUATION:
+        This is a portfolio, creative agency, or freelancer website. Focus on showcasing creative work and capabilities.
+        
+        HIGH VALUE for portfolio demos:
+        - Work samples, projects, and case studies
+        - Client testimonials and success stories
+        - About/bio information and creative process
+        - Services offered and expertise areas
+        - Creative team profiles and capabilities
+        - Awards, recognition, and achievements
+        - Contact information and project inquiry process
+        
+        LOW VALUE for portfolio demos:
+        - Empty galleries or placeholder content
+        - Purely personal social media without professional context
+        - Broken links to work samples
+        - Generic templates without actual work shown
+        
+        STRONG BIAS TOWARD INCLUSION: Portfolios are designed to showcase work - most content has demo value.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.EDUCATIONAL:
+            return base_info + """
+        EDUCATIONAL INSTITUTION DEMO EVALUATION:
+        This is a school, university, training program, or educational service. Focus on educational offerings and institutional credibility.
+        
+        HIGH VALUE for educational demos:
+        - Course catalogs, programs, and curricula
+        - Faculty profiles, expertise, and credentials
+        - Admission information and requirements
+        - Research programs and academic achievements
+        - Student services and campus resources
+        - Educational resources and learning materials
+        - About the institution, accreditation, and history
+        
+        LOW VALUE for educational demos:
+        - Internal student portals and grade systems
+        - Administrative forms without context
+        - Purely promotional content without educational substance
+        - Generic contact forms without program information
+        
+        MODERATE BIAS TOWARD INCLUSION: Educational content that shows institutional quality and offerings is valuable.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.HEALTHCARE:
+            return base_info + """
+        HEALTHCARE PROVIDER DEMO EVALUATION:
+        This is a healthcare provider, medical practice, hospital, or health services website. Focus on patient care and medical expertise.
+        
+        HIGH VALUE for healthcare demos:
+        - Medical services and specialties offered
+        - Provider profiles, credentials, and expertise
+        - Patient resources and health education
+        - Treatment options and medical procedures
+        - Facility information and technology capabilities
+        - Insurance and appointment information
+        - Health and wellness resources
+        
+        LOW VALUE for healthcare demos:
+        - Patient portals and private medical information
+        - Billing and administrative systems
+        - Purely regulatory compliance pages without patient value
+        - Generic appointment forms without service context
+        
+        MODERATE BIAS TOWARD INCLUSION: Healthcare information that helps patients understand services is valuable.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.GOVERNMENT:
+            return base_info + """
+        GOVERNMENT SITE DEMO EVALUATION:
+        This is a government agency, public service, or official website. Focus on citizen services and public information.
+        
+        HIGH VALUE for government demos:
+        - Public services and citizen resources
+        - Policy information and government programs
+        - Contact information and office locations
+        - Public records and transparency information
+        - Elected officials and department leadership
+        - Community resources and public programs
+        - Forms and processes for citizen services
+        
+        LOW VALUE for government demos:
+        - Internal administrative tools
+        - Purely bureaucratic processes without citizen context
+        - Outdated information without historical significance
+        - Generic contact information without service details
+        
+        MODERATE BIAS TOWARD INCLUSION: Government services and citizen resources are important to showcase.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.NON_PROFIT:
+            return base_info + """
+        NON-PROFIT ORGANIZATION DEMO EVALUATION:
+        This is a charity, foundation, advocacy group, or non-profit organization. Focus on mission and impact.
+        
+        HIGH VALUE for non-profit demos:
+        - Mission, vision, and cause information
+        - Programs and services offered
+        - Impact stories and success metrics
+        - Volunteer opportunities and ways to help
+        - Donation information and funding transparency
+        - About the organization, leadership, and history
+        - Community involvement and partnerships
+        
+        LOW VALUE for non-profit demos:
+        - Internal member areas and private content
+        - Purely fundraising appeals without mission context
+        - Administrative content without public relevance
+        - Generic donation forms without cause explanation
+        
+        STRONG BIAS TOWARD INCLUSION: Non-profits want to showcase their mission and impact broadly.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.ENTERTAINMENT:
+            return base_info + """
+        ENTERTAINMENT SITE DEMO EVALUATION:
+        This is an entertainment, media, gaming, or content website. Focus on content offerings and user experience.
+        
+        HIGH VALUE for entertainment demos:
+        - Content offerings (shows, movies, games, music, books)
+        - Artist profiles and entertainment personalities
+        - Event listings and entertainment news
+        - Platform features and user experience
+        - Reviews, ratings, and community features
+        - Subscription or access information
+        - About the platform and content strategy
+        
+        LOW VALUE for entertainment demos:
+        - User account areas and personal settings
+        - Purely promotional content without substance
+        - Generic marketing without content details
+        - Technical streaming information without context
+        
+        MODERATE BIAS TOWARD INCLUSION: Entertainment content that showcases offerings and experience is valuable.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.REAL_ESTATE:
+            return base_info + """
+        REAL ESTATE SITE DEMO EVALUATION:
+        This is a real estate agency, property website, or real estate services. Focus on property services and market expertise.
+        
+        HIGH VALUE for real estate demos:
+        - Property listings and market information
+        - Agent profiles and real estate expertise
+        - Market analysis and neighborhood information
+        - Real estate services offered (buying, selling, property management)
+        - Company information and track record
+        - Client testimonials and success stories
+        - Contact information and consultation process
+        
+        LOW VALUE for real estate demos:
+        - Individual property details without broader context
+        - Purely transactional forms and MLS data dumps
+        - Generic property photos without descriptive content
+        - Administrative tools without client relevance
+        
+        MODERATE BIAS TOWARD INCLUSION: Real estate content that shows market knowledge and services is valuable.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.LEGAL:
+            return base_info + """
+        LEGAL SERVICES DEMO EVALUATION:
+        This is a law firm, attorney, or legal services website. Focus on legal expertise and practice areas.
+        
+        HIGH VALUE for legal demos:
+        - Practice areas and legal specializations
+        - Attorney profiles, credentials, and experience
+        - Legal resources and educational content
+        - Case types handled and legal expertise
+        - Firm information and legal philosophy
+        - Client testimonials and case results (where appropriate)
+        - Contact information and consultation process
+        
+        LOW VALUE for legal demos:
+        - Client portals and confidential case information
+        - Generic legal disclaimers without substantive content
+        - Purely administrative forms without practice context
+        - Legal jargon without client-facing explanation
+        
+        MODERATE BIAS TOWARD INCLUSION: Legal content that demonstrates expertise and helps clients is valuable.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        elif site_type == BusinessSiteType.RESTAURANT:
+            return base_info + """
+        RESTAURANT & FOOD SERVICE DEMO EVALUATION:
+        This is a restaurant, food service, catering, or hospitality website. Focus on dining experience and food offerings.
+        
+        HIGH VALUE for restaurant demos:
+        - Menus, food offerings, and specialties
+        - Restaurant information, atmosphere, and dining experience
+        - Chef profiles and culinary expertise
+        - Location, hours, and contact information
+        - Catering and special event services
+        - Reviews, awards, and recognition
+        - Reservation and ordering information
+        
+        LOW VALUE for restaurant demos:
+        - Internal ordering systems without menu context
+        - Generic promotional content without food/service details
+        - Administrative content without customer relevance
+        - Purely transactional pages without dining information
+        
+        STRONG BIAS TOWARD INCLUSION: Restaurants want to showcase their food, atmosphere, and services.
+        
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
+        """
+        
+        else:  # UNKNOWN, NEWS, HEALTHCARE, GOVERNMENT, etc.
+            return base_info + """
+        GENERAL SITE DEMO EVALUATION:
+        Evaluate this content for demonstration value. For simple/minimal sites, be very permissive.
         
         HIGH VALUE for demos:
-        - Products, services, solutions (core business offerings)
-        - Customer support features (contact methods, help systems, FAQs)
-        - User experience features (app functionality, digital tools, convenience)
-        - Business information (company info, case studies, success stories)
-        - Educational content (guides, resources, how-to information)
-        - About pages, investor info, newsroom (credibility and transparency)
-        - Main navigation and key landing pages
-        - ANY content that shows capabilities, features, or customer value
+        - Main services, products, or information offered
+        - About us, company/organization information
+        - Key features or capabilities
+        - Contact information and locations
+        - Educational or informational content
+        - User-facing functionality
+        - Any substantial content that shows the site's purpose
         
         LOW VALUE for demos:
-        - Technical/admin content (API docs, debug pages, internal tools)
-        - Legal boilerplate (terms, privacy - unless specifically requested)
-        - Error pages, maintenance pages
-        - Duplicate/spam content
-        - Pure navigation with no content
+        - Technical documentation or admin pages
+        - Legal boilerplate without substance
+        - Error or maintenance pages
+        - Pure navigation without content
         
-        BIAS TOWARD INCLUSION: When in doubt, include it. Better to have too much demo content than miss valuable features.
+        STRONG BIAS TOWARD INCLUSION: For simple sites with minimal content, accept most pages. 
+        Better to include than exclude. When in doubt, mark as WORTHY.
         
-        Respond with:
-        WORTHY: true/false
-        CONFIDENCE: 0.0-1.0
-        REASONING: brief explanation focusing on demo/client value
+        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
 
 # Convenience functions for easy integration

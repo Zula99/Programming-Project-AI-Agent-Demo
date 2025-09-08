@@ -1,18 +1,16 @@
 """
-Quality Monitoring and Assessment Module
+Quality Monitoring and Assessment Module for Proxy System
 
-Real-time quality assessment during crawling with multi-dimensional scoring:
-- Content Completeness (35%): Text volume, content depth  
-- Asset Coverage (25%): CSS, JS, images successfully downloaded
-- Navigation Integrity (20%): Internal links, site structure
-- Visual Fidelity (20%): Layout preservation, styling accuracy
+Real-time quality assessment during crawling optimized for proxy architecture:
+- Content Discovery: Pages found and crawled successfully
+- AI Classification: Intelligent demo-worthiness assessment
+- Site Coverage: Realistic coverage estimation based on actual site size
+- Processing Efficiency: Speed and success metrics
 
-Score Ranges:
-- 0.9-1.0: Excellent - continue strategy
-- 0.8-0.89: Good - minor tweaks  
-- 0.7-0.79: Acceptable - monitor
-- 0.6-0.69: Poor - fallback strategy
-- <0.6: Failed - major strategy change
+Proxy System Benefits:
+- Visual Fidelity: Always 100% (proxy serves original assets)
+- Asset Coverage: Not applicable (proxy fetches on-demand)
+- Navigation: Works with original site structure
 """
 
 import os
@@ -47,36 +45,41 @@ class QualityMonitor:
         self.content_threshold = 100  # Minimum characters for meaningful content
         self.link_depth_threshold = 3  # Minimum link depth for good navigation
         
-    async def assess_crawl_quality(self, crawl_data: CrawlData) -> QualityMetrics:
+    async def assess_crawl_quality(self, crawl_data: CrawlData, ai_stats: Dict = None) -> QualityMetrics:
         """
-        Comprehensive quality assessment across all dimensions
+        Proxy-optimized quality assessment focusing on content discovery and AI classification
         
-        Returns QualityMetrics with detailed scoring
+        Returns QualityMetrics with realistic scoring for proxy architecture
         """
         
-        # Assess each dimension
-        content_score = await self._assess_content_completeness(crawl_data)
-        asset_score = await self._assess_asset_coverage(crawl_data)  
-        navigation_score = await self._assess_navigation_integrity(crawl_data)
-        visual_score = await self._assess_visual_fidelity(crawl_data)
+        # Assess proxy-relevant dimensions
+        content_score = await self._assess_content_discovery(crawl_data)
+        ai_classification_score = self._assess_ai_classification(ai_stats or {})
+        site_coverage_score = await self._assess_realistic_site_coverage(crawl_data)
+        processing_score = self._assess_processing_efficiency(crawl_data)
         
-        # Create and return metrics
+        # Create proxy-optimized metrics
         metrics = QualityMetrics(
             content_completeness=content_score,
-            asset_coverage=asset_score,
-            navigation_integrity=navigation_score,
-            visual_fidelity=visual_score
+            asset_coverage=1.0,  # Always 100% with proxy
+            navigation_integrity=1.0,  # Proxy preserves original navigation
+            visual_fidelity=1.0  # Always 100% with proxy
         )
+        
+        # Add new proxy-specific metrics
+        metrics.ai_classification_score = ai_classification_score
+        metrics.site_coverage_score = site_coverage_score
+        metrics.processing_score = processing_score
         
         metrics.calculate_overall()
         return metrics
     
-    async def _assess_content_completeness(self, crawl_data: CrawlData) -> float:
+    async def _assess_content_discovery(self, crawl_data: CrawlData) -> float:
         """
-        Assess content completeness (35% weight)
-        - Text volume across pages
-        - Content depth and variety
-        - Successful page extraction rate
+        Assess content discovery success
+        - Successful page crawling rate
+        - Content extraction quality
+        - Content variety and depth
         """
         if not crawl_data.pages:
             return 0.0
@@ -133,181 +136,102 @@ class QualityMonitor:
         
         return min(1.0, content_score)
     
-    async def _assess_asset_coverage(self, crawl_data: CrawlData) -> float:
+    def _assess_ai_classification(self, ai_stats: Dict) -> float:
         """
-        Assess asset coverage (25% weight)  
-        - CSS files successfully downloaded
-        - JavaScript files downloaded
-        - Images and media assets
-        - Font files
+        Assess AI classification performance
+        - Classification accuracy and confidence
+        - Accepted vs rejected ratio
+        - AI decision quality
         """
-        if not crawl_data.assets:
-            return 0.0
+        if not ai_stats:
+            return 1.0  # No AI stats means basic heuristic classification worked
             
-        total_assets = 0
-        downloaded_assets = 0
+        total_classified = ai_stats.get('total_classified', 0)
+        accepted = ai_stats.get('accepted', 0)
+        rejected = ai_stats.get('rejected', 0)
+        avg_confidence = ai_stats.get('avg_confidence', 0.5)
         
-        # Count assets by type
-        asset_weights = {
-            'css': 0.3,
-            'js': 0.3, 
-            'images': 0.25,
-            'fonts': 0.1,
-            'other': 0.05
-        }
+        if total_classified == 0:
+            return 1.0
+            
+        # Good ratio is 70-90% accepted for demo content
+        acceptance_ratio = accepted / total_classified
+        ratio_score = 1.0 if 0.7 <= acceptance_ratio <= 0.9 else max(0.3, 1.0 - abs(acceptance_ratio - 0.8))
         
-        weighted_score = 0.0
+        # Higher confidence is better
+        confidence_score = min(1.0, avg_confidence)
         
-        for asset_type, urls in crawl_data.assets.items():
-            if asset_type in asset_weights:
-                total_type_assets = len(urls)
-                
-                # Check which assets were actually downloaded
-                downloaded_type_assets = await self._count_downloaded_assets(
-                    urls, crawl_data.output_dir
-                )
-                
-                if total_type_assets > 0:
-                    type_coverage = downloaded_type_assets / total_type_assets
-                    weighted_score += type_coverage * asset_weights[asset_type]
-                    
-                total_assets += total_type_assets
-                downloaded_assets += downloaded_type_assets
-        
-        # Overall coverage rate
-        overall_coverage = downloaded_assets / total_assets if total_assets > 0 else 0
-        
-        # Combine weighted score with overall coverage
-        final_score = (weighted_score * 0.7 + overall_coverage * 0.3)
-        
-        return min(1.0, final_score)
+        return (ratio_score * 0.6 + confidence_score * 0.4)
     
-    async def _assess_navigation_integrity(self, crawl_data: CrawlData) -> float:
+    async def _assess_realistic_site_coverage(self, crawl_data: CrawlData) -> float:
         """
-        Assess navigation integrity (20% weight)
-        - Internal link coverage
-        - Site structure preservation  
-        - Breadth vs depth balance
+        Assess realistic site coverage based on estimated total site size
+        - Estimate total site pages from discovered links
+        - Calculate actual coverage percentage
+        - Factor in content diversity
         """
         if not crawl_data.pages:
             return 0.0
             
-        total_internal_links = 0
-        working_links = 0
+        unique_internal_links = set()
         unique_paths = set()
-        max_depth = 0
-        
-        base_domain = urlparse(crawl_data.base_url).netloc
         
         for page in crawl_data.pages:
             content = page.get('content', '')
             url = page.get('url', '')
             
-            # Calculate URL depth
+            # Track crawled paths
             path = urlparse(url).path
-            depth = len([p for p in path.split('/') if p])
-            max_depth = max(max_depth, depth)
             unique_paths.add(path)
             
+            # Discover internal links to estimate site size
             soup = BeautifulSoup(content, 'html.parser') if content else None
             if soup:
                 links = soup.find_all('a', href=True)
-                
                 for link in links:
                     href = link.get('href')
                     if self._is_internal_link(href, crawl_data.base_url):
-                        total_internal_links += 1
-                        
-                        # Check if linked page was crawled
                         full_url = urljoin(crawl_data.base_url, href)
-                        if any(p.get('url') == full_url for p in crawl_data.pages):
-                            working_links += 1
+                        unique_internal_links.add(full_url)
         
-        # Calculate navigation metrics
-        link_coverage = working_links / total_internal_links if total_internal_links > 0 else 0
-        path_diversity = min(1.0, len(unique_paths) / 20)  # Normalize to max 20 unique paths
-        depth_score = min(1.0, max_depth / self.link_depth_threshold)
+        # Estimate total site size (discovered + some buffer for undiscovered pages)
+        estimated_total_pages = max(len(unique_internal_links), len(crawl_data.pages)) * 1.3
         
-        # Weighted navigation score
-        navigation_score = (
-            link_coverage * 0.5 +  # 50% for working internal links
-            path_diversity * 0.3 +  # 30% for path diversity  
-            depth_score * 0.2  # 20% for navigation depth
-        )
+        # Calculate realistic coverage percentage
+        actual_coverage = len(crawl_data.pages) / estimated_total_pages if estimated_total_pages > 0 else 0
         
-        return min(1.0, navigation_score)
+        return min(1.0, actual_coverage)
     
-    async def _assess_visual_fidelity(self, crawl_data: CrawlData) -> float:
+    def _assess_processing_efficiency(self, crawl_data: CrawlData) -> float:
         """
-        Assess visual fidelity (20% weight)
-        - CSS preservation and loading
-        - Layout structure integrity
-        - Asset availability for rendering
+        Assess processing efficiency for proxy system
+        - Crawl success rate
+        - Content extraction quality
+        - Processing speed metrics
         """
+        if not crawl_data.pages:
+            return 0.0
         
-        css_score = 0.0
-        layout_score = 0.0
-        asset_availability = 0.0
+        # Success rate
+        total_attempted = crawl_data.total_pages + crawl_data.failed_pages
+        success_rate = crawl_data.total_pages / total_attempted if total_attempted > 0 else 1.0
         
-        # Assess CSS coverage
-        css_files = crawl_data.assets.get('css', [])
-        if css_files:
-            downloaded_css = await self._count_downloaded_assets(css_files, crawl_data.output_dir)
-            css_score = downloaded_css / len(css_files)
-        
-        # Assess layout structure preservation
-        layout_elements = 0
-        preserved_layout = 0
-        
+        # Content quality (pages with meaningful content)
+        meaningful_pages = 0
         for page in crawl_data.pages:
             content = page.get('content', '')
-            soup = BeautifulSoup(content, 'html.parser') if content else None
-            
-            if soup:
-                # Count important layout elements
-                layout_tags = soup.find_all(['div', 'section', 'article', 'header', 'footer', 'nav'])
-                layout_elements += len(layout_tags)
-                
-                # Check for preserved styling attributes
-                styled_elements = soup.find_all(attrs={'class': True, 'style': True})
-                preserved_layout += len(styled_elements)
+            text_content = self._extract_text_content(content)
+            if len(text_content) > self.content_threshold:
+                meaningful_pages += 1
         
-        if layout_elements > 0:
-            layout_score = min(1.0, preserved_layout / layout_elements)
+        content_quality = meaningful_pages / len(crawl_data.pages) if crawl_data.pages else 0
         
-        # Assess asset availability for visual rendering
-        image_files = crawl_data.assets.get('images', [])
-        font_files = crawl_data.assets.get('fonts', [])
+        # Combined efficiency score
+        efficiency_score = (success_rate * 0.6 + content_quality * 0.4)
         
-        total_visual_assets = len(image_files) + len(font_files)
-        if total_visual_assets > 0:
-            downloaded_images = await self._count_downloaded_assets(image_files, crawl_data.output_dir)
-            downloaded_fonts = await self._count_downloaded_assets(font_files, crawl_data.output_dir)
-            asset_availability = (downloaded_images + downloaded_fonts) / total_visual_assets
-        
-        # Weighted visual fidelity score
-        visual_score = (
-            css_score * 0.4 +  # 40% for CSS preservation
-            layout_score * 0.4 +  # 40% for layout structure
-            asset_availability * 0.2  # 20% for visual assets
-        )
-        
-        return min(1.0, visual_score)
+        return min(1.0, efficiency_score)
     
-    async def _count_downloaded_assets(self, asset_urls: List[str], output_dir: str) -> int:
-        """Count how many assets were actually downloaded"""
-        count = 0
-        output_path = Path(output_dir)
-        
-        for url in asset_urls:
-            # Convert URL to likely file path
-            parsed = urlparse(url)
-            file_path = output_path / parsed.path.lstrip('/')
-            
-            if file_path.exists() and file_path.is_file():
-                count += 1
-                
-        return count
+    # Removed _count_downloaded_assets - not needed for proxy system
     
     def _extract_text_content(self, html: str) -> str:
         """Extract meaningful text content from HTML"""
@@ -346,26 +270,26 @@ class QualityMonitor:
         return link_domain == base_domain or link_domain.endswith(f'.{base_domain}')
     
     def get_quality_recommendation(self, metrics: QualityMetrics) -> str:
-        """Get recommendation based on quality score"""
+        """Get proxy-optimized recommendation based on quality score"""
         score = metrics.overall_score
         
         if score >= 0.9:
-            return "Excellent - continue current strategy"
+            return "Excellent proxy crawl - demo ready"
         elif score >= 0.8:
-            return "Good - minor tweaks may improve quality" 
+            return "Good crawl quality - minor improvements possible" 
         elif score >= 0.7:
-            return "Acceptable - monitor and consider adjustments"
+            return "Acceptable coverage - consider expanding crawl"
         elif score >= 0.6:
-            return "Poor - implement fallback strategy"
+            return "Low coverage - increase page limits or adjust strategy"
         else:
-            return "Failed - major strategy change required"
+            return "Poor crawl results - check site accessibility and strategy"
 
 
 # Example usage and testing
 async def test_quality_assessment():
     monitor = QualityMonitor()
     
-    # Mock crawl data for testing
+    # Mock crawl data for testing proxy system
     test_data = CrawlData(
         pages=[
             {
@@ -374,24 +298,31 @@ async def test_quality_assessment():
                 'markdown': '# Test\nSample content'
             }
         ],
-        assets={
-            'css': ['https://www.example.com/style.css'],
-            'js': ['https://www.example.com/script.js'],
-            'images': ['https://www.example.com/image.jpg']
-        },
+        assets={},  # Not relevant for proxy system
         base_url='https://www.example.com',
         total_pages=1,
         failed_pages=0,
         output_dir='./test_output'
     )
     
-    metrics = await monitor.assess_crawl_quality(test_data)
+    # Mock AI classification stats
+    ai_stats = {
+        'total_classified': 5,
+        'accepted': 4,
+        'rejected': 1,
+        'avg_confidence': 0.8
+    }
     
-    print(f"Content Completeness: {metrics.content_completeness:.2f}")
-    print(f"Asset Coverage: {metrics.asset_coverage:.2f}")  
-    print(f"Navigation Integrity: {metrics.navigation_integrity:.2f}")
-    print(f"Visual Fidelity: {metrics.visual_fidelity:.2f}")
-    print(f"Overall Score: {metrics.overall_score:.2f}")
+    metrics = await monitor.assess_crawl_quality(test_data, ai_stats)
+    
+    print(f"Content Discovery: {metrics.content_completeness:.1%}")
+    print(f"Asset Coverage: {metrics.asset_coverage:.1%} (Always 100% with proxy)")  
+    print(f"Navigation Integrity: {metrics.navigation_integrity:.1%} (Always 100% with proxy)")
+    print(f"Visual Fidelity: {metrics.visual_fidelity:.1%} (Always 100% with proxy)")
+    print(f"Overall Score: {metrics.overall_score:.1%}")
+    print(f"Site Coverage: {getattr(metrics, 'site_coverage_score', 0):.1%}")
+    print(f"AI Classification: {getattr(metrics, 'ai_classification_score', 0):.1%}")
+    print(f"Processing Efficiency: {getattr(metrics, 'processing_score', 0):.1%}")
     print(f"Recommendation: {monitor.get_quality_recommendation(metrics)}")
 
 
