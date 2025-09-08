@@ -5,8 +5,7 @@ from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 import sys
 
-# Import crawler utilities
-sys.path.append(str(Path(__file__).parent.parent.parent / "crawl4ai"))
+# Import crawler utilities (now in same directory)
 from crawler_utils import CrawlConfig, CrawlResult, generic_crawl
 
 class AgentCrawler:

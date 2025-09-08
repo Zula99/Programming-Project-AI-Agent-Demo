@@ -12,10 +12,8 @@ from dataclasses import dataclass
 import asyncio
 import logging
 
-# AI Classification imports (with fallback if not available)
+# AI Classification imports (now in same directory)
 try:
-    import sys
-    sys.path.append(str(Path(__file__).parent.parent / "ai-agent-demo-factory-backend" / "crawl4ai-agent"))
     from ai_content_classifier import AIContentClassifier, HeuristicClassifier, ClassificationResult
     from ai_config import get_ai_config
     AI_AVAILABLE = True
