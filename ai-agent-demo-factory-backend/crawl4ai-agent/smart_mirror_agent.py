@@ -201,7 +201,7 @@ class SmartMirrorAgent:
         
     async def reconnaissance(self, url: str) -> ReconResults:
         """Quick reconnaissance to understand site characteristics and plan smart crawling"""
-        self.logger.info(f"🔍 Performing reconnaissance on {url}")
+        self.logger.info(f"Performing reconnaissance on {url}")
         
         try:
             # Quick crawl of homepage for analysis
