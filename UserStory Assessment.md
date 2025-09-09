@@ -255,7 +255,7 @@ As a demo factory operator I want AI-powered content worthiness assessment So th
 - 🔄 Learns from successful demo outcomes to improve classification (future enhancement)
 
 
-  **Step 3: Smart Tiebreaking - TO BE DELETED**
+  **Step 3: Smart Tiebreaking - TO BE DELETED/REPLACED**
   If multiple categories tie, the system uses priority ordering:
   1. Banking, Healthcare, Legal (high-stakes industries)
   2. Technology, E-commerce (business-focused)
