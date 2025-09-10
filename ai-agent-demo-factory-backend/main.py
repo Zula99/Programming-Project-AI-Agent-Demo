@@ -2,10 +2,12 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import requests
 
 #-----Core imports-----
 from services.indexer import index_crawl_results_to_opensearch
+from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_logs
 
 
 import uuid # For generating unique IDs
@@ -201,6 +203,13 @@ class SearchRequest(BaseModel):
     query: str
     size: int = 50
 
+# Pydantic model for crawl log search requests
+class CrawlLogSearchRequest(BaseModel):
+    run_id: Optional[str] = None
+    log_level: Optional[str] = None
+    log_type: Optional[str] = None  # "trigger", "runner", "execution_summary"
+    size: int = 100
+
 # Pydantic model for the structure of a single page result.
 # Used for documenting and validating the 'results' array.
 class PageRow(BaseModel):
@@ -269,6 +278,14 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
                     # Extract real crawl statistics from logs
                     crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
                     
+                    # Index crawl logs to OpenSearch
+                    try:
+                        log_indexing_result = index_crawl_logs_to_opensearch(run_id)
+                        crawl_jobs[run_id]['log_indexing_result'] = log_indexing_result
+                        print(f"[{run_id}] Crawl logs indexed: {log_indexing_result}")
+                    except Exception as e:
+                        print(f"[{run_id}] Failed to index crawl logs: {e}")
+                    
                     print(f"[{run_id}] Crawl completed successfully via HTTP API")
                 else:
                     raise Exception(f"HTTP API error: {norconex_response.status_code} - {norconex_response.text}")
@@ -318,6 +335,14 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
                     
                     # Extract real crawl statistics from logs
                     crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
+                    
+                    # Index crawl logs to OpenSearch
+                    try:
+                        log_indexing_result = index_crawl_logs_to_opensearch(run_id)
+                        crawl_jobs[run_id]['log_indexing_result'] = log_indexing_result
+                        print(f"[{run_id}] Crawl logs indexed: {log_indexing_result}")
+                    except Exception as e:
+                        print(f"[{run_id}] Failed to index crawl logs: {e}")
                     
                     print(f"[{run_id}] Crawl completed successfully via file trigger")
                     
@@ -595,5 +620,46 @@ async def search_documents(request: SearchRequest):
         raise HTTPException(status_code=500, detail=f"Failed to connect to OpenSearch: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
+
+@app.post("/crawl-logs/search")
+async def search_crawl_logs_endpoint(request: CrawlLogSearchRequest):
+    """
+    Search crawl logs in OpenSearch.
+    """
+    try:
+        results = search_crawl_logs(
+            run_id=request.run_id,
+            log_level=request.log_level,
+            log_type=request.log_type,
+            size=request.size
+        )
+        
+        if "error" in results:
+            raise HTTPException(status_code=500, detail=results["error"])
+        
+        return results
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Crawl log search error: {str(e)}")
+
+@app.post("/crawl-logs/index/{run_id}")
+async def index_crawl_logs_endpoint(run_id: str):
+    """
+    Manually trigger indexing of crawl logs for a specific run.
+    """
+    try:
+        result = index_crawl_logs_to_opensearch(run_id)
+        
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Log indexing error: {str(e)}")
 
 
