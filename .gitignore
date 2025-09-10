@@ -5,6 +5,11 @@ norconex/workdir/
 norconex/logs/
 norconex/progress/
 
+# Generated Crawler Configs and Status Files
+norconex-runner/configs/crawler-*.xml
+norconex-runner/configs/completed-*.json
+norconex-runner/configs/failed-*.json
+
 # Norconex Database Files
 *.mvstore
 *.mvstore.db
