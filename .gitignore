@@ -25,7 +25,7 @@ norconex/downloads/
 # Log Files
 *.log
 *.log.*
-logs/
+
 
 # Temporary Files
 *.tmp
