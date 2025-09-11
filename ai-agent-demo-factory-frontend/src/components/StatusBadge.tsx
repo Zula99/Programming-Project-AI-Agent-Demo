@@ -1,4 +1,4 @@
-type Props = { status: "complete" | "running" | "failed" | "pending" | "unknown" };
+type Props = { status: "complete" | "running" | "failed" | "pending" | "stopped" | "unknown" };
 
 export default function StatusBadge({ status }: Props) {
     const colours = {
@@ -6,6 +6,7 @@ export default function StatusBadge({ status }: Props) {
         running: "bg-blue-100 text-blue-800",
         failed: "bg-red-100 text-red-800",
         pending: "bg-yellow-100 text-yellow-800",
+        stopped: "bg-orange-100 text-orange-800",
         unknown: "bg-gray-100 text-gray-800",
     };
 
