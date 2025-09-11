@@ -26,7 +26,7 @@ interface CrawlStats {
 interface CrawlJob {
   run_id: string;
   target_url: string;
-  status: 'pending' | 'running' | 'complete' | 'failed';
+  status: 'pending' | 'running' | 'complete' | 'failed' | 'stopped';
   progress: number;
   started_at: number;
   completed_at?: number;
@@ -90,8 +90,8 @@ export default function CrawlController() {
           const job: CrawlJob = await response.json();
           setActiveJob(job);
           
-          // Stop polling if job is complete or failed
-          if (job.status === 'complete' || job.status === 'failed') {
+          // Stop polling if job is complete, failed, or stopped
+          if (job.status === 'complete' || job.status === 'failed' || job.status === 'stopped') {
             polling = false;
           }
         }
@@ -107,6 +107,41 @@ export default function CrawlController() {
     poll();
   };
 
+  const stopCrawl = async (runId: string) => {
+    try {
+      const response = await fetch(`/api/crawl/stop/${runId}`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.details || errorData.error || errorData.detail || errorMessage;
+        } catch {
+          // If response is not JSON, use the status text
+          errorMessage = `${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('Crawl stopped successfully:', data);
+      
+      // Update the local job state immediately
+      if (activeJob && activeJob.run_id === runId) {
+        setActiveJob({
+          ...activeJob,
+          status: 'stopped',
+          completed_at: Date.now() / 1000
+        });
+      }
+    } catch (err) {
+      console.error('Error stopping crawl:', err);
+      setError(err instanceof Error ? err.message : 'Failed to stop crawl');
+    }
+  };
+
   const formatDuration = (startTime: number, endTime?: number) => {
     const duration = Math.floor((endTime ? endTime : Date.now() / 1000) - startTime);
     if (duration < 60) return `${duration}s`;
@@ -114,13 +149,6 @@ export default function CrawlController() {
     return `${Math.floor(duration / 3600)}h ${Math.floor((duration % 3600) / 60)}m`;
   };
 
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   const renderCompletionStats = (job: CrawlJob) => {
     if (job.status !== 'complete' || !job.stats) return null;
@@ -196,6 +224,68 @@ export default function CrawlController() {
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  const renderStoppedStats = (job: CrawlJob) => {
+    if (job.status !== 'stopped') return null;
+
+    const stats = job.stats;
+    const duration = job.completed_at ? formatDuration(job.started_at, job.completed_at) : 'Unknown';
+    
+    return (
+      <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-yellow-800">Crawl Stopped - Partial Results Available</h4>
+          <div className="text-sm text-yellow-600">
+            Duration: <span className="font-medium">{duration}</span>
+          </div>
+        </div>
+        
+        <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded">
+          <div className="text-sm text-orange-800 mb-2">
+            <strong>Status:</strong> The crawl was manually stopped and partial results have been saved
+          </div>
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="text-xl font-bold text-blue-600">{stats.pages_indexed || 0}</div>
+                <div className="text-xs text-gray-600">Pages Indexed</div>
+              </div>
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="text-xl font-bold text-green-600">{stats.pages_processed || stats.total_pages_crawled || 0}</div>
+                <div className="text-xs text-gray-600">Pages Processed</div>
+              </div>
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="text-xl font-bold text-purple-600">{stats.pages_fetched || 0}</div>
+                <div className="text-xs text-gray-600">Pages Fetched</div>
+              </div>
+              <div className="text-center p-2 bg-white rounded border">
+                <div className="text-xl font-bold text-orange-600">{stats.pages_queued || 0}</div>
+                <div className="text-xs text-gray-600">Pages Queued</div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm text-gray-700">
+            The crawl was stopped before completion, but any pages that were successfully crawled are available for search.
+          </div>
+          
+          {stats && stats.pages_indexed && stats.pages_indexed > 0 && (
+            <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-blue-700 text-sm">
+              <strong>Data Available:</strong> {stats.pages_indexed} pages were successfully indexed and are available for search in OpenSearch.
+            </div>
+          )}
+          
+          {(!stats || !stats.pages_indexed || stats.pages_indexed === 0) && (
+            <div className="mt-3 p-2 bg-gray-50 border border-gray-200 rounded text-gray-700 text-sm">
+              No pages were successfully indexed before the crawl was stopped.
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -289,11 +379,11 @@ export default function CrawlController() {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Enter URL to crawl (e.g., https://example.com)"
             className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={loading || (activeJob && activeJob.status === 'running')}
+            disabled={loading || (activeJob?.status === 'running')}
           />
           <button
             onClick={startCrawl}
-            disabled={loading || (activeJob && activeJob.status === 'running')}
+            disabled={loading || (activeJob?.status === 'running')}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Starting...' : 'Start Crawl'}
@@ -319,7 +409,17 @@ export default function CrawlController() {
                 <p className="font-medium text-blue-600">{activeJob.target_url}</p>
                 <p className="text-sm text-gray-500">Run ID: {activeJob.run_id}</p>
               </div>
-              <StatusBadge status={activeJob.status === 'pending' ? 'running' : activeJob.status as any} />
+              <div className="flex items-center gap-2">
+                {activeJob.status === 'running' && (
+                  <button
+                    onClick={() => stopCrawl(activeJob.run_id)}
+                    className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    Stop Crawl
+                  </button>
+                )}
+                <StatusBadge status={activeJob.status === 'pending' ? 'running' : activeJob.status as any} />
+              </div>
             </div>
             
             <div className="mb-3">
@@ -361,6 +461,9 @@ export default function CrawlController() {
           
           {/* Render detailed completion stats */}
           {renderCompletionStats(activeJob)}
+          
+          {/* Render stopped stats with partial results */}
+          {renderStoppedStats(activeJob)}
           
           {/* Render failure stats with partial results */}
           {renderFailureStats(activeJob)}
