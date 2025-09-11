@@ -17,7 +17,6 @@ class BusinessSiteType(Enum):
     ECOMMERCE = "ecommerce" 
     NEWS = "news"
     CORPORATE = "corporate"
-    PORTFOLIO = "portfolio"
     EDUCATIONAL = "educational"
     HEALTHCARE = "healthcare"
     GOVERNMENT = "government"
@@ -27,7 +26,6 @@ class BusinessSiteType(Enum):
     LEGAL = "legal"
     RESTAURANT = "restaurant"
     TECHNOLOGY = "technology"
-    PERSONAL = "personal"
     UNKNOWN = "unknown"
 
 @dataclass
@@ -41,27 +39,172 @@ class ClassificationResult:
 class BusinessSiteDetector:
     """Detects business site type using heuristics for targeted content evaluation"""
     
-    # Business site type patterns
-    BUSINESS_PATTERNS = {
-        BusinessSiteType.BANKING: ["bank", "banking", "financial institution", "loan", "mortgage", "credit card", "investment banking", "wealth management"],
-        BusinessSiteType.ECOMMERCE: ["shop", "store", "cart", "checkout", "product", "buy", "marketplace", "retail"],
-        BusinessSiteType.NEWS: ["news", "article", "blog", "post", "story", "journalism", "media"],
-        BusinessSiteType.HEALTHCARE: ["health", "medical", "doctor", "clinic", "hospital", "dentist", "pharmacy"],
-        BusinessSiteType.EDUCATIONAL: ["school", "university", "course", "learning", "education", "training"],
-        BusinessSiteType.GOVERNMENT: ["gov", ".gov", "government", "council", "state", "federal", "municipal"],
-        BusinessSiteType.LEGAL: ["law", "legal", "attorney", "lawyer", "court", "justice", "litigation"],
-        BusinessSiteType.REAL_ESTATE: ["property", "realestate", "homes", "rent", "real estate", "housing"],
-        BusinessSiteType.RESTAURANT: ["restaurant", "food", "dining", "menu", "cafe", "bar", "catering"],
-        BusinessSiteType.TECHNOLOGY: ["tech", "software", "saas", "api", "cloud", "app", "platform", "scientific", "instruments", "diagnostics", "life sciences", "chemical", "biotechnology", "engineering", "innovation"],
-        BusinessSiteType.NON_PROFIT: ["nonprofit", "charity", "foundation", "donate", "volunteer", "cause"],
-        BusinessSiteType.ENTERTAINMENT: ["entertainment", "movie", "music", "game", "streaming", "media"],
-        BusinessSiteType.PORTFOLIO: ["portfolio", "designer", "freelancer", "agency", "creative", "work"],
+    # Enhanced hybrid patterns: phrases (high confidence) + keywords (supporting evidence)
+    ENHANCED_BUSINESS_PATTERNS = {
+        BusinessSiteType.BANKING: {
+            "high_confidence_phrases": [  # 5 points each
+                "online banking", "mobile banking", "account balance", "wire transfer",
+                "loan application", "mortgage calculator", "investment banking", "wealth management",
+                "checking account", "savings account", "credit score", "financial planning",
+                "personal banking", "business banking", "commercial lending", "atm locator"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "bank", "banking", "financial", "loan", "mortgage", "credit", "investment",
+                "finance", "funds", "account", "lending", "wealth", "treasury"
+            ]
+        },
+        BusinessSiteType.ECOMMERCE: {
+            "high_confidence_phrases": [  # 5 points each
+                "add to cart", "shopping cart", "checkout process", "product catalog", 
+                "customer reviews", "payment gateway", "shipping information", "return policy",
+                "product details", "wishlist", "compare products", "order tracking",
+                "online store", "product search", "shopping experience", "secure checkout"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "shop", "store", "cart", "checkout", "product", "buy", "marketplace", "retail",
+                "purchase", "order", "shipping", "payment", "catalog", "inventory"
+            ]
+        },
+        BusinessSiteType.NEWS: {
+            "high_confidence_phrases": [  # 5 points each
+                "breaking news", "news headlines", "current events", "news article",
+                "press release", "editorial content", "investigative journalism", "news feed",
+                "local news", "world news", "news archive", "news categories",
+                "live updates", "news analysis", "reporter byline", "news coverage"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "news", "article", "journalism", "reporter", "editorial", "headline",
+                "story", "press", "media", "coverage", "update", "breaking"
+            ]
+        },
+        BusinessSiteType.HEALTHCARE: {
+            "high_confidence_phrases": [  # 5 points each
+                "medical services", "patient care", "health information", "medical practice",
+                "healthcare provider", "patient portal", "appointment scheduling", "health records",
+                "medical specialties", "treatment options", "health insurance", "wellness programs",
+                "medical equipment", "clinical services", "health screening", "patient resources"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "health", "medical", "doctor", "clinic", "hospital", "dentist", "pharmacy",
+                "patient", "treatment", "care", "wellness", "medicine", "healthcare"
+            ]
+        },
+        BusinessSiteType.EDUCATIONAL: {
+            "high_confidence_phrases": [  # 5 points each
+                "course catalog", "academic programs", "student services", "faculty profiles",
+                "admission requirements", "online learning", "educational resources", "degree programs",
+                "class schedule", "student portal", "academic calendar", "learning management",
+                "continuing education", "professional development", "certification programs", "campus life"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "school", "university", "course", "learning", "education", "training",
+                "student", "academic", "program", "degree", "certification", "campus"
+            ]
+        },
+        BusinessSiteType.GOVERNMENT: {
+            "high_confidence_phrases": [  # 5 points each
+                "government services", "public records", "citizen services", "government programs",
+                "elected officials", "public information", "government forms", "tax information",
+                "public safety", "community services", "government meetings", "policy information",
+                "public resources", "government contact", "municipal services", "federal agency"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "government", "gov", "federal", "state", "municipal", "council", "public",
+                "citizen", "official", "agency", "department", "policy", "service"
+            ]
+        },
+        BusinessSiteType.LEGAL: {
+            "high_confidence_phrases": [  # 5 points each
+                "legal services", "law firm", "attorney profiles", "practice areas",
+                "legal consultation", "case results", "legal resources", "legal expertise",
+                "court representation", "legal advice", "law practice", "legal specialization",
+                "client testimonials", "legal experience", "attorney credentials", "legal process"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "law", "legal", "attorney", "lawyer", "court", "justice", "litigation",
+                "counsel", "practice", "firm", "case", "representation", "advice"
+            ]
+        },
+        BusinessSiteType.REAL_ESTATE: {
+            "high_confidence_phrases": [  # 5 points each
+                "property listings", "real estate agent", "home search", "property management",
+                "market analysis", "real estate services", "home valuation", "property details",
+                "neighborhood information", "buying process", "selling process", "real estate expertise",
+                "property investment", "home inspection", "mortgage assistance", "property photos"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "property", "realestate", "homes", "rent", "housing", "agent",
+                "listings", "market", "buy", "sell", "investment", "residential"
+            ]
+        },
+        BusinessSiteType.RESTAURANT: {
+            "high_confidence_phrases": [  # 5 points each
+                "restaurant menu", "dining experience", "food service", "chef specialties",
+                "restaurant location", "table reservation", "catering services", "special events",
+                "restaurant hours", "food ordering", "restaurant atmosphere", "culinary team",
+                "private dining", "takeout menu", "restaurant reviews", "wine selection"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "restaurant", "food", "dining", "menu", "cafe", "bar", "catering",
+                "chef", "cuisine", "meal", "reservation", "takeout", "delivery"
+            ]
+        },
+        BusinessSiteType.TECHNOLOGY: {
+            "high_confidence_phrases": [  # 5 points each
+                "software solutions", "technology platform", "cloud services", "api documentation",
+                "technical support", "software development", "system integration", "enterprise software",
+                "data analytics", "artificial intelligence", "machine learning", "cybersecurity solutions",
+                "scientific instruments", "life sciences", "biotechnology solutions", "engineering services",
+                "research development", "innovation center", "technology consulting", "digital transformation"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "tech", "software", "saas", "api", "cloud", "app", "platform", "digital",
+                "system", "solution", "data", "analytics", "ai", "ml", "cyber", "security",
+                "scientific", "instruments", "diagnostics", "biotechnology", "engineering", "innovation"
+            ]
+        },
+        BusinessSiteType.NON_PROFIT: {
+            "high_confidence_phrases": [  # 5 points each
+                "nonprofit organization", "charitable foundation", "volunteer opportunities", "donation process",
+                "community programs", "social impact", "fundraising events", "nonprofit mission",
+                "charitable giving", "volunteer services", "community outreach", "social cause",
+                "nonprofit board", "impact stories", "charitable programs", "community support"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "nonprofit", "charity", "foundation", "donate", "volunteer", "cause",
+                "community", "impact", "mission", "giving", "support", "social"
+            ]
+        },
+        BusinessSiteType.ENTERTAINMENT: {
+            "high_confidence_phrases": [  # 5 points each
+                "entertainment content", "streaming service", "movie catalog", "music platform",
+                "gaming platform", "entertainment news", "artist profiles", "content library",
+                "subscription service", "entertainment events", "live streaming", "digital content",
+                "media platform", "entertainment industry", "content creation", "user experience"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "entertainment", "movie", "music", "game", "streaming", "content",
+                "artist", "show", "video", "audio", "platform", "digital", "media"
+            ]
+        },
+        BusinessSiteType.CORPORATE: {
+            "high_confidence_phrases": [  # 5 points each
+                "corporate services", "business solutions", "company overview", "corporate team",
+                "business consulting", "enterprise solutions", "corporate clients", "professional services",
+                "company leadership", "business strategy", "corporate culture", "industry expertise",
+                "client success", "business process", "corporate responsibility", "company values"
+            ],
+            "supporting_keywords": [  # 1 point each
+                "corporate", "business", "company", "enterprise", "professional", "services",
+                "solutions", "consulting", "strategy", "leadership", "team", "clients"
+            ]
+        }
     }
     
     def detect_site_type(self, url: str, title: str = "", content: str = "") -> BusinessSiteType:
         """
-        Detect business site type using enhanced keyword scoring system
-        Uses weighted scoring: URL (3pts) > Title (2pts) > Content (1pt)
+        Detect business site type using enhanced hybrid phrase + keyword scoring system
+        High-confidence phrases (5pts) + supporting keywords (1pt) + context weighting
         """
         url_lower = url.lower()
         title_lower = title.lower() 
@@ -70,46 +213,65 @@ class BusinessSiteDetector:
         # Initialize scores for each site type
         scores = {site_type: 0 for site_type in BusinessSiteType}
         
-        # Score each site type based on pattern matches
-        for site_type, patterns in self.BUSINESS_PATTERNS.items():
-            for pattern in patterns:
-                # URL matches (highest weight - most reliable)
-                if pattern in url_lower:
-                    scores[site_type] += 3
-                
-                # Title matches (medium weight - page purpose)  
-                if pattern in title_lower:
-                    scores[site_type] += 2
-                
-                # Content matches (lowest weight - can be noisy)
-                if pattern in content_lower:
-                    scores[site_type] += 1
+        # Score each site type based on hybrid patterns
+        for site_type, pattern_dict in self.ENHANCED_BUSINESS_PATTERNS.items():
+            # High-confidence phrase matching (5 points each)
+            for phrase in pattern_dict["high_confidence_phrases"]:
+                # URL matches get highest weight (3x multiplier)
+                if phrase in url_lower:
+                    scores[site_type] += 5 * 3  # 15 points
+                # Title matches get medium weight (2x multiplier)  
+                elif phrase in title_lower:
+                    scores[site_type] += 5 * 2  # 10 points
+                # Content matches get base weight
+                elif phrase in content_lower:
+                    scores[site_type] += 5      # 5 points
+            
+            # Supporting keyword matching (1 point each)
+            for keyword in pattern_dict["supporting_keywords"]:
+                # URL matches get highest weight (3x multiplier)
+                if keyword in url_lower:
+                    scores[site_type] += 1 * 3  # 3 points
+                # Title matches get medium weight (2x multiplier)
+                elif keyword in title_lower:
+                    scores[site_type] += 1 * 2  # 2 points
+                # Content matches get base weight  
+                elif keyword in content_lower:
+                    scores[site_type] += 1      # 1 point
         
         # Find the site type with highest score
-        max_score = max(scores.values())
+        max_score = max(scores.values()) if scores.values() else 0
         
-        # If we have a clear winner with decent score
-        if max_score >= 2:  # At least one title match or multiple content matches
+        # Require minimum threshold for confidence (at least one phrase or multiple keywords)
+        if max_score >= 3:  # At least one keyword in URL or multiple matches
             winning_types = [site_type for site_type, score in scores.items() if score == max_score]
             
-            # If tied, use tiebreaker logic
+            # Single clear winner - no tiebreaking needed
             if len(winning_types) == 1:
                 return winning_types[0]
-            else:
-                # Tiebreaker: prefer more specific types over general ones
-                priority_order = [
-                    BusinessSiteType.BANKING, BusinessSiteType.HEALTHCARE, 
-                    BusinessSiteType.LEGAL, BusinessSiteType.EDUCATIONAL,
-                    BusinessSiteType.GOVERNMENT, BusinessSiteType.TECHNOLOGY,
-                    BusinessSiteType.ECOMMERCE, BusinessSiteType.NEWS,
-                    BusinessSiteType.RESTAURANT, BusinessSiteType.REAL_ESTATE,
-                    BusinessSiteType.NON_PROFIT, BusinessSiteType.ENTERTAINMENT,
-                    BusinessSiteType.PORTFOLIO, BusinessSiteType.CORPORATE,
-                    BusinessSiteType.PERSONAL
-                ]
-                for site_type in priority_order:
-                    if site_type in winning_types:
-                        return site_type
+            
+            # Multiple winners - use confidence-based tiebreaking instead of arbitrary priority
+            # Find the winner with the most high-confidence phrase matches
+            phrase_counts = {}
+            for site_type in winning_types:
+                phrase_count = 0
+                pattern_dict = self.ENHANCED_BUSINESS_PATTERNS[site_type]
+                for phrase in pattern_dict["high_confidence_phrases"]:
+                    if phrase in url_lower or phrase in title_lower or phrase in content_lower:
+                        phrase_count += 1
+                phrase_counts[site_type] = phrase_count
+            
+            # Return the site type with most phrase matches
+            max_phrases = max(phrase_counts.values())
+            if max_phrases > 0:
+                phrase_winners = [st for st, count in phrase_counts.items() if count == max_phrases]
+                if len(phrase_winners) == 1:
+                    return phrase_winners[0]
+                # If still tied on phrases, return first one (rare case)
+                return phrase_winners[0]
+            
+            # Fallback: return first winning type (should be very rare now)
+            return winning_types[0]
         
         # Fallback to domain extension analysis
         if url_lower.endswith('.edu') or 'university' in title_lower or 'college' in title_lower:
@@ -123,14 +285,13 @@ class BusinessSiteDetector:
         combined_text = f"{url_lower} {title_lower} {content_lower}"
         if any(word in combined_text for word in ["company", "business", "services", "solutions", "corporate"]):
             return BusinessSiteType.CORPORATE
-        elif any(word in combined_text for word in ["personal", "blog", "about me", "my", "portfolio"]):
-            return BusinessSiteType.PERSONAL
         
         return BusinessSiteType.UNKNOWN
     
     def detect_site_type_with_confidence(self, url: str, title: str = "", content: str = "") -> dict:
         """
         Enhanced detection that returns site type with confidence and score details
+        Uses hybrid phrase + keyword system with detailed match tracking
         """
         url_lower = url.lower()
         title_lower = title.lower() 
@@ -139,62 +300,75 @@ class BusinessSiteDetector:
         # Initialize scores for each site type
         scores = {site_type: 0 for site_type in BusinessSiteType}
         match_details = {site_type: [] for site_type in BusinessSiteType}
+        phrase_counts = {site_type: 0 for site_type in BusinessSiteType}
         
-        # Score each site type based on pattern matches
-        for site_type, patterns in self.BUSINESS_PATTERNS.items():
-            for pattern in patterns:
-                # URL matches (highest weight - most reliable)
-                if pattern in url_lower:
-                    scores[site_type] += 3
-                    match_details[site_type].append(f"URL:{pattern}")
-                
-                # Title matches (medium weight - page purpose)  
-                if pattern in title_lower:
-                    scores[site_type] += 2
-                    match_details[site_type].append(f"Title:{pattern}")
-                
-                # Content matches (lowest weight - can be noisy)
-                if pattern in content_lower:
-                    scores[site_type] += 1
-                    match_details[site_type].append(f"Content:{pattern}")
+        # Score each site type based on hybrid patterns
+        for site_type, pattern_dict in self.ENHANCED_BUSINESS_PATTERNS.items():
+            # High-confidence phrase matching (5 points each)
+            for phrase in pattern_dict["high_confidence_phrases"]:
+                # URL matches get highest weight (3x multiplier)
+                if phrase in url_lower:
+                    scores[site_type] += 5 * 3  # 15 points
+                    match_details[site_type].append(f"URL_PHRASE:{phrase}")
+                    phrase_counts[site_type] += 1
+                # Title matches get medium weight (2x multiplier)  
+                elif phrase in title_lower:
+                    scores[site_type] += 5 * 2  # 10 points
+                    match_details[site_type].append(f"TITLE_PHRASE:{phrase}")
+                    phrase_counts[site_type] += 1
+                # Content matches get base weight
+                elif phrase in content_lower:
+                    scores[site_type] += 5      # 5 points
+                    match_details[site_type].append(f"CONTENT_PHRASE:{phrase}")
+                    phrase_counts[site_type] += 1
+            
+            # Supporting keyword matching (1 point each)
+            for keyword in pattern_dict["supporting_keywords"]:
+                # URL matches get highest weight (3x multiplier)
+                if keyword in url_lower:
+                    scores[site_type] += 1 * 3  # 3 points
+                    match_details[site_type].append(f"URL_KEYWORD:{keyword}")
+                # Title matches get medium weight (2x multiplier)
+                elif keyword in title_lower:
+                    scores[site_type] += 1 * 2  # 2 points
+                    match_details[site_type].append(f"TITLE_KEYWORD:{keyword}")
+                # Content matches get base weight  
+                elif keyword in content_lower:
+                    scores[site_type] += 1      # 1 point
+                    match_details[site_type].append(f"CONTENT_KEYWORD:{keyword}")
         
         # Find the site type with highest score
         max_score = max(scores.values()) if scores.values() else 0
         
         # Apply same logic as detect_site_type but with more detail
-        if max_score >= 2:
+        if max_score >= 3:
             winning_types = [site_type for site_type, score in scores.items() if score == max_score]
             
             if len(winning_types) == 1:
                 final_type = winning_types[0]
             else:
-                # Same tiebreaker logic
-                priority_order = [
-                    BusinessSiteType.BANKING, BusinessSiteType.HEALTHCARE, 
-                    BusinessSiteType.LEGAL, BusinessSiteType.EDUCATIONAL,
-                    BusinessSiteType.GOVERNMENT, BusinessSiteType.TECHNOLOGY,
-                    BusinessSiteType.ECOMMERCE, BusinessSiteType.NEWS,
-                    BusinessSiteType.RESTAURANT, BusinessSiteType.REAL_ESTATE,
-                    BusinessSiteType.NON_PROFIT, BusinessSiteType.ENTERTAINMENT,
-                    BusinessSiteType.PORTFOLIO, BusinessSiteType.CORPORATE,
-                    BusinessSiteType.PERSONAL
-                ]
-                final_type = BusinessSiteType.UNKNOWN
-                for site_type in priority_order:
-                    if site_type in winning_types:
-                        final_type = site_type
-                        break
+                # Use confidence-based tiebreaking (same as detect_site_type)
+                max_phrases = max(phrase_counts[st] for st in winning_types)
+                if max_phrases > 0:
+                    phrase_winners = [st for st in winning_types if phrase_counts[st] == max_phrases]
+                    final_type = phrase_winners[0]  # Take first if still tied
+                else:
+                    final_type = winning_types[0]  # Fallback to first winner
         else:
             # Apply fallback logic
             final_type = self.detect_site_type(url, title, content)
-            max_score = 1  # Fallback score
+            # Update max_score if fallback found something
+            if final_type != BusinessSiteType.UNKNOWN:
+                max_score = max(1, max_score)  # At least 1 for fallback detection
         
-        # Calculate confidence based on score and clarity of match
-        if max_score >= 5:
+        # Enhanced confidence calculation based on score and phrase matches
+        phrase_match_count = phrase_counts.get(final_type, 0)
+        
+        if max_score >= 10 or phrase_match_count >= 2:  # Multiple phrases or strong URL phrase
             confidence = "HIGH"
-        elif max_score >= 3:
+        elif max_score >= 5 or phrase_match_count >= 1:  # Single phrase match
             confidence = "MEDIUM" 
-        elif max_score >= 2:
+        elif max_score >= 3:  # Multiple keywords or URL keyword
             confidence = "LOW"
         else:
             confidence = "FALLBACK"
@@ -203,6 +377,7 @@ class BusinessSiteDetector:
             'site_type': final_type,
             'confidence': confidence,
             'score': max_score,
+            'phrase_matches': phrase_match_count,
             'all_scores': scores,
             'matches': match_details[final_type] if final_type in match_details else []
         }
@@ -573,27 +748,6 @@ class AIContentClassifier:
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
         
-        elif site_type == BusinessSiteType.PERSONAL:
-            return base_info + """
-        PERSONAL/SIMPLE SITE DEMO EVALUATION:
-        This appears to be a personal or simple website. Be more permissive - focus on main content.
-        
-        HIGH VALUE for personal site demos:
-        - Main content and key information
-        - About pages and personal information
-        - Work samples, projects, or creations
-        - Contact information
-        - Any substantial content that shows the site's purpose
-        
-        LOW VALUE for personal site demos:
-        - Broken links or empty pages
-        - Pure placeholder content
-        - Technical error pages
-        
-        BE LIBERAL: Most content on personal sites has demo value. When in doubt, include it.
-        
-        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
-        """
         
         elif site_type == BusinessSiteType.TECHNOLOGY:
             return base_info + """
@@ -647,30 +801,6 @@ class AIContentClassifier:
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
         
-        elif site_type == BusinessSiteType.PORTFOLIO:
-            return base_info + """
-        PORTFOLIO & CREATIVE SITE DEMO EVALUATION:
-        This is a portfolio, creative agency, or freelancer website. Focus on showcasing creative work and capabilities.
-        
-        HIGH VALUE for portfolio demos:
-        - Work samples, projects, and case studies
-        - Client testimonials and success stories
-        - About/bio information and creative process
-        - Services offered and expertise areas
-        - Creative team profiles and capabilities
-        - Awards, recognition, and achievements
-        - Contact information and project inquiry process
-        
-        LOW VALUE for portfolio demos:
-        - Empty galleries or placeholder content
-        - Purely personal social media without professional context
-        - Broken links to work samples
-        - Generic templates without actual work shown
-        
-        STRONG BIAS TOWARD INCLUSION: Portfolios are designed to showcase work - most content has demo value.
-        
-        Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
-        """
         
         elif site_type == BusinessSiteType.EDUCATIONAL:
             return base_info + """

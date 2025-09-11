@@ -125,7 +125,7 @@ As a demo factory operator I want to process multiple URLs simultaneously So tha
 
 - Generates comprehensive batch reports with individual URL results
 
-US-40: Performance Targets and Monitoring
+**US-40: Performance Targets and Monitoring**
 As a demo factory operator I want the agent to meet specific performance targets So that the system is efficient and meets quality standards
 - ✅ Comprehensive quality assessment system adapted for proxy architecture
 - ✅ Realistic site coverage calculations (eliminates nonsensical "70% for 1 page" metrics)
@@ -287,8 +287,8 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - Combines speed of algorithms with intelligence of AI decision making
 
 **Implementation Phases:**
-- **Phase 1**: AI Content Classification Layer (US-049) ✅ COMPLETED
-- **Phase 2**: Search Bar Integration (US-56) 🎯 NEXT PRIORITY
+- **Phase 1**: AI Content Classification Layer (US-049)  COMPLETED
+- **Phase 2**: Search Bar Integration (US-56)  NEXT PRIORITY
 - **Phase 3**: AI Strategy Optimization Layer (US-050)  
 - **Phase 4**: AI Site Analysis Layer (US-051)
 - **Phase 5**: Complete Hybrid System Integration (US-052)
@@ -321,35 +321,29 @@ As a demo factory operator, I want to inject a search bar into the proxied site 
 **US-53: Intelligent Site Coverage Monitoring & Visualization**
 As a demo factory operator I want comprehensive site completeness tracking with real-time visualization So that I can ensure 80-90% of important site content is scraped, processed into OpenSearch, and ready for demo presentation
  Acceptance Criteria:
- 1. Intelligent Site Structure Discovery
-  -  Parse sitemap.xml for complete page inventory and priority mapping
-  -  Analyze main navigation menus, footer links, and breadcrumb structures
-  -  Detect site sections (Products, Services, About, Support, Legal, etc.) with confidence scoring
-  -  Identify content hierarchies and URL pattern recognition
-  -  Estimate total crawlable pages with confidence intervals (±15% accuracy)
 
-  2. Section-Based Coverage Dashboard
+  1. Section-Based Coverage Dashboard
   -  Real-time coverage visualization by site section with color-coded progress bars
   -  Page completion tracking: "Products: 67% (43/64 pages)" with drill-down capability
   -  Priority weighting: Critical sections (Products, Services) vs Low priority (Legal, Footer)
   -  Quality distribution per section showing high/medium/low value content ratios
   -  ETA predictions for section completion based on crawling velocity
 
-  3. OpenSearch Integration Monitoring
+  2. OpenSearch Integration Monitoring
   -  Content indexing progress: "847/847 pages indexed (100%)"
   -  Document type classification and distribution analysis
   -  Search readiness scoring with content quality assessment
   -  Missing content identification: pages crawled but not indexed
   -  Content freshness tracking with last-updated timestamps
 
-  4. Smart Completion Logic
+  3. Smart Completion Logic
   -  80-90% intelligent stopping when diminishing returns detected
   -  Section completion prioritization (90% of critical sections vs 60% of low-priority)
   -  Quality plateau detection: stop crawling when content quality stops improving
   -  Comprehensive site coverage recommendation engine
   -  Manual override capability for operator-driven completion decisions
 
-  5. Performance & Integration
+  4. Performance & Integration
   -  Coverage calculations complete in <2 seconds for sites up to 10,000 pages
   -  WebSocket real-time updates during active crawling
   -  FastAPI endpoints for dashboard integration: /coverage/{run_id}, /sections/{run_id}
