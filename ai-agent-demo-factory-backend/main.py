@@ -128,6 +128,9 @@ app.add_middleware(
 # Dictionary stores crawl statuses and simulated results in memory.
 crawl_jobs = {}
 
+# Dictionary to track running processes for stop functionality
+running_processes = {}
+
 def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
                                   index_name: str = "demo_factory") -> str:
     """
@@ -170,7 +173,7 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
     <!-- Reference filters - ONLY allow target domain -->
     <referenceFilters>
         <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
-            <valueMatcher method="regex">^https?://([a-z0-9-]+\.)*{re.escape(target_domain.replace('www.', ''))}(/.*)?$</valueMatcher>
+            <valueMatcher method="regex">^https?://([a-z0-9-]+\\.)*{re.escape(target_domain.replace('www.', ''))}(/.*)?$</valueMatcher>
         </filter>
         <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
             css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
@@ -230,6 +233,9 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
     # Update job status to 'running' and reset progress
     crawl_jobs[run_id]['status'] = 'running'
     crawl_jobs[run_id]['progress'] = 0
+    
+    # Initialize process tracking
+    running_processes[run_id] = None
 
     try:
         # Use the NAB config as template and modify for the target URL
@@ -403,6 +409,9 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
             universal_newlines=True
         )
         
+        # Store process reference for stop functionality
+        running_processes[run_id] = process
+        
         # Monitor the process and update progress
         stdout_lines = []
         stderr_lines = []
@@ -453,6 +462,10 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
         print(f"[{run_id}] Crawl failed with exception: {e}")
         
     finally:
+        # Clean up process tracking
+        if run_id in running_processes:
+            del running_processes[run_id]
+        
         # Leave config file for Norconex to use
         print(f"[{run_id}] Keeping config file for Norconex: {config_file if 'config_file' in locals() else 'N/A'}")
 
@@ -536,6 +549,110 @@ async def get_crawl_status(run_id: str):
         "stats": stats
     })
 
+@app.post("/crawl/stop/{run_id}")
+async def stop_crawl(run_id: str):
+    """
+    Endpoint to stop a running crawl by its run_id.
+    This will attempt to gracefully terminate the crawler process.
+    """
+    job = crawl_jobs.get(run_id)
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Crawl run not found")
+    
+    if job['status'] not in ['running', 'pending']:
+        raise HTTPException(status_code=409, detail=f"Cannot stop crawl in status: {job['status']}")
+    
+    try:
+        stopped = False
+        
+        # Check if we have a direct process reference
+        if run_id in running_processes and running_processes[run_id]:
+            process = running_processes[run_id]
+            if process.poll() is None:  # Process is still running
+                print(f"[{run_id}] Terminating crawler process...")
+                process.terminate()
+                
+                # Wait a few seconds for graceful shutdown
+                try:
+                    process.wait(timeout=10)
+                    stopped = True
+                    print(f"[{run_id}] Process terminated gracefully")
+                except subprocess.TimeoutExpired:
+                    # Force kill if graceful shutdown fails
+                    print(f"[{run_id}] Forcing process kill...")
+                    process.kill()
+                    process.wait()
+                    stopped = True
+                    print(f"[{run_id}] Process killed forcefully")
+        
+        # For Maven/container-based crawls, try HTTP stop request
+        if not stopped:
+            try:
+                # Try to stop via HTTP API to norconex-maven container
+                response = requests.post(
+                    f"http://norconex-maven:8080/stop/{run_id}",
+                    timeout=10
+                )
+                if response.status_code == 200:
+                    stopped = True
+                    print(f"[{run_id}] Stopped crawl via HTTP API")
+                else:
+                    print(f"[{run_id}] HTTP stop API returned: {response.status_code}")
+            except Exception as e:
+                print(f"[{run_id}] HTTP stop request failed: {e}")
+        
+        # For file-based triggers, create a stop signal file
+        if not stopped:
+            try:
+                stop_file = f"/opt/norconex/configs/stop-{run_id}.json"
+                stop_data = {
+                    "run_id": run_id,
+                    "action": "stop",
+                    "timestamp": time.time()
+                }
+                
+                with open(stop_file, 'w') as f:
+                    import json
+                    json.dump(stop_data, f)
+                
+                print(f"[{run_id}] Created stop signal file: {stop_file}")
+                stopped = True
+            except Exception as e:
+                print(f"[{run_id}] Failed to create stop file: {e}")
+        
+        # Update job status
+        if stopped:
+            crawl_jobs[run_id]['status'] = 'stopped'
+            crawl_jobs[run_id]['completed_at'] = time.time()
+            crawl_jobs[run_id]['progress'] = crawl_jobs[run_id].get('progress', 0)  # Keep current progress
+            
+            # Calculate duration
+            duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
+            crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
+            
+            # Clean up process tracking
+            if run_id in running_processes:
+                del running_processes[run_id]
+            
+            print(f"[{run_id}] Crawl stopped successfully")
+            
+            return JSONResponse(content={
+                "message": "Crawl stopped successfully",
+                "run_id": run_id,
+                "status": "stopped",
+                "progress": crawl_jobs[run_id]['progress'],
+                "duration": duration
+            })
+        else:
+            raise HTTPException(status_code=500, detail="Failed to stop crawl - no active process found")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[{run_id}] Error stopping crawl: {e}")
+        raise HTTPException(status_code=500, detail=f"Error stopping crawl: {str(e)}")
+
 @app.get("/results/{run_id}", response_model=list[PageRow])
 async def get_crawl_results(run_id: str):
     """
@@ -548,9 +665,9 @@ async def get_crawl_results(run_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Crawl run not found")
 
-    # Return the results if the crawl is complete or still in progress (with partial results).
+    # Return the results if the crawl is complete, stopped, or still in progress (with partial results).
     # If it's pending or failed without results, return a 409 Conflict.
-    if job['status'] in ['complete', 'running']:
+    if job['status'] in ['complete', 'running', 'stopped']:
         return job['results']
     else:
         raise HTTPException(status_code=409, detail="Crawl not yet complete or results not available")
