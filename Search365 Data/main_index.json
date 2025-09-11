@@ -1,0 +1,232 @@
+{
+  "settings": {
+    "index.knn": "true",
+    "number_of_shards": 1,
+    "number_of_replicas": 1,
+    "analysis": {
+      "analyzer": {
+        "s365_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "keyword" },
+      "url": {
+          "type": "text",
+          "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above": 256
+              }
+            }
+      },
+      "title": { "type": "text",  "analyzer": "s365_analyzer" },
+      "content": { "type": "text", "analyzer": "s365_analyzer" },
+      "description": { "type": "text", "analyzer": "s365_analyzer" },
+      "summary": { "type": "text", "analyzer": "s365_analyzer" },
+      "contenttype": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "encoding": { "type": "text" },
+      "location": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+
+      "datasource": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "age": { "type": "integer" },
+      "dacl": { "type": "text" },
+      "collection": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "tags": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+      },
+      "contentpurpose": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+      },
+      "locationgeo": { "type": "geo_point" },
+      "date": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "modified": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "lastmodified": { "type": "date",  "format": "strict_date_optional_time||epoch_millis" },
+      "docsize": { "type": "integer" },
+      "extension": { "type": "text" },
+      "category": { "type": "text" },
+      "contentfamily": { "type": "text" },
+      "keywords": { "type": "text" },
+      "keywords_extend": { "type": "text" },
+      "breadcrumb": { "type": "text" },
+      "filename": { "type": "text" },
+      "topicarea": { "type": "text" },
+      "systemtitle": { "type": "text" },
+      "created": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "editor": { "type": "text" },
+      "author": { "type": "text" },
+      "crawltime": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "access": { "type": "text" },
+      "address": { "type": "text" },
+      "advisernames": { "type": "text" },
+      "collectorcontentencoding": { "type": "text" },
+      "collectorcontenttype": { "type": "text" },
+      "collectordepth": { "type": "text" },
+      "collectoriscrawlnew": { "type": "text" },
+      "collectorreferencedurls": { "type": "text" },
+      "collectorreferrerlinktag": { "type": "text" },
+      "collectorreferrerlinktext": { "type": "text" },
+      "collectorreferrerreference": { "type": "text" },
+      "collectorsitemaplastmod": { "type": "text" },
+      "contentlocation": { "type": "text" },
+      "contenttypehint": { "type": "text" },
+      "crawledat": { "type": "text" },
+      "dateerror": { "type": "text" },
+      "datepub": { "type": "text" },
+      "datepublished": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+      "dctitle": { "type": "text" },
+      "document": { "type": "text" },
+      "documentcontentencoding": { "type": "text" },
+      "documentcontentfamily": { "type": "text" },
+      "documentcontenttype": { "type": "text" },
+      "documentreference": { "type": "text" },
+      "email": { "type": "text" },
+      "facebook": { "type": "text" },
+      "fax": { "type": "text" },
+      "fbadmins": { "type": "text" },
+      "fbpageid": { "type": "text" },
+      "findlocationid": { "type": "text" },
+      "formatdetection": { "type": "text" },
+      "googlesiteverification": { "type": "text" },
+      "htmlextractedfieldtemplate": { "type": "text" },
+      "longitude": { "type": "float" },
+      "latitude": { "type": "float" },
+      "htmlextractedh1": { "type": "text" },
+      "htmlextractedh2": { "type": "text" },
+      "htmlextractedh3": { "type": "text" },
+      "htmlextractedhasapplynow": { "type": "text" },
+      "htmlextractedhasarticletags": { "type": "text" },
+      "htmlextractedhasarticleurlkeywords": { "type": "text" },
+      "htmlextractedhasbenefitsandfeatures": { "type": "text" },
+      "htmlextractedhasbenefitandfeaturestext": { "type": "text" },
+      "htmlextractedhasenquire": { "type": "text" },
+      "htmlextractedhasgettingstarted": { "type": "text" },
+      "htmlextractedhasgetstarted": { "type": "text" },
+      "htmlextractedurlsegmentcount": { "type": "text" },
+      "htmlextractedhasgetincontact": { "type": "text" },
+      "htmlextractedhasproductdiv": { "type": "text" },
+      "htmlextractedhastoolsurlkeywords": { "type": "text" },
+      "htmlextractedinputcount": { "type": "text" },
+      "htmlextractedishowto": { "type": "text" },
+      "htmlextractedisinmegamenu": { "type": "text" },
+      "htmlextractedmetarefiners": { "type": "text" },
+      "htmlextractedoutboundlinkcount": { "type": "text" },
+      "htmlextractedsection": { "type": "text" },
+      "htmlextractedtrainingdatacategory": { "type": "text" },
+      "htmlextractedurlkeywords": { "type": "text" },
+      "httpheaderacceptranges": { "type": "text" },
+      "httpheadercachecontrol": { "type": "text" },
+      "httpheaderconnection": { "type": "text" },
+      "httpheadercontentencoding": { "type": "text" },
+      "httpheadercontentlength": { "type": "text" },
+      "httpheadercontentsecuritypolicy": { "type": "text" },
+      "httpheadercontenttype": { "type": "text" },
+      "httpheaderdate": { "type": "text" },
+      "httpheaderetag": { "type": "text" },
+      "httpheaderexpires": { "type": "text" },
+      "httpheaderlastmodified": { "type": "text" },
+      "httpheadersetcookie": { "type": "text" },
+      "httpheaderstricttransportsecurity": { "type": "text" },
+      "httpheadertransferencoding": { "type": "text" },
+      "httpheadervary": { "type": "text" },
+      "httpheaderxakamaipragmaclientip": { "type": "text" },
+      "httpheaderxakamaisslclientsid": { "type": "text" },
+      "httpheaderxakamaitransformed": { "type": "text" },
+      "httpheaderxcheckcacheable": { "type": "text" },
+      "httpheaderxcontenttypeoptions": { "type": "text" },
+      "httpheaderxframeoptions": { "type": "text" },
+      "httpheaderxserial": { "type": "text" },
+      "httpheaderxxssprotection": { "type": "text" },
+      "licensee": { "type": "text" },
+      "linkedin": { "type": "text" },
+      "metachecksum": { "type": "text" },
+      "origintrial": { "type": "text" },
+      "path": { "type": "text" },
+      "phone": { "type": "text" },
+      "postaladdress": { "type": "text" },
+      "postcode": { "type": "text" },
+      "principleimage": { "type": "text" },
+      "principlename": { "type": "text" },
+      "principletitle": { "type": "text" },
+      "robots": { "type": "text" },
+      "searchrefiners": { "type": "text" },
+      "searchrefinersall": { "type": "text" },
+      "sitename": { "type": "text" },
+      "state": { "type": "text" },
+      "subcollection": { "type": "text" },
+      "suburb": { "type": "text" },
+      "taxonomy": { "type": "text" },
+      "twitter": { "type": "text" },
+      "urihost": { "type": "text" },
+      "uriparams": { "type": "text" },
+      "uripath": { "type": "text" },
+      "uripathparseerror": { "type": "text" },
+      "uriprotocol": { "type": "text" },
+      "viewport": { "type": "text" },
+      "website": { "type": "text" },
+      "xparsedby": { "type": "text" },
+      "xuacompatible": { "type": "text" },
+      "ogtype": { "type": "text" },
+      "ogtitle": { "type": "text" },
+      "ogurl": { "type": "text" },
+      "twitteraccountid": { "type": "text" },
+      "twittertitle": { "type": "text" },
+      "twittercard": { "type": "text" },
+      "twittersite": { "type": "text" },
+      "pdfdocinfosubject": { "type": "text" },
+      "dcdescription": { "type": "text" },
+      "twitterdescription": { "type": "text" },
+      "ogdescription": { "type": "text" },
+      "searchsuggestions": { "type": "text",  "analyzer": "s365_analyzer" },
+      "searchsuggestions_extend": { "type": "text", "analyzer": "s365_analyzer" }
+    }
+  }
+}
