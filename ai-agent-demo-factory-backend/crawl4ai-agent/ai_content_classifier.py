@@ -453,7 +453,7 @@ class HeuristicClassifier:
 class AIContentClassifier:
     """AI-powered content classifier for demo worthiness"""
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo", 
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini", 
                  cache_dir: Optional[Path] = None):
         self.api_key = api_key
         self.model = model

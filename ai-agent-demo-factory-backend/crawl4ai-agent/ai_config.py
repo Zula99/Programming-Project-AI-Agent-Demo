@@ -24,7 +24,7 @@ class AIConfig:
     anthropic_api_key: Optional[str] = None
     
     # Model Selection
-    preferred_model: str = "gpt-3.5-turbo"  # or "claude-3-haiku", "local"
+    preferred_model: str = "gpt-4o-mini"  # or "claude-3-haiku", "local"
     fallback_model: str = "heuristic"
     
     # Rate Limiting
@@ -70,7 +70,7 @@ class AIConfigManager:
         env_config = {
             'openai_api_key': os.getenv('OPENAI_API_KEY'),
             'anthropic_api_key': os.getenv('ANTHROPIC_API_KEY'),
-            'preferred_model': os.getenv('AI_MODEL', config_data.get('preferred_model', 'gpt-3.5-turbo')),
+            'preferred_model': os.getenv('AI_MODEL', config_data.get('preferred_model', 'gpt-4o-mini')),
             'requests_per_minute': int(os.getenv('AI_RATE_LIMIT', config_data.get('requests_per_minute', 20))),
             'max_monthly_cost': float(os.getenv('AI_MAX_COST', config_data.get('max_monthly_cost', 50.0))),
             'enable_caching': os.getenv('AI_CACHING', '').lower() != 'false',
@@ -102,6 +102,7 @@ class AIConfigManager:
         """Check which AI models are available based on API keys"""
         available = {
             'heuristic': True,  # Always available
+            'gpt-4o-mini': bool(self.config.openai_api_key),
             'gpt-3.5-turbo': bool(self.config.openai_api_key),
             'gpt-4': bool(self.config.openai_api_key),
             'claude-3-haiku': bool(self.config.anthropic_api_key),
@@ -127,7 +128,7 @@ class AIConfigManager:
     def create_sample_config(self) -> str:
         """Create a sample configuration file and return instructions"""
         sample_config = {
-            "preferred_model": "gpt-3.5-turbo",
+            "preferred_model": "gpt-4o-mini",
             "fallback_model": "heuristic", 
             "requests_per_minute": 20,
             "max_monthly_cost": 50.0,
