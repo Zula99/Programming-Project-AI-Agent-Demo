@@ -21,6 +21,14 @@ except ImportError as e:
     AI_AVAILABLE = False
     print(f"AI classification not available: {e}")
 
+# Quality Plateau Detection
+try:
+    from quality_plateau import HybridQualityMonitor, QualityMetrics as PlateauQualityMetrics
+    PLATEAU_AVAILABLE = True
+except ImportError as e:
+    PLATEAU_AVAILABLE = False
+    print(f"Quality plateau detection not available: {e}")
+
 # Enable long paths on Windows
 if os.name == 'nt':
     try:
@@ -40,6 +48,121 @@ except Exception:
 
 from crawl4ai import AsyncWebCrawler
 
+def _get_site_specific_thresholds(site_type):
+    """
+    Map BusinessSiteType to quality plateau thresholds
+    All 13 site types from ai_content_classifier.py with appropriate settings
+    """
+    from ai_content_classifier import BusinessSiteType
+    
+    # VERY PERMISSIVE - Product/content rich sites that want comprehensive coverage
+    if site_type == BusinessSiteType.ECOMMERCE:
+        return {
+            'quality_window_size': 25,      # Larger window for product variety
+            'worthy_threshold': 0.15,       # Only 15% worthy needed (very low)
+            'diversity_threshold': 0.95,    # 95% similarity to stop (very high)
+            'diversity_window_size': 20     # Check more pages for diversity
+        }
+    elif site_type == BusinessSiteType.RESTAURANT:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.2,        # Most restaurant content is valuable
+            'diversity_threshold': 0.9,     # Menu items can be similar
+            'diversity_window_size': 15
+        }
+    elif site_type == BusinessSiteType.REAL_ESTATE:
+        return {
+            'quality_window_size': 25,
+            'worthy_threshold': 0.2,        # Property listings are valuable
+            'diversity_threshold': 0.9,     # Properties can be similar
+            'diversity_window_size': 18
+        }
+    
+    # MODERATELY PERMISSIVE - Professional content sites
+    elif site_type == BusinessSiteType.HEALTHCARE:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.25,       # Medical content should be quality
+            'diversity_threshold': 0.85,    # Allow some similar health topics
+            'diversity_window_size': 15
+        }
+    elif site_type == BusinessSiteType.EDUCATIONAL:
+        return {
+            'quality_window_size': 22,
+            'worthy_threshold': 0.25,       # Academic content variety important
+            'diversity_threshold': 0.85,    # Courses/programs can be similar
+            'diversity_window_size': 16
+        }
+    elif site_type == BusinessSiteType.LEGAL:
+        return {
+            'quality_window_size': 18,
+            'worthy_threshold': 0.3,        # Legal content should be substantial
+            'diversity_threshold': 0.85,    # Practice areas can overlap
+            'diversity_window_size': 14
+        }
+    elif site_type == BusinessSiteType.TECHNOLOGY:
+        return {
+            'quality_window_size': 22,
+            'worthy_threshold': 0.2,        # Tech content often valuable (bias toward inclusion)
+            'diversity_threshold': 0.85,    # Products/solutions can be similar
+            'diversity_window_size': 16
+        }
+    elif site_type == BusinessSiteType.NON_PROFIT:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.25,       # Mission-driven content important
+            'diversity_threshold': 0.8,     # Programs/initiatives should be diverse
+            'diversity_window_size': 15
+        }
+    
+    # BALANCED - Standard business content
+    elif site_type == BusinessSiteType.BANKING:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.3,        # Financial content needs quality
+            'diversity_threshold': 0.8,     # Standard similarity threshold
+            'diversity_window_size': 15
+        }
+    elif site_type == BusinessSiteType.CORPORATE:
+        return {
+            'quality_window_size': 18,
+            'worthy_threshold': 0.3,        # Professional corporate content
+            'diversity_threshold': 0.8,     # Business content should vary
+            'diversity_window_size': 14
+        }
+    elif site_type == BusinessSiteType.GOVERNMENT:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.3,        # Government services should be quality
+            'diversity_threshold': 0.8,     # Services should be diverse
+            'diversity_window_size': 15
+        }
+    
+    # HIGHER STANDARDS - Content/editorial sites
+    elif site_type == BusinessSiteType.NEWS:
+        return {
+            'quality_window_size': 18,
+            'worthy_threshold': 0.4,        # News should be engaging
+            'diversity_threshold': 0.7,     # Articles can be topically similar
+            'diversity_window_size': 12
+        }
+    elif site_type == BusinessSiteType.ENTERTAINMENT:
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.35,       # Entertainment should be engaging
+            'diversity_threshold': 0.75,    # Content can have similar themes
+            'diversity_window_size': 14
+        }
+    
+    # DEFAULT - Unknown or unmatched site types
+    else:  # BusinessSiteType.UNKNOWN or any new types
+        return {
+            'quality_window_size': 20,
+            'worthy_threshold': 0.3,        # Balanced default
+            'diversity_threshold': 0.8,     # Standard similarity threshold
+            'diversity_window_size': 15
+        }
+
 @dataclass
 class CrawlConfig:
     """Configuration for web crawling"""
@@ -56,6 +179,8 @@ class CrawlConfig:
     additional_wait: float = 0.0  # Extra wait after wait_for condition (for heavy JS)
     headless: bool = True
     screenshot: bool = False
+    # Cost tracking
+    cost_tracker: Optional[Any] = None  # CostTracker instance for AI cost monitoring
     javascript: bool = True
     max_concurrent: int = 5
     # Anti-detection features
@@ -69,6 +194,8 @@ class CrawlConfig:
     scroll_delay: int = 1000  # Delay between scroll actions (ms)
     post_load_delay: int = 0  # Extra delay after all loading (ms)
     js_code: Optional[List[str]] = None  # JavaScript code to execute
+    # Cost tracking
+    cost_tracker: Optional[object] = None  # CostTracker instance for AI cost monitoring
 
 # URL helpers
 DROP_QUERY_KEYS = {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid","_ga","_gl"}
@@ -215,7 +342,7 @@ def get_ai_classifier() -> Optional[AIContentClassifier]:
     
     return _ai_classifier
 
-async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "") -> tuple[bool, str, dict]:
+async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", cost_tracker=None) -> tuple[bool, str, dict]:
     """
     AI-enhanced URL worthiness check with fallback to heuristics
     
@@ -244,6 +371,12 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "") ->
     if ai_classifier:
         try:
             result: ClassificationResult = await ai_classifier.classify_content(url, content, title)
+            
+            # Track costs if cost_tracker provided
+            if cost_tracker:
+                content_length = len(content + title)
+                cost_tracker.track_classification(url, result, content_length)
+            
             classification_details.update({
                 'method': result.method_used,
                 'confidence': result.confidence,
@@ -396,7 +529,7 @@ class CrawlResult:
         if self.links is None:
             self.links = set()
 
-async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) -> CrawlResult:
+async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, cost_tracker=None) -> CrawlResult:
     """Crawl a single page and return structured results"""
     try:
         if config.request_gap > 0:
@@ -486,9 +619,9 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
         
         # Log which HTML we're using for debugging
         if rendered_html and rendered_html != raw_html:
-            print(f"✅ Using rendered HTML (post-JS) for {url}")
+            print(f" Using rendered HTML (post-JS) for {url}")
         else:
-            print(f"⚠️  Using raw HTML (pre-JS) for {url}")
+            print(f"  Using raw HTML (pre-JS) for {url}")
         
         # AI Content Classification - analyze actual page content
         ai_worthy = True  # default to worthy
@@ -498,7 +631,7 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig) ->
         if AI_AVAILABLE:
             try:
                 # Use AI to classify the actual page content
-                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title)
+                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title, cost_tracker)
                 ai_worthy = is_worthy
                 ai_reasoning = details.get('reasoning', reason)
                 ai_confidence = details.get('confidence', 0.7)
@@ -666,6 +799,38 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     if config.extra_headers:
         crawler_config['extra_headers'] = config.extra_headers
     
+    # Initialize quality plateau monitoring if available
+    plateau_monitor = None
+    if PLATEAU_AVAILABLE and AI_AVAILABLE:
+        try:
+            # Create AI classifier and site detector
+            ai_config = get_ai_config()
+            ai_classifier = AIContentClassifier(
+                api_key=getattr(ai_config, 'openai_api_key', None),
+                model=getattr(ai_config, 'model', 'gpt-4o-mini')
+            )
+            
+            # Use existing BusinessSiteDetector for site type detection
+            site_detector = ai_classifier.site_detector
+            site_type = site_detector.detect_site_type(start_url, "", "")
+            
+            # Get site-specific quality thresholds
+            thresholds = _get_site_specific_thresholds(site_type)
+            
+            plateau_monitor = HybridQualityMonitor(
+                quality_window_size=thresholds['quality_window_size'],
+                worthy_threshold=thresholds['worthy_threshold'],
+                diversity_threshold=thresholds['diversity_threshold'],
+                diversity_window_size=thresholds['diversity_window_size']
+            )
+            
+            _logger.info(f"Quality plateau detection enabled for {site_type.value} site")
+            _logger.info(f"Thresholds: worthy={thresholds['worthy_threshold']:.1%}, diversity={thresholds['diversity_threshold']:.1%}")
+            
+        except Exception as e:
+            _logger.warning(f"Could not initialize quality plateau detection: {e}")
+            plateau_monitor = None
+    
     async with AsyncWebCrawler(**crawler_config) as crawler:
         while q and pages_crawled < config.max_pages:
             url = q.popleft()
@@ -687,7 +852,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             is_worthy, filter_reason = is_demo_worthy_url_sync(url)
             if not is_worthy:
                 filtered_urls[filter_reason] += 1
-                print(f"  ⏭️  Skipped {url} ({filter_reason})")
+                print(f"  Skipped {url} ({filter_reason})")
                 continue
             
             # Check robots.txt if enabled
@@ -699,8 +864,9 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 except Exception:
                     pass
             
-            # Crawl the page
-            result = await crawl_page(crawler, url, config)
+            # Crawl the page (pass cost tracker if available)
+            cost_tracker = getattr(config, 'cost_tracker', None)
+            result = await crawl_page(crawler, url, config, cost_tracker)
             results.append(result)
             
             if result.success:
@@ -740,13 +906,70 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         q.append(u)
                         new_queued += 1
                         
-                print(f"   ↳ found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
+                print(f"  found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
+                
+                # Quality plateau monitoring and intelligent stopping
+                if plateau_monitor:
+                    try:
+                        # Create quality metrics from AI classification
+                        if result.ai_classification:
+                            is_worthy = result.ai_classification.get('worthy', True)
+                            confidence = result.ai_classification.get('confidence', 0.7)
+                            reasoning = result.ai_classification.get('reasoning', 'AI classified as worthy')
+                        else:
+                            # Fallback: assume successful crawl is worthy
+                            is_worthy = True
+                            confidence = 0.6
+                            reasoning = 'Successful crawl without AI classification'
+                        
+                        # Generate content hash for diversity monitoring
+                        import hashlib
+                        content_hash = hashlib.md5(result.markdown.encode()).hexdigest()
+                        
+                        # Create plateau quality metrics
+                        plateau_quality = PlateauQualityMetrics(
+                            is_worthy=is_worthy,
+                            confidence_score=confidence,
+                            reasoning=reasoning,
+                            url=url
+                        )
+                        
+                        # Update plateau monitor
+                        plateau_monitor.assess_page(plateau_quality, content_hash)
+                        
+                        # Check if we should stop crawling
+                        should_stop, stop_reason = plateau_monitor.should_stop_crawling()
+                        
+                        if should_stop:
+                            _logger.info(f"🛑 Quality plateau detected: {stop_reason}")
+                            print(f"\n🛑 Intelligent stopping: {stop_reason}")
+                            print(f"   Crawled {pages_crawled} pages with sufficient quality coverage")
+                            break  # Exit the crawling loop
+                        else:
+                            # Log quality status every 10 pages
+                            if pages_crawled % 10 == 0:
+                                stats = plateau_monitor.get_comprehensive_stats()
+                                _logger.info(f"📊 Quality check at page {pages_crawled}: {stats['recent_worthy_ratio']:.1%} recent quality")
+                                
+                    except Exception as e:
+                        _logger.warning(f"Quality plateau monitoring failed for {url}: {e}")
+                        # Continue crawling even if plateau monitoring fails
+                        
             else:
-                print(f"  ❌ Error on {url}: {result.error}")
+                print(f"  Error on {url}: {result.error}")
     
     # Calculate filtering statistics
     total_filtered = sum(filtered_urls.values())
     quality_ratio = pages_crawled / (pages_crawled + total_filtered) if (pages_crawled + total_filtered) > 0 else 0
+    
+    # Include quality plateau statistics if available
+    plateau_stats = {}
+    if plateau_monitor:
+        try:
+            plateau_stats = plateau_monitor.get_comprehensive_stats()
+            print(f"Quality plateau summary: {plateau_stats['recent_worthy_ratio']:.1%} recent quality, {plateau_stats['overall_worthy_ratio']:.1%} overall")
+        except Exception as e:
+            _logger.warning(f"Could not get plateau statistics: {e}")
     
     stats = {
         "pages_crawled": pages_crawled,
@@ -758,7 +981,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "filtered_urls": filtered_urls,
         "total_filtered": total_filtered,
         "url_quality_ratio": quality_ratio,
-        "filtering_efficiency": total_filtered / total_urls_discovered if total_urls_discovered > 0 else 0
+        "filtering_efficiency": total_filtered / total_urls_discovered if total_urls_discovered > 0 else 0,
+        "quality_plateau_stats": plateau_stats  # Include plateau monitoring results
     }
     
     print(f"Done. Crawled {pages_crawled} quality page(s), filtered {total_filtered} junk URLs")
