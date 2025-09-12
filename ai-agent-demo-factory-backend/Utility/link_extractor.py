@@ -11,7 +11,8 @@ import urllib3
 import os
 from pathlib import Path
 from fake_useragent import UserAgent
-from urllib.parse import urljoin, urlparse, robots
+from urllib.parse import urljoin, urlparse
+import urllib.robotparser
 
 # Try to import AI classifier - graceful fallback if not available
 try:
@@ -43,7 +44,15 @@ class LinkExtractor:
             try:
                 # Initialize both the site detector and the full AI classifier
                 self.site_detector = BusinessSiteDetector()
-                self.ai_classifier = AIContentClassifier()
+                
+                # Get AI configuration and initialize classifier with API key
+                from ai_config import get_ai_config
+                ai_config = get_ai_config()
+                
+                self.ai_classifier = AIContentClassifier(
+                    api_key=ai_config.openai_api_key,
+                    model=ai_config.preferred_model
+                )
                 print("AI classification enabled for intelligent URL filtering")
             except Exception as e:
                 print(f"Failed to initialize AI classifier: {e}")
@@ -250,7 +259,7 @@ class LinkExtractor:
         self.robots_intel[domain] = intelligence
         return intelligence
 
-    def intelligent_url_filtering(self, urls: List[str], sample_content: bool = False) -> List[Tuple[str, float, str]]:
+    async def intelligent_url_filtering(self, urls: List[str], sample_content: bool = False) -> List[Tuple[str, float, str]]:
         """
         Apply AI classification to prioritize URLs based on demo worthiness
         
@@ -268,6 +277,15 @@ class LinkExtractor:
         prioritized_urls = []
         print(f"Applying AI classification to {len(urls)} URLs...")
         
+        # Initialize cost tracking for this sitemap analysis
+        from pathlib import Path
+        import sys
+        sys.path.append(str(Path(__file__).parent.parent / 'crawl4ai-agent'))
+        from cost_tracker import CostTracker
+        
+        domain = urlparse(urls[0] if urls else 'unknown.com').netloc
+        cost_tracker = CostTracker(domain.replace('www.', ''), output_dir=str(Path(self.file_path) / 'cost_logs'))
+        
         for i, url in enumerate(urls):
             if i % 50 == 0 and i > 0:
                 print(f"  Processed {i}/{len(urls)} URLs...")
@@ -280,7 +298,7 @@ class LinkExtractor:
                 title = ""
                 content_sample = ""
                 
-                if sample_content and i % 10 == 0:  # Sample every 10th URL to avoid too many requests
+                if sample_content:  # Sample all URLs when AI classification is enabled
                     try:
                         response = self.session.get(url, timeout=5)
                         if response.status_code == 200:
@@ -297,20 +315,32 @@ class LinkExtractor:
                 # Use full AI classifier to assess demo worthiness
                 try:
                     # Use the comprehensive AIContentClassifier (async)
-                    import asyncio
-                    result = asyncio.run(self.ai_classifier.classify_content(url, content_sample, title))
+                    result = await self.ai_classifier.classify_content(url, content_sample, title)
                     confidence = result.confidence
                     reasoning = result.reasoning
                     
                     # Convert boolean to confidence score for sorting
                     if not result.is_worthy:
                         confidence = confidence * 0.5  # Reduce confidence for unworthy content
+                    
+                    # Track cost and show verbose output
+                    content_length = len(content_sample + title)
+                    cost_tracker.track_classification(url, result, content_length)
+                    
+                    # Verbose output for each URL
+                    status = "WORTHY" if result.is_worthy else "FILTERED"
+                    method_indicator = "AI" if result.method_used == "ai" else result.method_used.upper()
+                    
+                    print(f"  [{i+1:4d}/{len(urls)}] {status} ({confidence:.2f}) - {url[:70]}...")
+                    print(f"        {method_indicator}: {reasoning[:120]}...")
                         
                 except Exception as ai_error:
-                    print(f"AI classification failed for {url}: {ai_error}")
+                    print(f"  [{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
+                    print(f"        Error: {ai_error}")
                     # Fallback to simple URL pattern analysis
                     confidence = self._simple_url_scoring(url)
                     reasoning = "Simple URL pattern analysis (AI failed)"
+                    print(f"        Fallback: Heuristic score {confidence:.2f}")
                 
                 prioritized_urls.append((url, confidence, reasoning))
                 
@@ -323,7 +353,11 @@ class LinkExtractor:
         
         print(f"URL classification complete. Top 10 URLs by confidence:")
         for i, (url, confidence, reasoning) in enumerate(prioritized_urls[:10]):
-            print(f"  {i+1}. {confidence:.2f} - {url[:60]}... ({reasoning})")
+            print(f"  {i+1}. {confidence:.2f} - {url[:60]}... ({reasoning[:50]}...)")
+        
+        # Show cost summary
+        cost_tracker.print_session_summary()
+        cost_tracker.save_final_session()
         
         return prioritized_urls
 
@@ -358,7 +392,7 @@ class LinkExtractor:
         
         return max(0.0, min(1.0, score))
 
-    def process_sitemap_with_ai(self, max_urls: Optional[int] = None, sample_content: bool = False) -> Tuple[List[str], Dict[str, Any]]:
+    async def process_sitemap_with_ai(self, max_urls: Optional[int] = None, sample_content: bool = False) -> Tuple[List[str], Dict[str, Any]]:
         """
         Enhanced sitemap processing with AI classification and robots.txt intelligence
         
@@ -436,7 +470,7 @@ class LinkExtractor:
         
         # Apply AI classification for prioritization
         if filtered_urls:
-            prioritized_results = self.intelligent_url_filtering(filtered_urls, sample_content)
+            prioritized_results = await self.intelligent_url_filtering(filtered_urls, sample_content)
             
             # Extract URLs and apply limit if specified
             final_urls = [url for url, confidence, reasoning in prioritized_results]

@@ -35,6 +35,11 @@ class ClassificationResult:
     confidence: float  # 0.0 to 1.0
     reasoning: str
     method_used: str  # "ai", "heuristic", "cache"
+    # Token usage and cost tracking (only populated for AI method)
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost: float = 0.0
     
 class BusinessSiteDetector:
     """Detects business site type using heuristics for targeted content evaluation"""
@@ -529,6 +534,18 @@ class AIContentClassifier:
             content = response.choices[0].message.content.strip()
             self.logger.info(f"OpenAI response: {content}")  # Debug logging
             
+            # Extract usage information for cost calculation
+            usage = response.usage
+            prompt_tokens = usage.prompt_tokens
+            completion_tokens = usage.completion_tokens
+            total_tokens = usage.total_tokens
+            
+            # Calculate exact cost for GPT-4o-mini
+            # GPT-4o-mini pricing: $0.00015 per 1K input tokens, $0.0006 per 1K output tokens
+            input_cost = (prompt_tokens / 1000) * 0.00015
+            output_cost = (completion_tokens / 1000) * 0.0006
+            estimated_cost = input_cost + output_cost
+            
             # Parse the response more safely
             is_worthy = True  # default to worthy
             confidence = 0.7  # default confidence
@@ -593,7 +610,7 @@ class AIContentClassifier:
             # Final debug logging
             self.logger.info(f"Final AI result: WORTHY={is_worthy}, CONFIDENCE={confidence}")
             
-            return is_worthy, confidence, reasoning
+            return is_worthy, confidence, reasoning, prompt_tokens, completion_tokens, total_tokens, estimated_cost
             
         except openai.RateLimitError as e:
             raise Exception(f"OpenAI rate limit exceeded: {e}")
@@ -629,13 +646,17 @@ class AIContentClassifier:
                 
                 # Prepare AI prompt
                 prompt = self._create_ai_prompt(url, content, title)
-                is_worthy, confidence, reasoning = await self._call_ai_api(prompt)
+                is_worthy, confidence, reasoning, prompt_tokens, completion_tokens, total_tokens, estimated_cost = await self._call_ai_api(prompt)
                 
                 result = ClassificationResult(
                     is_worthy=is_worthy,
                     confidence=confidence,
                     reasoning=f"AI: {reasoning}",
-                    method_used="ai"
+                    method_used="ai",
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=total_tokens,
+                    estimated_cost=estimated_cost
                 )
                 
                 # Cache the result
@@ -685,21 +706,22 @@ class AIContentClassifier:
         if site_type == BusinessSiteType.BANKING:
             return base_info + """
         BANKING SITE DEMO EVALUATION:
-        This is a financial/banking website. Focus on professional demonstration value.
+        This is a financial/banking website. Consider both CUSTOMER needs and PROFESSIONAL demo value.
         
-        HIGH VALUE for banking demos:
-        - Core banking services (accounts, loans, mortgages, credit cards)
-        - Business banking solutions (commercial lending, corporate accounts)
-        - Digital banking features (online banking, mobile apps, security)
-        - Investment and financial advisory services
-        - Customer support and branch information
-        - About us, careers, investor relations (credibility)
+        HIGH VALUE (MARK AS WORTHY):
+        - Any service customers would actually use (accounts, loans, credit cards, payments,mortgages, transfers)
+        - Application processes and how-to guides (credit card applications, loan applications)
+        - Personal finance tools (calculators, budgeting, tax guidance, financial planning)
+        - Specialized services (youth banking, business banking, investment services)
+        - Support and help content (cheque payments, online banking help, FAQs)
+        - Branch/contact information and customer service
+        - Educational content and financial literacy resources
+        - About us, company information, careers (credibility and completeness)
         
-        LOW VALUE for banking demos:
-        - Legal compliance pages (unless main regulatory info)
-        - Technical documentation, API docs
-        - Individual rate pages without context
-        - Generic marketing fluff without substance
+        LOW VALUE:
+        - Pure legal text without service context
+        - Broken or placeholder pages
+        - Developer-only technical documentation
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
@@ -707,21 +729,22 @@ class AIContentClassifier:
         elif site_type == BusinessSiteType.ECOMMERCE:
             return base_info + """
         E-COMMERCE SITE DEMO EVALUATION:
-        This is an online retail/shopping website. Focus on shopping experience and features.
+        This is an online retail/shopping website. Consider both CUSTOMER needs and PROFESSIONAL demo value.
         
-        HIGH VALUE for e-commerce demos:
-        - Product categories and main collections (not individual products)
-        - Shopping features (cart, checkout, search, filters)
-        - Customer service (returns, shipping, support)
-        - About us, company story, brand information
-        - Customer reviews and testimonials systems
-        - Account/profile management features
+        HIGH VALUE (MARK AS WORTHY):
+        - Any products customers would want to find and buy
+        - Product categories, collections, and individual product pages
+        - Shopping features (cart, checkout, search, filters, wish lists)
+        - Customer service (returns, shipping, support, size guides, FAQs)
+        - Company information (about us, brand story, sustainability)
+        - Customer reviews, testimonials, and community features
+        - Account management, order tracking, and user profiles
+        - Sale and promotional pages customers seek
         
-        LOW VALUE for e-commerce demos:
-        - Individual product pages (unless showcasing key products)
-        - Specific pricing without context
-        - Legal pages, shipping details only
-        - Duplicate product variants
+        LOW VALUE:
+        - Broken or empty product pages
+        - Pure legal text without shopping context
+        - Internal admin tools
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
@@ -729,21 +752,22 @@ class AIContentClassifier:
         elif site_type == BusinessSiteType.CORPORATE:
             return base_info + """
         CORPORATE WEBSITE DEMO EVALUATION:
-        This is a business/corporate website. Focus on company capabilities and professionalism.
+        This is a business/corporate website. Consider both PROSPECTIVE CLIENT needs and PROFESSIONAL demo value.
         
-        HIGH VALUE for corporate demos:
-        - Services and solutions offered
-        - Company information and leadership
-        - Case studies, client success stories
-        - Industry expertise and insights
-        - Contact information and locations
-        - Careers and company culture
+        HIGH VALUE (MARK AS WORTHY):
+        - All services and solutions offered (what clients need to find)
+        - Company information, leadership, and expertise (credibility)
+        - Case studies, client success stories, and testimonials
+        - Industry insights, thought leadership, and expertise
+        - Contact information, locations, and ways to engage
+        - Careers, company culture, and team information
+        - News, press releases, and company updates
+        - Resource centers, whitepapers, and educational content
         
-        LOW VALUE for corporate demos:
-        - Legal compliance pages only
-        - Press releases without context
-        - Internal employee resources
-        - Generic contact forms without content
+        LOW VALUE:
+        - Broken or empty pages
+        - Internal employee-only resources
+        - Pure legal compliance without business context
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
