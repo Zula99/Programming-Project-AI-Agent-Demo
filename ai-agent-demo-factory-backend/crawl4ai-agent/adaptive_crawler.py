@@ -29,6 +29,7 @@ from crawl4ai.extraction_strategy import LLMExtractionStrategy
 
 from smart_mirror_agent import CrawlStrategy, SiteType, QualityMetrics
 from quality_monitor import QualityMonitor, CrawlData
+from quality_plateau import SimpleQualityBasedCrawling, QualityMetrics as PlateauQualityMetrics, HybridQualityMonitor
 
 
 class AdaptiveCrawler:
@@ -36,12 +37,17 @@ class AdaptiveCrawler:
     Adaptive crawler with real-time quality monitoring and strategy adjustment
     """
     
-    def __init__(self, output_dir: str = "./crawl_output"):
+    def __init__(self, output_dir: str = "./crawl_output", use_quality_plateau: bool = True):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         
         self.quality_monitor = QualityMonitor()
         self.logger = logging.getLogger(__name__)
+        
+        # Initialize quality plateau detection
+        self.use_quality_plateau = use_quality_plateau
+        self.plateau_monitor = None
+        self.site_type = None
         
         # Strategy-specific configurations
         self.strategy_configs = {
@@ -91,14 +97,24 @@ class AdaptiveCrawler:
         }
     
     async def crawl_with_strategy(self, base_url: str, strategy: CrawlStrategy, 
-                                max_pages: int = 50) -> Tuple[bool, CrawlData]:
+                                max_pages: Optional[int] = None, site_type: Optional[SiteType] = None) -> Tuple[bool, CrawlData]:
         """
         Execute crawling with specified strategy and real-time monitoring
         """
         self.logger.info(f"Starting crawl of {base_url} with strategy: {strategy}")
         
-        # Initialize session
+        # Initialize session and quality plateau monitoring
         self._reset_session()
+        self.site_type = site_type
+        
+        # Initialize plateau monitor with site-type aware settings
+        if self.use_quality_plateau:
+            self.plateau_monitor = self._create_plateau_monitor(site_type)
+        
+        # Set max_pages fallback if plateau detection disabled
+        if max_pages is None:
+            max_pages = 1000 if self.use_quality_plateau else 50
+            
         config = self.strategy_configs[strategy]
         
         # Start crawling based on strategy

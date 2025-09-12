@@ -43,7 +43,7 @@ class AIConfig:
     heuristic_threshold: float = 0.6
     confidence_threshold: float = 0.7
     
-    # Logging
+    # Loggingexwow
     log_ai_decisions: bool = True
     save_prompts: bool = False  # For debugging
 

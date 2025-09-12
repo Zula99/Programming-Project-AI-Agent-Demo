@@ -276,42 +276,109 @@ class SmartMirrorAgent:
         return recon.recommended_strategy
         
     async def adaptive_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults) -> Tuple[bool, Dict[str, Any]]:
-        """Execute intelligent crawling with reconnaissance-based configuration"""
+        """Execute intelligent crawling with US-54 hybrid crawler integration"""
         try:
-            # Configure crawler based on strategy and reconnaissance
-            config = self.strategy_to_config(strategy)
+            # Import hybrid crawler system
+            from hybrid_crawler import HybridCrawler
+            from cost_tracker import CostTrackingSession
+            from urllib.parse import urlparse
             
-            # Override with intelligent settings from reconnaissance
-            max_pages = recon.recommended_sample_size
-            request_gap = self._calculate_optimal_delay(recon.site_type, strategy)
+            # Extract domain for cost tracking
+            domain = urlparse(url).netloc.replace('www.', '')
             
-            self.logger.info(f"   Starting intelligent crawl:")
-            self.logger.info(f"   Target pages: {max_pages} (for 90% coverage)")
-            self.logger.info(f"   Request delay: {request_gap}s")
-            self.logger.info(f"   Strategy: {strategy.value}")
+            # Initialize hybrid crawler with cost tracking
+            with CostTrackingSession(domain, "./output/cost_logs") as cost_tracker:
+                hybrid_crawler = HybridCrawler(
+                    output_dir=f"./output/agent_crawls/{domain}"
+                )
+                
+                self.logger.info(f"🔍 Using US-54 Hybrid Crawler System")
+                
+                # Step 1: Analyze site structure (sitemap-first vs progressive)
+                analysis = await hybrid_crawler.analyze_site_structure(url)
+                
+                # Step 2: Create intelligent crawl plan
+                plan = hybrid_crawler.create_crawl_plan(url, analysis)
+                
+                self.logger.info(f"📋 Crawl Plan:")
+                self.logger.info(f"   Strategy: {plan.strategy.value}")
+                self.logger.info(f"   Max pages: {plan.max_pages_recommendation}")
+                self.logger.info(f"   Priority URLs: {len(plan.priority_urls)}")
+                self.logger.info(f"   Reasoning: {plan.reasoning}")
+                
+                # Step 3: Execute hybrid crawl with cost tracking
+                try:
+                    results, stats = await hybrid_crawler.execute_crawl_plan(
+                        plan=plan,
+                        cost_tracker=cost_tracker
+                    )
+                    
+                    # Calculate success metrics safely
+                    successful_results = [r for r in results if hasattr(r, 'success') and r.success]
+                    success = len(successful_results) > 0
+                    success_rate = len(successful_results) / len(results) if results else 0
+                    
+                    # Build crawl_data compatible with existing system
+                    crawl_data = {
+                        "output_path": f"./output/agent_crawls/{domain}",
+                        "results": results,
+                        "stats": stats,
+                        "cost_summary": cost_tracker.get_session_stats(),
+                        "hybrid_analysis": {
+                            "has_sitemap": analysis.has_sitemap,
+                            "strategy_used": plan.strategy.value,
+                            "urls_discovered": len(plan.priority_urls) if hasattr(plan, 'priority_urls') and plan.priority_urls else 0,
+                            "ai_classifications": stats.get('ai_classifications', 0),
+                            "quality_plateau_triggered": stats.get('quality_plateau_triggered', False)
+                        }
+                    }
+                    
+                    self.logger.info(f"✅ Hybrid crawl completed:")
+                    self.logger.info(f"   Pages crawled: {len(results)}")
+                    self.logger.info(f"   Success rate: {len(successful_results)}/{len(results)} ({success_rate:.1%})")
+                    self.logger.info(f"   AI cost: ${cost_tracker.total_session_cost:.4f}")
+                    
+                    return success, crawl_data
+                    
+                except Exception as hybrid_error:
+                    self.logger.error(f"Hybrid crawler failed: {hybrid_error}")
+                    # Fallback to original system
+                    return await self._fallback_to_original_crawl(url, strategy, recon)
+                    
+        except ImportError as import_error:
+            self.logger.warning(f"Hybrid crawler not available: {import_error}")
+            # Fallback to original system
+            return await self._fallback_to_original_crawl(url, strategy, recon)
+        except Exception as e:
+            self.logger.error(f"Adaptive crawl failed: {e}")
+            return False, {"error": str(e)}
             
-            # Get browser configuration from strategy
+    async def _fallback_to_original_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults) -> Tuple[bool, Dict[str, Any]]:
+        """Fallback to original AgentCrawler system if hybrid crawler fails"""
+        self.logger.info("🔄 Falling back to original crawler system")
+        
+        try:
+            # Get strategy configuration with stealth mode preserved
             strategy_config = self.strategy_to_config(strategy)
             
+            # Initialize AgentCrawler with full configuration
             success, crawl_data = await self.crawler.crawl_website(
-                url=url,
-                max_pages=max_pages,
-                request_gap=request_gap,
-                user_agent=strategy_config.get('user_agent', "Mozilla/5.0 (compatible; SmartMirrorAgent/1.0)"),
-                respect_robots=False,  # Demo sites ignore robots.txt
-                # Pass browser configuration
+                url,
+                max_pages=strategy_config.get('max_pages', 80),
+                request_gap=strategy_config.get('request_gap', 0.6),
+                respect_robots=strategy_config.get('respect_robots', False),
+                # Browser configuration
                 timeout=strategy_config.get('timeout', 30),
-                wait_for=strategy_config.get('wait_for', 'networkidle'),
-                additional_wait=strategy_config.get('additional_wait', 0.0),
+                wait_for=strategy_config.get('wait_for', 'domcontentloaded'),
                 headless=strategy_config.get('headless', True),
                 screenshot=strategy_config.get('screenshot', False),
                 javascript=strategy_config.get('javascript', True),
                 max_concurrent=strategy_config.get('max_concurrent', 5),
-                # Anti-detection features
+                # Anti-detection features (stealth mode kept)
                 stealth_mode=strategy_config.get('stealth_mode', False),
                 realistic_viewport=strategy_config.get('realistic_viewport', True),
                 extra_headers=strategy_config.get('extra_headers', {}),
-                # Enhanced JS rendering parameters (if supported by AgentCrawler)
+                # Enhanced JS rendering parameters
                 wait_for_selector=strategy_config.get('wait_for_selector'),
                 selector_timeout=strategy_config.get('selector_timeout', 10000),
                 auto_scroll=strategy_config.get('auto_scroll', False),
@@ -321,18 +388,19 @@ class SmartMirrorAgent:
             )
             
             # Add reconnaissance data to crawl results
-            crawl_data["reconnaissance"] = {
-                "site_type": recon.site_type.value,
-                "frameworks": recon.frameworks,
-                "estimated_total_pages": recon.estimated_total_pages,
-                "main_sections": recon.main_sections,
-                "recommended_sample_size": recon.recommended_sample_size
-            }
+            if crawl_data:
+                crawl_data["reconnaissance"] = {
+                    "site_type": recon.site_type.value,
+                    "frameworks": recon.frameworks,
+                    "estimated_total_pages": recon.estimated_total_pages,
+                    "main_sections": recon.main_sections,
+                    "recommended_sample_size": recon.recommended_sample_size
+                }
             
             return success, crawl_data
             
         except Exception as e:
-            self.logger.error(f"Adaptive crawl failed: {e}")
+            self.logger.error(f"Fallback crawl failed: {e}")
             return False, {"error": str(e)}
     
     def _calculate_optimal_delay(self, site_type: SiteType, strategy: CrawlStrategy) -> float:
