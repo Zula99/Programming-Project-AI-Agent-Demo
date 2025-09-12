@@ -705,23 +705,30 @@ class AIContentClassifier:
         
         if site_type == BusinessSiteType.BANKING:
             return base_info + """
-        BANKING SITE DEMO EVALUATION:
-        This is a financial/banking website. Consider both CUSTOMER needs and PROFESSIONAL demo value.
+        BANKING SITE SEARCH DEMO EVALUATION:
+        This is for a comprehensive SEARCH SOLUTION DEMO - users need to find ALL types of banking information.
         
-        HIGH VALUE (MARK AS WORTHY):
-        - Any service customers would actually use (accounts, loans, credit cards, payments,mortgages, transfers)
-        - Application processes and how-to guides (credit card applications, loan applications)
-        - Personal finance tools (calculators, budgeting, tax guidance, financial planning)
-        - Specialized services (youth banking, business banking, investment services)
-        - Support and help content (cheque payments, online banking help, FAQs)
-        - Branch/contact information and customer service
-        - Educational content and financial literacy resources
-        - About us, company information, careers (credibility and completeness)
+        HIGH VALUE (MARK AS WORTHY - be inclusive):
+        - ALL customer services (personal, business, corporate, institutional)
+        - Investment products (securities, bonds, funds, trading, wealth management)
+        - Corporate banking (treasury, commercial lending, capital markets)
+        - Institutional services (custody, fund administration, investment management)  
+        - Technical financial products (derivatives, structured products, institutional cash management)
+        - Application processes and eligibility criteria for ALL services
+        - Educational content (financial literacy, market insights, economic research)
+        - Rate sheets, product disclosure statements, and detailed service information
+        - Regulatory information and compliance content
+        - Professional resources (advisor tools, business banking guides)
+        - Company information (about, careers, news, investor relations)
+        - ALL support content (FAQs, help guides, contact information)
         
-        LOW VALUE:
-        - Pure legal text without service context
-        - Broken or placeholder pages
-        - Developer-only technical documentation
+        LOW VALUE (avoid space-wasting content):
+        - Large PDF documents unless they contain critical searchable information
+        - Broken or error pages
+        - Empty placeholder pages
+        - Duplicate content with identical text
+        
+        CRITICAL: For search demos, include professional/investor content that users might search for.
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
@@ -751,23 +758,30 @@ class AIContentClassifier:
         
         elif site_type == BusinessSiteType.CORPORATE:
             return base_info + """
-        CORPORATE WEBSITE DEMO EVALUATION:
-        This is a business/corporate website. Consider both PROSPECTIVE CLIENT needs and PROFESSIONAL demo value.
+        CORPORATE WEBSITE SEARCH DEMO EVALUATION:
+        This is for a comprehensive SEARCH SOLUTION DEMO - include ALL business information users might search for.
         
-        HIGH VALUE (MARK AS WORTHY):
-        - All services and solutions offered (what clients need to find)
-        - Company information, leadership, and expertise (credibility)
-        - Case studies, client success stories, and testimonials
-        - Industry insights, thought leadership, and expertise
-        - Contact information, locations, and ways to engage
-        - Careers, company culture, and team information
-        - News, press releases, and company updates
-        - Resource centers, whitepapers, and educational content
+        HIGH VALUE (MARK AS WORTHY - be comprehensive):
+        - ALL services, solutions, and products offered
+        - Detailed service descriptions, pricing, and technical specifications
+        - Company information, leadership profiles, and organizational structure
+        - Case studies, client success stories, project portfolios, and testimonials
+        - Industry insights, research reports, whitepapers, and thought leadership
+        - Technical documentation, guides, and professional resources
+        - Investor relations content, financial information, and annual reports
+        - News, press releases, company updates, and market announcements
+        - Career opportunities, company culture, and employee information
+        - Contact information, office locations, and regional operations
+        - Regulatory information, compliance documentation, and industry standards
+        - Partnership information, vendor resources, and business relationships
         
-        LOW VALUE:
-        - Broken or empty pages
-        - Internal employee-only resources
-        - Pure legal compliance without business context
+        LOW VALUE (avoid space-wasting content):
+        - Large PDF files unless they contain searchable business information
+        - Broken or error pages
+        - Empty placeholder pages
+        - Internal employee portals and login pages
+        
+        CRITICAL: For search demos, include professional/technical content that business users search for.
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
@@ -1028,25 +1042,29 @@ class AIContentClassifier:
         
         else:  # UNKNOWN, NEWS, HEALTHCARE, GOVERNMENT, etc.
             return base_info + """
-        GENERAL SITE DEMO EVALUATION:
-        Evaluate this content for demonstration value. For simple/minimal sites, be very permissive.
+        COMPREHENSIVE SEARCH DEMO EVALUATION:
+        This is for a SEARCH SOLUTION DEMO - include ALL content users might realistically search for.
         
-        HIGH VALUE for demos:
-        - Main services, products, or information offered
-        - About us, company/organization information
-        - Key features or capabilities
-        - Contact information and locations
-        - Educational or informational content
-        - User-facing functionality
-        - Any substantial content that shows the site's purpose
+        HIGH VALUE (MARK AS WORTHY - be very inclusive):
+        - ALL main services, products, or information offered
+        - Detailed content about offerings, features, and capabilities
+        - Company/organization information, leadership, and background
+        - Educational content, resources, guides, and documentation
+        - News, updates, announcements, and industry information
+        - Contact information, locations, and how to engage
+        - Professional resources, technical information, and specifications
+        - User guides, FAQs, help content, and support information
+        - Any content with substantial information value for users
+        - Regulatory, compliance, or official documentation
+        - Research, reports, data, and analytical content
         
-        LOW VALUE for demos:
-        - Technical documentation or admin pages
-        - Legal boilerplate without substance
-        - Error or maintenance pages
-        - Pure navigation without content
+        LOW VALUE (avoid space-wasting content):
+        - Large PDF files unless critical for search functionality
+        - Broken, error, or completely empty pages
+        - Login pages and internal administration areas
+        - Duplicate content with identical text across multiple pages
         
-        STRONG BIAS TOWARD INCLUSION: For simple sites with minimal content, accept most pages. 
+        CRITICAL: For search demos, err on the side of inclusion - users search for diverse information.
         Better to include than exclude. When in doubt, mark as WORTHY.
         
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation

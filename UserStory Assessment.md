@@ -286,6 +286,27 @@ As a system architect I want a reliable hybrid AI system So that we get AI intel
 - Maintains system reliability during AI service outages
 - Combines speed of algorithms with intelligence of AI decision making
 
+**US-058: Persistent AI Classification Cache** 
+As a demo factory operator I want AI classification results cached between sessions So that I can rerun crawls without paying AI costs for previously analyzed content
+- Implements persistent disk-based cache storage for AI classification results
+- Cache key generation based on content hash + URL pattern for reliable matching
+- Automatic cache loading on system startup and saving on shutdown
+- Cache invalidation policies with configurable TTL (time-to-live) settings
+- Significant cost savings for repeat crawls of same or similar sites
+- In-memory cache for session performance + persistent storage for cross-session savings
+- Cache statistics and monitoring: hit/miss rates, cost savings, cache size management
+
+**US-059: High-Performance Parallel AI Classification System**
+As a demo factory operator I want AI classification to process URLs concurrently So that sitemap analysis completes in minutes instead of hours
+- Implement concurrent/parallel processing for AI URL classification (5-8x speed improvement)
+- Batch processing of 8-10 URLs simultaneously using asyncio.gather() for optimal throughput
+- Aggressive heuristic pre-filtering to skip obvious junk URLs before expensive AI calls (30-50% cost reduction)
+- Smart URL pattern caching to reuse classifications for similar URL structures
+- Batch API calls to OpenAI for processing multiple URLs in single requests where possible
+- Rate limiting and error handling for concurrent API requests to prevent throttling
+- Progress monitoring and ETA calculation for large sitemap processing (5,000+ URLs)
+- Reduce sitemap classification time from 2.5 hours to 30-45 minutes for comprehensive sites
+
 **Implementation Phases:**
 - **Phase 1**: AI Content Classification Layer (US-049)  COMPLETED
 - **Phase 2**: Search Bar Integration (US-56)  NEXT PRIORITY
