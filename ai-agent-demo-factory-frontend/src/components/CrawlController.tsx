@@ -36,11 +36,117 @@ interface CrawlJob {
   failure_details?: any;
 }
 
+interface CMSTemplate {
+  id: string;
+  name: string;
+  description: string;
+  platform: string;
+  maxDepth: number;
+  maxDocuments: number;
+  numThreads: number;
+  delay: number;
+  stayOnDomain: boolean;
+  includeSubdomains: boolean;
+  fileExclusions: string[];
+  urlPatterns: string[];
+}
+
+// Predefined CMS templates
+
+const CMS_TEMPLATES: CMSTemplate[] = [
+  {
+    id: 'wordpress',
+    name: 'WordPress',
+    description: 'Optimized for WordPress sites with posts, pages, and WooCommerce',
+    platform: 'WordPress',
+    maxDepth: 3,           
+    maxDocuments: 500,     
+    numThreads: 2,         
+    delay: 1500,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['wp-admin', 'wp-includes', 'wp-content/uploads', 'admin-ajax.php'],
+    urlPatterns: ['/wp-content/', '/wp-json/', '/category/', '/tag/', '/author/']
+  },
+  {
+    id: 'drupal',
+    name: 'Drupal',
+    description: 'Optimized for Drupal sites with nodes, taxonomy, and content types',
+    platform: 'Drupal',
+    maxDepth: 3,           
+    maxDocuments: 400,     
+    numThreads: 2,         
+    delay: 2000,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['admin', 'modules', 'themes', 'sites/default/files'],
+    urlPatterns: ['/node/', '/taxonomy/', '/user/', '/content/']
+  },
+  {
+    id: 'joomla',
+    name: 'Joomla',
+    description: 'Optimized for Joomla sites with articles, categories, and components',
+    platform: 'Joomla',
+    maxDepth: 3,           
+    maxDocuments: 350,     
+    numThreads: 2,         
+    delay: 1500,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['administrator', 'cache', 'tmp', 'logs'],
+    urlPatterns: ['/component/', '/index.php', '/article/', '/category/']
+  },
+  {
+    id: 'wix',
+    name: 'Wix',
+    description: 'Optimized for Wix sites with dynamic content and JavaScript',
+    platform: 'Wix',
+    maxDepth: 2,           
+    maxDocuments: 300,     
+    numThreads: 1,        
+    delay: 2500,           
+    stayOnDomain: true,
+    includeSubdomains: true,
+    fileExclusions: ['_api', 'wixstatic', 'static.wixstatic.com'],
+    urlPatterns: ['/s/', '/blog/', '/_api/']
+  },
+  {
+    id: 'squarespace',
+    name: 'Squarespace',
+    description: 'Optimized for Squarespace sites with galleries, blogs, and events',
+    platform: 'Squarespace',
+    maxDepth: 3,           
+    maxDocuments: 400,     
+    numThreads: 2,         
+    delay: 1500,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['admin', 'config', 'squarespace'],
+    urlPatterns: ['/s/', '/blog/', '/gallery/', '/events/']
+  },
+  {
+    id: 'generic',
+    name: 'Generic',
+    description: 'General purpose template for unknown or custom platforms',
+    platform: 'Generic',
+    maxDepth: 2,           
+    maxDocuments: 250,     
+    numThreads: 2,         
+    delay: 1500,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['admin', 'api', 'assets', 'static'],
+    urlPatterns: ['/blog/', '/news/', '/about/', '/contact/']
+  }
+];
+
 export default function CrawlController() {
   const [url, setUrl] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<CMSTemplate | null>(null);
   const [activeJob, setActiveJob] = useState<CrawlJob | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showTemplatePreview, setShowTemplatePreview] = useState(false);
 
   const startCrawl = async () => {
     if (!url.trim()) {
@@ -58,7 +164,20 @@ export default function CrawlController() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          target_url: url
+          target_url: url,
+          template: selectedTemplate ? {
+            id: selectedTemplate.id,
+            name: selectedTemplate.name,
+            platform: selectedTemplate.platform,
+            maxDepth: selectedTemplate.maxDepth,
+            maxDocuments: selectedTemplate.maxDocuments,
+            numThreads: selectedTemplate.numThreads,
+            delay: selectedTemplate.delay,
+            stayOnDomain: selectedTemplate.stayOnDomain,
+            includeSubdomains: selectedTemplate.includeSubdomains,
+            fileExclusions: selectedTemplate.fileExclusions,
+            urlPatterns: selectedTemplate.urlPatterns
+          } : null
         }),
       });
 
@@ -105,6 +224,21 @@ export default function CrawlController() {
     };
     
     poll();
+  };
+
+  const handleTemplateSelect = (template: CMSTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplatePreview(false);
+  };
+
+  const handleTemplatePreview = (template: CMSTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplatePreview(true);
+  };
+
+  const clearTemplate = () => {
+    setSelectedTemplate(null);
+    setShowTemplatePreview(false);
   };
 
   const stopCrawl = async (runId: string) => {
@@ -399,6 +533,90 @@ export default function CrawlController() {
         )}
       </div>
 
+      {/* CMS Template Selection */}
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-3">Select CMS Template (Optional)</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Choose a template optimized for your target website's platform to improve crawl efficiency.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {CMS_TEMPLATES.map((template) => (
+            <div
+              key={template.id}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                selectedTemplate?.id === template.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+              onClick={() => handleTemplateSelect(template)}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-900">{template.name}</h4>
+                <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                  {template.platform}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTemplatePreview(template);
+                  }}
+                  className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                >
+                  Preview
+                </button>
+                {selectedTemplate?.id === template.id && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearTemplate();
+                    }}
+                    className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selectedTemplate && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-blue-900">Selected Template: {selectedTemplate.name}</h4>
+              <button
+                onClick={clearTemplate}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Change Template
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">Max Depth:</span>
+                <span className="font-medium ml-1">{selectedTemplate.maxDepth}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Max Documents:</span>
+                <span className="font-medium ml-1">{selectedTemplate.maxDocuments}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Threads:</span>
+                <span className="font-medium ml-1">{selectedTemplate.numThreads}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Delay:</span>
+                <span className="font-medium ml-1">{selectedTemplate.delay}ms</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {activeJob && (
         <div className="border-t pt-6">
           <h3 className="font-medium mb-4">Active Crawl</h3>
@@ -479,6 +697,106 @@ export default function CrawlController() {
           <li>Run using the Norconex HTTP Collector v3</li>
         </ul>
       </div>
+
+      {/* Template Preview Modal */}
+      {showTemplatePreview && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold">Template Preview: {selectedTemplate.name}</h3>
+              <button
+                onClick={() => setShowTemplatePreview(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Description</h4>
+                <p className="text-gray-600">{selectedTemplate.description}</p>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Configuration Parameters</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Depth:</span>
+                      <span className="font-medium">{selectedTemplate.maxDepth}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Max Documents:</span>
+                      <span className="font-medium">{selectedTemplate.maxDocuments}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Threads:</span>
+                      <span className="font-medium">{selectedTemplate.numThreads}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Delay:</span>
+                      <span className="font-medium">{selectedTemplate.delay}ms</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Stay on Domain:</span>
+                      <span className="font-medium">{selectedTemplate.stayOnDomain ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Include Subdomains:</span>
+                      <span className="font-medium">{selectedTemplate.includeSubdomains ? 'Yes' : 'No'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">File Exclusions</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTemplate.fileExclusions.map((exclusion, index) => (
+                    <span key={index} className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                      {exclusion}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">URL Patterns</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTemplate.urlPatterns.map((pattern, index) => (
+                    <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      {pattern}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6 pt-4 border-t">
+              <button
+                onClick={() => {
+                  setShowTemplatePreview(false);
+                  setSelectedTemplate(selectedTemplate);
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Use This Template
+              </button>
+              <button
+                onClick={() => setShowTemplatePreview(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
