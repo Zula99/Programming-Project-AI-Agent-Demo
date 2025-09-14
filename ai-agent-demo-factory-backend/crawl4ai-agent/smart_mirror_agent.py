@@ -361,7 +361,7 @@ class SmartMirrorAgent:
             # Get strategy configuration with stealth mode preserved
             strategy_config = self.strategy_to_config(strategy)
             
-            # Initialize AgentCrawler with full configuration
+            # Initialize AgentCrawler with full configuration including deduplication
             success, crawl_data = await self.crawler.crawl_website(
                 url,
                 max_pages=strategy_config.get('max_pages', 80),
@@ -384,7 +384,11 @@ class SmartMirrorAgent:
                 auto_scroll=strategy_config.get('auto_scroll', False),
                 scroll_delay=strategy_config.get('scroll_delay', 1000),
                 post_load_delay=strategy_config.get('post_load_delay', 0),
-                js_code=strategy_config.get('js_code', [])
+                js_code=strategy_config.get('js_code', []),
+                # Content deduplication (enabled by default for better demo quality)
+                enable_deduplication=True,
+                dedup_similarity_threshold=0.85,  # 85% similarity threshold
+                dedup_min_content_length=100
             )
             
             # Add reconnaissance data to crawl results

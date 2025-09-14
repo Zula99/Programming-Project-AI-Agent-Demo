@@ -29,6 +29,14 @@ except ImportError as e:
     PLATEAU_AVAILABLE = False
     print(f"Quality plateau detection not available: {e}")
 
+# Content Deduplication System
+try:
+    from content_deduplicator import ContentDeduplicator
+    DEDUPLICATION_AVAILABLE = True
+except ImportError as e:
+    DEDUPLICATION_AVAILABLE = False
+    print(f"Content deduplication not available: {e}")
+
 # Enable long paths on Windows
 if os.name == 'nt':
     try:
@@ -183,6 +191,10 @@ class CrawlConfig:
     cost_tracker: Optional[Any] = None  # CostTracker instance for AI cost monitoring
     javascript: bool = True
     max_concurrent: int = 5
+    # Content deduplication settings
+    enable_deduplication: bool = True
+    dedup_similarity_threshold: float = 0.85  # 85% similarity threshold
+    dedup_min_content_length: int = 100  # Minimum content length to analyze
     # Anti-detection features
     stealth_mode: bool = False
     realistic_viewport: bool = True
@@ -799,6 +811,19 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     if config.extra_headers:
         crawler_config['extra_headers'] = config.extra_headers
     
+    # Initialize content deduplication system
+    deduplicator = None
+    if DEDUPLICATION_AVAILABLE and config.enable_deduplication:
+        try:
+            deduplicator = ContentDeduplicator(
+                similarity_threshold=config.dedup_similarity_threshold,
+                min_content_length=config.dedup_min_content_length
+            )
+            _logger.info(f"Content deduplication enabled (threshold: {config.dedup_similarity_threshold:.1%})")
+        except Exception as e:
+            _logger.warning(f"Could not initialize content deduplicator: {e}")
+            deduplicator = None
+
     # Initialize quality plateau monitoring if available
     plateau_monitor = None
     if PLATEAU_AVAILABLE and AI_AVAILABLE:
@@ -867,11 +892,32 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             # Crawl the page (pass cost tracker if available)
             cost_tracker = getattr(config, 'cost_tracker', None)
             result = await crawl_page(crawler, url, config, cost_tracker)
+
+            # Check for content duplication before processing
+            is_duplicate = False
+            duplicate_reason = ""
+            if result.success and deduplicator:
+                try:
+                    is_duplicate, duplicate_reason = deduplicator.is_duplicate(
+                        url=result.url,
+                        content=result.markdown,
+                        title=result.title
+                    )
+
+                    if is_duplicate:
+                        print(f"  Skipped duplicate content: {url} ({duplicate_reason})")
+                        # Still add to results for statistics but mark as filtered
+                        result.error = f"duplicate_content: {duplicate_reason}"
+                        result.success = False
+                except Exception as e:
+                    _logger.warning(f"Deduplication check failed for {url}: {e}")
+                    # Continue processing if deduplication fails
+
             results.append(result)
-            
-            if result.success:
+
+            if result.success and not is_duplicate:
                 pages_crawled += 1
-                
+
                 # Save result
                 saved_path = save_crawl_result(result, config)
                 if saved_path:
@@ -962,6 +1008,16 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     total_filtered = sum(filtered_urls.values())
     quality_ratio = pages_crawled / (pages_crawled + total_filtered) if (pages_crawled + total_filtered) > 0 else 0
     
+    # Include deduplication statistics if available
+    deduplication_stats = {}
+    if deduplicator:
+        try:
+            deduplication_stats = deduplicator.get_deduplication_summary()
+            print(f"Content deduplication summary: {deduplication_stats['duplicate_rate']} duplicates filtered")
+            print(f"  Breakdown: {deduplication_stats['breakdown']['exact_duplicates']} exact, {deduplication_stats['breakdown']['url_pattern_duplicates']} URL pattern, {deduplication_stats['breakdown']['text_similarity_duplicates']} text similarity, {deduplication_stats['breakdown']['template_duplicates']} template")
+        except Exception as e:
+            _logger.warning(f"Could not get deduplication statistics: {e}")
+
     # Include quality plateau statistics if available
     plateau_stats = {}
     if plateau_monitor:
@@ -970,7 +1026,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             print(f"Quality plateau summary: {plateau_stats['recent_worthy_ratio']:.1%} recent quality, {plateau_stats['overall_worthy_ratio']:.1%} overall")
         except Exception as e:
             _logger.warning(f"Could not get plateau statistics: {e}")
-    
+
     stats = {
         "pages_crawled": pages_crawled,
         "total_urls_seen": len(seen),
@@ -982,7 +1038,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "total_filtered": total_filtered,
         "url_quality_ratio": quality_ratio,
         "filtering_efficiency": total_filtered / total_urls_discovered if total_urls_discovered > 0 else 0,
-        "quality_plateau_stats": plateau_stats  # Include plateau monitoring results
+        "quality_plateau_stats": plateau_stats,  # Include plateau monitoring results
+        "deduplication_stats": deduplication_stats  # Include content deduplication results
     }
     
     print(f"Done. Crawled {pages_crawled} quality page(s), filtered {total_filtered} junk URLs")

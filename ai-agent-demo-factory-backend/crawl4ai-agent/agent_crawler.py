@@ -43,7 +43,11 @@ class AgentCrawler:
                           auto_scroll: bool = False,
                           scroll_delay: int = 1000,
                           post_load_delay: int = 0,
-                          js_code: Optional[List[str]] = None) -> Tuple[bool, Dict[str, Any]]:
+                          js_code: Optional[List[str]] = None,
+                          # Content deduplication settings
+                          enable_deduplication: bool = True,
+                          dedup_similarity_threshold: float = 0.85,
+                          dedup_min_content_length: int = 100) -> Tuple[bool, Dict[str, Any]]:
         """
         Crawl a website with the specified configuration
         
@@ -103,7 +107,11 @@ class AgentCrawler:
                 auto_scroll=auto_scroll,
                 scroll_delay=scroll_delay,
                 post_load_delay=post_load_delay,
-                js_code=js_code or []
+                js_code=js_code or [],
+                # Content deduplication settings
+                enable_deduplication=enable_deduplication,
+                dedup_similarity_threshold=dedup_similarity_threshold,
+                dedup_min_content_length=dedup_min_content_length
             )
             
             print(f"Starting crawl of {url} (max {max_pages} pages)")
