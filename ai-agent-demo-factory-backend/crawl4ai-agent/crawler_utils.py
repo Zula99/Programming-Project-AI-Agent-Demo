@@ -208,6 +208,8 @@ class CrawlConfig:
     js_code: Optional[List[str]] = None  # JavaScript code to execute
     # Cost tracking
     cost_tracker: Optional[object] = None  # CostTracker instance for AI cost monitoring
+    # Classification cache for avoiding duplicate AI calls
+    classification_cache: Optional[dict] = None  # Session cache for AI classifications
 
 # URL helpers
 DROP_QUERY_KEYS = {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid","_ga","_gl"}
@@ -354,13 +356,26 @@ def get_ai_classifier() -> Optional[AIContentClassifier]:
     
     return _ai_classifier
 
-async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", cost_tracker=None) -> tuple[bool, str, dict]:
+async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", cost_tracker=None, classification_cache=None) -> tuple[bool, str, dict]:
     """
-    AI-enhanced URL worthiness check with fallback to heuristics
+    AI-enhanced URL worthiness check with fallback to heuristics and session cache
+    
+    Args:
+        url: URL to classify
+        content: Page content (if available)
+        title: Page title (if available)
+        cost_tracker: Cost tracking instance
+        classification_cache: Session cache dict to avoid duplicate classifications
     
     Returns:
         (is_worthy, reason, classification_details)
     """
+    # Check classification cache first (avoid duplicate AI calls)
+    if classification_cache and url in classification_cache:
+        cached_result = classification_cache[url]
+        _logger.debug(f"Cache hit for {url}: {cached_result['reasoning']}")
+        return cached_result['is_worthy'], cached_result['reasoning'], cached_result['details']
+    
     classification_details = {
         'method': 'unknown',
         'confidence': 0.0,
@@ -376,7 +391,17 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
             'confidence': 0.9,
             'reasoning': f'Failed basic filter: {basic_reason}'
         })
-        return False, basic_reason, classification_details
+        result = (False, basic_reason, classification_details)
+        
+        # Cache basic filter results too
+        if classification_cache is not None:
+            classification_cache[url] = {
+                'is_worthy': False,
+                'reasoning': basic_reason,
+                'details': classification_details
+            }
+        
+        return result
     
     # Try AI classification if available
     ai_classifier = get_ai_classifier()
@@ -395,7 +420,17 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
                 'reasoning': result.reasoning
             })
             
-            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+            final_result = (result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details)
+            
+            # Cache AI classification result
+            if classification_cache is not None:
+                classification_cache[url] = {
+                    'is_worthy': result.is_worthy,
+                    'reasoning': result.reasoning if not result.is_worthy else "",
+                    'details': classification_details
+                }
+            
+            return final_result
             
         except Exception as e:
             _logger.warning(f"AI classification failed for {url}: {e}")
@@ -412,7 +447,17 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
                 'reasoning': result.reasoning
             })
             
-            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+            final_result = (result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details)
+            
+            # Cache heuristic classification result
+            if classification_cache is not None:
+                classification_cache[url] = {
+                    'is_worthy': result.is_worthy,
+                    'reasoning': result.reasoning if not result.is_worthy else "",
+                    'details': classification_details
+                }
+            
+            return final_result
             
         except Exception as e:
             _logger.warning(f"Heuristic classification failed for {url}: {e}")
@@ -423,7 +468,18 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
         'confidence': 0.7,
         'reasoning': 'Only basic filtering applied'
     })
-    return True, "", classification_details
+    
+    final_result = (True, "", classification_details)
+    
+    # Cache fallback result
+    if classification_cache is not None:
+        classification_cache[url] = {
+            'is_worthy': True,
+            'reasoning': "",
+            'details': classification_details
+        }
+    
+    return final_result
 
 def is_demo_worthy_url_sync(url: str, content: str = "", title: str = "") -> tuple[bool, str]:
     """
@@ -541,7 +597,7 @@ class CrawlResult:
         if self.links is None:
             self.links = set()
 
-async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, cost_tracker=None) -> CrawlResult:
+async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, cost_tracker=None, classification_cache=None) -> CrawlResult:
     """Crawl a single page and return structured results"""
     try:
         if config.request_gap > 0:
@@ -643,7 +699,7 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, co
         if AI_AVAILABLE:
             try:
                 # Use AI to classify the actual page content
-                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title, cost_tracker)
+                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title, cost_tracker, classification_cache)
                 ai_worthy = is_worthy
                 ai_reasoning = details.get('reasoning', reason)
                 ai_confidence = details.get('confidence', 0.7)
@@ -889,9 +945,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 except Exception:
                     pass
             
-            # Crawl the page (pass cost tracker if available)
+            # Crawl the page (pass cost tracker and classification cache if available)
             cost_tracker = getattr(config, 'cost_tracker', None)
-            result = await crawl_page(crawler, url, config, cost_tracker)
+            classification_cache = getattr(config, 'classification_cache', None)
+            result = await crawl_page(crawler, url, config, cost_tracker, classification_cache)
 
             # Check for content duplication before processing
             is_duplicate = False
@@ -912,7 +969,6 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 except Exception as e:
                     _logger.warning(f"Deduplication check failed for {url}: {e}")
                     # Continue processing if deduplication fails
-
             results.append(result)
 
             if result.success and not is_duplicate:
