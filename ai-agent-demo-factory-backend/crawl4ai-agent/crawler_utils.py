@@ -373,7 +373,7 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
     # Check classification cache first (avoid duplicate AI calls)
     if classification_cache and url in classification_cache:
         cached_result = classification_cache[url]
-        _logger.debug(f"Cache hit for {url}: {cached_result['reasoning']}")
+        _logger.debug(f"Session cache hit for {url}: {'WORTHY' if cached_result['is_worthy'] else 'NOT WORTHY'}")
         return cached_result['is_worthy'], cached_result['reasoning'], cached_result['details']
     
     classification_details = {
@@ -422,13 +422,14 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
             
             final_result = (result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details)
             
-            # Cache AI classification result
+            # Cache AI classification result in session cache (takes priority)
             if classification_cache is not None:
                 classification_cache[url] = {
                     'is_worthy': result.is_worthy,
                     'reasoning': result.reasoning if not result.is_worthy else "",
                     'details': classification_details
                 }
+                _logger.debug(f"Cached classification for {url}: {'WORTHY' if result.is_worthy else 'NOT WORTHY'}")
             
             return final_result
             
