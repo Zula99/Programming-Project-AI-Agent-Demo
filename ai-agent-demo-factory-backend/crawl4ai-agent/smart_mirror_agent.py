@@ -323,7 +323,17 @@ class SmartMirrorAgent:
                         "output_path": f"./output/agent_crawls/{domain}",
                         "results": results,
                         "stats": stats,
+                        "successful": success,  # Required by assess_quality method
+                        "success_rate": success_rate,
                         "cost_summary": cost_tracker.get_session_stats(),
+                        # Add the quality metrics from our fixed hybrid crawler
+                        "overall_score": stats.get('overall_score', 0),
+                        "content_completeness": stats.get('content_completeness', 0), 
+                        "asset_coverage": stats.get('asset_coverage', 0),
+                        "navigation_integrity": stats.get('navigation_integrity', 0),
+                        "visual_fidelity": stats.get('visual_fidelity', 0),
+                        "site_coverage": stats.get('site_coverage', 0),
+                        "url_quality_ratio": stats.get('url_quality_ratio', 0),
                         "hybrid_analysis": {
                             "has_sitemap": analysis.has_sitemap,
                             "strategy_used": plan.strategy.value,
@@ -746,6 +756,34 @@ class SmartMirrorAgent:
             return QualityMetrics()
         
         try:
+            # Use quality metrics from our fixed hybrid crawler if available
+            if all(key in crawl_data for key in ['overall_score', 'content_completeness', 'asset_coverage']):
+                self.logger.info("Using quality metrics from hybrid crawler")
+                
+                # Create metrics object from hybrid crawler results
+                metrics = QualityMetrics(
+                    content_completeness=crawl_data.get('content_completeness', 0) / 100.0,  # Convert percentage to ratio
+                    asset_coverage=crawl_data.get('asset_coverage', 0) / 100.0,
+                    navigation_integrity=crawl_data.get('navigation_integrity', 0) / 100.0,
+                    visual_fidelity=crawl_data.get('visual_fidelity', 0) / 100.0,
+                    site_coverage=crawl_data.get('site_coverage', 0) / 100.0,
+                    url_quality_ratio=crawl_data.get('url_quality_ratio', 0) / 100.0,
+                    overall_score=crawl_data.get('overall_score', 0) / 100.0,
+                    total_filtered_urls=crawl_data.get("stats", {}).get("total_filtered", 0),
+                    filtering_breakdown=crawl_data.get("stats", {}).get("filtered_urls", {})
+                )
+                
+                self.logger.info(f"Quality Assessment from Hybrid Crawler - Overall: {metrics.overall_score:.3f}")
+                self.logger.info(f"   Content: {metrics.content_completeness:.3f}, Assets: {metrics.asset_coverage:.3f}")
+                self.logger.info(f"   Navigation: {metrics.navigation_integrity:.3f}, Visual: {metrics.visual_fidelity:.3f}")
+                self.logger.info(f"   Site Coverage: {metrics.site_coverage:.3f} (90% target)")
+                self.logger.info(f"   URL Quality: {metrics.url_quality_ratio:.3f}")
+                
+                return metrics
+            
+            # Fallback to original quality assessment if hybrid metrics not available
+            self.logger.warning("Hybrid crawler metrics not available, using fallback assessment")
+            
             # Get crawl summary from the crawler
             summary = self.crawler.get_crawl_summary()
             stats = crawl_data.get("stats", {})
@@ -800,19 +838,11 @@ class SmartMirrorAgent:
             
             metrics.calculate_overall()
             
-            self.logger.info(f"Quality Assessment - Overall: {metrics.overall_score:.3f}")
+            self.logger.info(f"Quality Assessment (Fallback) - Overall: {metrics.overall_score:.3f}")
             self.logger.info(f"   Content: {content_completeness:.3f}, Assets: {asset_coverage:.3f}")
             self.logger.info(f"   Navigation: {navigation_integrity:.3f}, Visual: {visual_fidelity:.3f}")
             self.logger.info(f"   Site Coverage: {site_coverage:.3f} (90% target)")
             self.logger.info(f"   URL Quality: {url_quality_ratio:.3f} (filtered {metrics.total_filtered_urls} junk URLs)")
-            
-            # Log filtering breakdown if significant
-            if metrics.total_filtered_urls > 10:
-                self.logger.info("   Top filtered categories:")
-                sorted_filters = sorted(metrics.filtering_breakdown.items(), key=lambda x: x[1], reverse=True)
-                for category, count in sorted_filters[:3]:
-                    if count > 0:
-                        self.logger.info(f"     {category}: {count} URLs")
             
             return metrics
             

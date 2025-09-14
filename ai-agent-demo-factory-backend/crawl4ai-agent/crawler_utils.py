@@ -1076,13 +1076,14 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             _logger.warning(f"Could not get deduplication statistics: {e}")
 
     # Include quality plateau statistics if available
-    plateau_stats = {}
+    plateau_stats = {}  # Initialize to empty dict to avoid undefined variable
     if plateau_monitor:
         try:
             plateau_stats = plateau_monitor.get_comprehensive_stats()
             print(f"Quality plateau summary: {plateau_stats['recent_worthy_ratio']:.1%} recent quality, {plateau_stats['overall_worthy_ratio']:.1%} overall")
         except Exception as e:
             _logger.warning(f"Could not get plateau statistics: {e}")
+            plateau_stats = {}  # Reset to empty on error
 
     stats = {
         "pages_crawled": pages_crawled,
