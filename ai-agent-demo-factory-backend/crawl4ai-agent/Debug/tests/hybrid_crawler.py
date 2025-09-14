@@ -153,15 +153,21 @@ class HybridCrawler:
                     
                     # Test sitemap accessibility and extract URLs with AI analysis
                     urls, metadata = await extractor.process_sitemap_with_ai(
-                        max_urls=100,  # Sample for analysis
+                        max_urls=10,  # Sample for analysis
                         sample_content=True  # Get content samples for AI classification
                     )
                     
                     if urls and len(urls) > 5:  # Reasonable minimum for valid sitemap
                         successful_sitemap = sitemap_url
                         analysis.has_sitemap = True
-                        analysis.sitemap_urls = urls
-                        analysis.estimated_total_urls = len(urls)
+                        #analysis.sitemap_urls = urls
+                        #analysis.estimated_total_urls = len(urls)
+                        # TEMPORARY TEST LIMIT: Only use first 10 sitemap URLs
+                        analysis.sitemap_urls = urls[:10]
+                        analysis.estimated_total_urls = len(analysis.sitemap_urls)
+                        self.logger.info(f"TEST LIMIT: Using only {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap + URLs")
+                        #Delete above line when done testing to # line 160 and uncomment line 163,164
+
                         analysis.ai_classified_urls = metadata.get('ai_classifications', [])
                         analysis.discovery_metadata.update(metadata)
                         
@@ -304,11 +310,11 @@ class HybridCrawler:
             Tuple of (success: bool, comprehensive_results: Dict)
         """
         try:
-            self.logger.info(f"🚀 Starting US-54 hybrid crawl of {start_url}")
+            self.logger.info(f" Starting US-54 hybrid crawl of {start_url}")
             start_time = time.time()
             
             # Phase 1: Site Structure Analysis & Sitemap Detection
-            self.logger.info("📊 Phase 1: Site structure analysis and sitemap detection")
+            self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
             analysis = await self.analyze_site_structure(start_url)
             
             # Phase 2: Site Type Detection for Quality Thresholds
@@ -316,22 +322,23 @@ class HybridCrawler:
             if self.site_detector:
                 try:
                     site_type = self.site_detector.detect_site_type(start_url, "", "")
-                    self.logger.info(f"🏷️  Site type detected: {site_type.value}")
+                    self.logger.info(f"  Site type detected: {site_type.value}")
                 except Exception as e:
                     self.logger.warning(f"Site type detection failed: {e}")
             
             # Phase 3: Strategy Selection & Crawl Plan Creation
-            self.logger.info("📋 Phase 2: Strategy selection and crawl planning") 
+            self.logger.info(" Phase 2: Strategy selection and crawl planning") 
             plan = self.create_crawl_plan(start_url, analysis, site_type)
             
             # Phase 4: Crawler Configuration
-            self.logger.info("⚙️  Phase 3: Configuring adaptive crawler")
+            self.logger.info("  Phase 3: Configuring adaptive crawler")
             if not crawl_config:
                 domain = urllib.parse.urlparse(start_url).netloc
                 crawl_config = CrawlConfig(
                     domain=domain,
                     output_root=self.output_dir / domain.replace('.', '_'),
-                    max_pages=plan.max_pages_recommendation,
+                    #max_pages=plan.max_pages_recommendation,
+                    max_pages=10,  # TEMPORARY TEST LIMIT
                     request_gap=0.8,  # Respectful crawling
                     respect_robots=False,  # Demo purposes - ignore robots.txt
                     start_url=start_url,
@@ -343,7 +350,7 @@ class HybridCrawler:
                 )
             
             # Phase 5: Execute Crawling with Quality Plateau Detection  
-            self.logger.info(f"🕷️  Phase 4: Executing {plan.strategy.value} crawl with intelligent stopping")
+            self.logger.info(f"  Phase 4: Executing {plan.strategy.value} crawl with intelligent stopping")
             results, stats = await generic_crawl(crawl_config)
             
             # Phase 6: Comprehensive Results Analysis
@@ -386,7 +393,7 @@ class HybridCrawler:
             }
             
             # Log comprehensive summary
-            self.logger.info("📈 US-54 hybrid crawl completed:")
+            self.logger.info("    US-54 hybrid crawl completed:")
             self.logger.info(f"   Scenario: {comprehensive_results['us54_implementation']['scenario']}")
             self.logger.info(f"   Strategy: {plan.strategy.value}")
             self.logger.info(f"   Pages crawled: {stats['pages_crawled']}")

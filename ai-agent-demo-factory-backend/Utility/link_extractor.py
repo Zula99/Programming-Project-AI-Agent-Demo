@@ -452,8 +452,16 @@ class LinkExtractor:
                 else:
                     # Direct sitemap with URLs
                     urls = [loc.text for loc in sitemap_refs]
+                    
+                    # TEMPORARY TEST LIMIT: Only take first 10 URLs to prevent massive AI costs
+                    if max_urls and len(all_urls) + len(urls) > max_urls:
+                        remaining_quota = max_urls - len(all_urls)
+                        urls = urls[:remaining_quota] if remaining_quota > 0 else []
+                        print(f"     ...extracted {len(urls)} URLs (LIMITED by max_urls={max_urls})")
+                    else:
+                        print(f"     ...extracted {len(urls)} URLs")
+                    
                     all_urls.extend(urls)
-                    print(f"     ...extracted {len(urls)} URLs")
                 
                 processing_stats['total_sitemaps_processed'] += 1
                 
