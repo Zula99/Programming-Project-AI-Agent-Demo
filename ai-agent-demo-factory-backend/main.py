@@ -132,10 +132,25 @@ crawl_jobs = {}
 running_processes = {}
 
 def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
-                                  index_name: str = "demo_factory") -> str:
+                                  index_name: str = "demo_factory", template: Optional[TemplateConfig] = None) -> str:
     """
     Create a Norconex config using the NAB template as a base.
+    If template is provided, use template parameters; otherwise use defaults.
     """
+    
+    # Use template parameters if provided, otherwise use function defaults
+    if template:
+        max_depth = template.maxDepth
+        max_documents = template.maxDocuments
+        num_threads = template.numThreads
+        delay_ms = template.delay
+        stay_on_domain = template.stayOnDomain
+        include_subdomains = template.includeSubdomains
+        file_exclusions = template.fileExclusions
+        url_patterns = template.urlPatterns
+        print(f"Using template '{template.name}' ({template.platform}) with parameters: depth={max_depth}, docs={max_documents}, threads={num_threads}")
+    else:
+        print(f"Using default parameters: depth={max_depth}, docs={max_documents}")
     
     # Copy working-example.xml and modify it to ONLY crawl the target URL
     try:
@@ -161,14 +176,34 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         config = config.replace('id="nab-banking-collector"', f'id="{collector_id}"')
         config = config.replace('id="nab-banking-crawler"', f'id="{crawler_id}"')
         
-        # Set reasonable but limited crawl parameters for testing
-        config = config.replace('<maxDocuments>5000</maxDocuments>', '<maxDocuments>50</maxDocuments>')
-        config = config.replace('<maxDepth>8</maxDepth>', '<maxDepth>2</maxDepth>')
+        # Set crawl parameters (use template values if available)
+        config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+        config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
+        config = config.replace('<numThreads>4</numThreads>', f'<numThreads>{num_threads}</numThreads>')
         
-        # Ensure stayOnDomain is true and add domain restriction
-        config = config.replace('stayOnDomain="true"', 'stayOnDomain="true"')
+        # Set delay (use template value if available)
+        if template:
+            config = config.replace('default="1500"', f'default="{delay_ms}"')
+        
+        # Set domain restrictions (use template values if available)
+        if template:
+            stay_domain_str = "true" if stay_on_domain else "false"
+            include_sub_str = "true" if include_subdomains else "false"
+            config = config.replace('stayOnDomain="true"', f'stayOnDomain="{stay_domain_str}"')
+            config = config.replace('includeSubdomains="false"', f'includeSubdomains="{include_sub_str}"')
+        else:
+            # Default behavior
+            config = config.replace('stayOnDomain="true"', 'stayOnDomain="true"')
         
         # Add a reference filter to ONLY allow the target domain
+        # Build file exclusions list
+        if template and template.fileExclusions:
+            # Use template-specific exclusions plus default media files
+            exclusions = ','.join(template.fileExclusions + ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'ico', 'zip', 'exe', 'svg', 'webp', 'mp4', 'mp3', 'woff', 'woff2'])
+        else:
+            # Default exclusions
+            exclusions = 'css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2'
+        
         reference_filter = f'''
     <!-- Reference filters - ONLY allow target domain -->
     <referenceFilters>
@@ -176,7 +211,7 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
             <valueMatcher method="regex">^https?://([a-z0-9-]+\\.)*{re.escape(target_domain.replace('www.', ''))}(/.*)?$</valueMatcher>
         </filter>
         <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
-            css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
+            {exclusions}
         </filter>
     </referenceFilters>'''
         
@@ -197,9 +232,24 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
     return config
 
 # Pydantic model for validating the request body when starting a crawl.
+# Template configuration model
+class TemplateConfig(BaseModel):
+    id: str
+    name: str
+    platform: str
+    maxDepth: int
+    maxDocuments: int
+    numThreads: int
+    delay: int
+    stayOnDomain: bool
+    includeSubdomains: bool
+    fileExclusions: list[str]
+    urlPatterns: list[str]
+
 # FastAPI uses this to automatically validate incoming JSON data.
 class CrawlRequest(BaseModel):
     target_url: str
+    template: Optional[TemplateConfig] = None
 
 # Pydantic model for search requests
 class SearchRequest(BaseModel):
@@ -223,7 +273,7 @@ class PageRow(BaseModel):
     size: int # size in bytes
 
 # --- Helper Function: Runs the Norconex Crawler via Maven ---
-def run_norconex_crawler_maven(run_id: str, target_url: str):
+def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[TemplateConfig] = None):
     """
     This function runs the actual Norconex crawler via the Maven-based runner.
     It generates a configuration file, executes the crawler, and monitors progress.
@@ -239,12 +289,16 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
 
     try:
         # Use the NAB config as template and modify for the target URL
-        print(f"[{run_id}] Using NAB config template...")
+        if template:
+            print(f"[{run_id}] Using template '{template.name}' ({template.platform})...")
+        else:
+            print(f"[{run_id}] Using NAB config template...")
         xml_config = create_config_from_nab_template(
             url=target_url,
             max_depth=3,
             max_documents=500,
-            index_name="demo_factory"
+            index_name="demo_factory",
+            template=template
         )
         
         # Write config to temporary file
@@ -510,7 +564,7 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
 
     # Add the crawl function to FastAPI's background tasks.
     # This allows the HTTP response to be sent instantly while the crawl runs.
-    background_tasks.add_task(run_norconex_crawler_maven, run_id, target_url)
+    background_tasks.add_task(run_norconex_crawler_maven, run_id, target_url, request.template)
 
     # Return a 202 Accepted response, indicating the request has been taken for processing.
     return JSONResponse(content={
