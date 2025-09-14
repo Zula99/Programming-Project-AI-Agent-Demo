@@ -1,0 +1,539 @@
+"""
+Hybrid Crawler - Intelligent Site Structure Discovery
+
+Orchestrates between sitemap-first and progressive discovery approaches based on
+site characteristics and available information. Integrates with existing 
+LinkExtractor for sitemap processing and quality plateau detection for
+intelligent stopping conditions.
+"""
+
+import asyncio
+import logging
+import sys
+from typing import Dict, List, Set, Optional, Tuple, Any
+from pathlib import Path
+from dataclasses import dataclass
+from enum import Enum
+import urllib.parse
+import time
+
+# Import existing components
+from crawler_utils import CrawlConfig, generic_crawl, is_same_site
+from quality_plateau import HybridQualityMonitor, QualityMetrics as PlateauQualityMetrics
+
+# Import AI components if available
+try:
+    from ai_content_classifier import AIContentClassifier, BusinessSiteDetector, BusinessSiteType
+    AI_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"AI classification not available: {e}")
+    AI_AVAILABLE = False
+
+# Import LinkExtractor from Utility directory
+try:
+    utility_path = Path(__file__).parent.parent / "Utility"
+    if str(utility_path) not in sys.path:
+        sys.path.insert(0, str(utility_path))
+    from link_extractor import LinkExtractor
+    LINK_EXTRACTOR_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"LinkExtractor not available: {e}")
+    LINK_EXTRACTOR_AVAILABLE = False
+
+
+class DiscoveryStrategy(Enum):
+    """Site discovery approaches based on US-54 implementation plan"""
+    SITEMAP_FIRST = "sitemap_first"        # Scenario A: Sites with accessible sitemaps
+    PROGRESSIVE = "progressive"            # Scenario B: Sites without sitemaps
+
+
+@dataclass
+class SitemapAnalysis:
+    """Results of sitemap analysis and intelligence gathering"""
+    has_sitemap: bool
+    sitemap_urls: List[str] = None
+    robots_intelligence: Dict[str, Any] = None
+    estimated_total_urls: int = 0
+    main_sections: List[str] = None
+    ai_classified_urls: List[Tuple[str, float, str]] = None  # (url, confidence, reasoning)
+    discovery_metadata: Dict[str, Any] = None
+
+
+@dataclass
+class CrawlPlan:
+    """Comprehensive crawling plan based on site analysis"""
+    strategy: DiscoveryStrategy
+    priority_urls: List[str]
+    estimated_coverage_target: int
+    max_pages_recommendation: int
+    sitemap_analysis: Optional[SitemapAnalysis]
+    quality_thresholds: Dict[str, float]
+    reasoning: str
+
+
+class HybridCrawler:
+    """
+    Intelligent crawler that adapts strategy based on site characteristics.
+    
+    Implements US-54 hybrid approach:
+    - Scenario A: Sitemap-First Discovery (with quality plateau detection)
+    - Scenario B: Progressive Discovery (with quality plateau detection)
+    
+    Both scenarios use AI classification and intelligent stopping conditions.
+    """
+    
+    def __init__(self, output_dir: str = "./hybrid_crawl_output"):
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize AI components if available
+        self.ai_classifier = None
+        self.site_detector = None
+        if AI_AVAILABLE:
+            try:
+                self.site_detector = BusinessSiteDetector()
+                # AI classifier will be initialized with API key when needed
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize AI components: {e}")
+    
+    async def analyze_site_structure(self, start_url: str) -> SitemapAnalysis:
+        """
+        Comprehensive site analysis to determine optimal discovery strategy.
+        
+        Returns:
+            SitemapAnalysis with intelligence about site structure and sitemap availability
+        """
+        self.logger.info(f"🔍 Analyzing site structure for {start_url}")
+        
+        domain = urllib.parse.urlparse(start_url).netloc
+        
+        # Initialize analysis result
+        analysis = SitemapAnalysis(
+            has_sitemap=False,
+            sitemap_urls=[],
+            main_sections=[],
+            discovery_metadata={'analysis_timestamp': time.time()}
+        )
+        
+        if not LINK_EXTRACTOR_AVAILABLE:
+            self.logger.warning("LinkExtractor not available, using progressive discovery")
+            analysis.discovery_metadata['fallback_reason'] = 'LinkExtractor unavailable'
+            return analysis
+        
+        try:
+            # Create temporary directory for LinkExtractor
+            temp_dir = self.output_dir / "temp_sitemap_analysis"
+            temp_dir.mkdir(exist_ok=True)
+            
+            # Construct sitemap URL (common patterns)
+            sitemap_candidates = [
+                f"https://{domain}/sitemap.xml",
+                f"https://{domain}/sitemap_index.xml", 
+                f"https://www.{domain}/sitemap.xml",
+                f"https://www.{domain}/sitemap_index.xml",
+                start_url.rstrip('/') + '/sitemap.xml'
+            ]
+            
+            successful_sitemap = None
+            
+            # Try to find working sitemap
+            for sitemap_url in sitemap_candidates:
+                try:
+                    self.logger.info(f"   Trying sitemap: {sitemap_url}")
+                    
+                    # Initialize LinkExtractor for this sitemap
+                    extractor = LinkExtractor(
+                        sitemap_url=sitemap_url,
+                        file_name="temp_analysis",
+                        output_file="temp_urls.txt", 
+                        file_path=str(temp_dir),
+                        use_ai=True  # Enable AI for intelligent analysis
+                    )
+                    
+                    # Test sitemap accessibility and extract URLs with AI analysis
+                    urls, metadata = await extractor.process_sitemap_with_ai(
+                        max_urls=10,  # Sample for analysis
+                        sample_content=True  # Get content samples for AI classification
+                    )
+                    
+                    if urls and len(urls) > 5:  # Reasonable minimum for valid sitemap
+                        successful_sitemap = sitemap_url
+                        analysis.has_sitemap = True
+                        # TEMPORARY TEST LIMIT: Only use first 10 sitemap URLs
+                        analysis.sitemap_urls = urls[:10]
+                        analysis.estimated_total_urls = len(analysis.sitemap_urls)
+                        self.logger.info(f"TEST LIMIT: Using only {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap URLs")
+                        analysis.ai_classified_urls = metadata.get('ai_classifications', [])
+                        analysis.discovery_metadata.update(metadata)
+                        
+                        # Get robots.txt intelligence
+                        analysis.robots_intelligence = extractor.analyze_robots_txt(domain)
+                        
+                        self.logger.info(f"✅ Found working sitemap: {sitemap_url}")
+                        self.logger.info(f"   Discovered {len(urls)} URLs")
+                        break
+                        
+                except Exception as e:
+                    self.logger.debug(f"   Sitemap {sitemap_url} failed: {e}")
+                    continue
+            
+            if not successful_sitemap:
+                self.logger.info("❌ No accessible sitemap found - will use progressive discovery")
+                analysis.discovery_metadata['sitemap_search_attempted'] = len(sitemap_candidates)
+                analysis.discovery_metadata['fallback_reason'] = 'No accessible sitemap'
+            
+            # Cleanup temp directory
+            try:
+                import shutil
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass  # Ignore cleanup errors
+                
+        except Exception as e:
+            self.logger.error(f"Site structure analysis failed: {e}")
+            analysis.discovery_metadata['analysis_error'] = str(e)
+        
+        return analysis
+    
+    def create_crawl_plan(self, start_url: str, analysis: SitemapAnalysis, 
+                         site_type: Optional[BusinessSiteType] = None) -> CrawlPlan:
+        """
+        Create comprehensive crawling plan based on site analysis.
+        
+        Implements US-54 strategy selection:
+        - Scenario A: Sitemap-First Discovery
+        - Scenario B: Progressive Discovery
+        
+        Args:
+            start_url: Starting URL for crawling
+            analysis: Results from site structure analysis
+            site_type: Detected site type for quality threshold configuration
+            
+        Returns:
+            CrawlPlan with strategy, priority URLs, and configuration
+        """
+        self.logger.info("📋 Creating intelligent crawl plan")
+        
+        # US-54 Strategy Selection: Only two scenarios
+        if analysis.has_sitemap and analysis.sitemap_urls:
+            strategy = DiscoveryStrategy.SITEMAP_FIRST
+            reasoning = f"Scenario A: Sitemap available ({len(analysis.sitemap_urls)} URLs) - sitemap-first approach with AI prioritization"
+        else:
+            strategy = DiscoveryStrategy.PROGRESSIVE  
+            reasoning = "Scenario B: No sitemap available - progressive discovery from homepage with quality plateau detection"
+        
+        # Get site-specific quality thresholds
+        from crawler_utils import _get_site_specific_thresholds
+        if site_type:
+            quality_thresholds = _get_site_specific_thresholds(site_type)
+        else:
+            # Default balanced thresholds
+            quality_thresholds = {
+                'quality_window_size': 20,
+                'worthy_threshold': 0.3,
+                'diversity_threshold': 0.8,
+                'diversity_window_size': 15
+            }
+        
+        # Configure strategy-specific parameters
+        if strategy == DiscoveryStrategy.SITEMAP_FIRST:
+            # Scenario A: Parse sitemap for comprehensive URL inventory
+            # Apply AI classification to prioritize URLs
+            # Extract navigation patterns from sitemap structure
+            # Use quality plateau detection during crawling
+            
+            if analysis.ai_classified_urls:
+                # Sort by AI confidence/worthiness for prioritization
+                sorted_urls = sorted(
+                    analysis.ai_classified_urls, 
+                    key=lambda x: x[1], 
+                    reverse=True
+                )
+                priority_urls = [url for url, conf, reason in sorted_urls[:50]]
+            else:
+                priority_urls = analysis.sitemap_urls[:50]  # Reasonable starting set
+            
+            estimated_coverage = len(analysis.sitemap_urls)
+            max_pages = min(500, len(analysis.sitemap_urls) * 2)  # Allow for additional discovered URLs
+            
+        else:  # PROGRESSIVE
+            # Scenario B: Start with homepage and main navigation extraction
+            # Build URL queue progressively as pages are crawled
+            # Apply AI classification in real-time
+            # Use quality plateau detection to prevent infinite crawling
+            # Domain-bounded crawling (stays within single domain)
+            
+            priority_urls = [start_url]
+            estimated_coverage = 150  # Conservative estimate without sitemap
+            max_pages = 300  # Reasonable limit for progressive discovery with plateau detection
+        
+        plan = CrawlPlan(
+            strategy=strategy,
+            priority_urls=priority_urls,
+            estimated_coverage_target=estimated_coverage,
+            max_pages_recommendation=max_pages,
+            sitemap_analysis=analysis,
+            quality_thresholds=quality_thresholds,
+            reasoning=reasoning
+        )
+        
+        self.logger.info(f"📋 Crawl plan created:")
+        self.logger.info(f"   Strategy: {strategy.value}")
+        self.logger.info(f"   Priority URLs: {len(priority_urls)}")
+        self.logger.info(f"   Est. coverage target: {estimated_coverage}")
+        self.logger.info(f"   Max pages: {max_pages}")
+        self.logger.info(f"   Reasoning: {reasoning}")
+        
+        return plan
+    
+    async def execute_hybrid_crawl(self, start_url: str, crawl_config: Optional[CrawlConfig] = None) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Execute complete hybrid crawling workflow with intelligent strategy selection.
+        
+        Implements the full US-54 workflow:
+        1. Site structure analysis (sitemap detection)
+        2. Strategy selection (Sitemap-First vs Progressive)
+        3. AI classification integration
+        4. Quality plateau detection for intelligent stopping
+        5. Comprehensive results analysis
+        
+        Args:
+            start_url: Starting URL to crawl
+            crawl_config: Optional crawl configuration (will be created if not provided)
+            
+        Returns:
+            Tuple of (success: bool, comprehensive_results: Dict)
+        """
+        try:
+            self.logger.info(f" Starting US-54 hybrid crawl of {start_url}")
+            start_time = time.time()
+            
+            # Phase 1: Site Structure Analysis & Sitemap Detection
+            self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
+            analysis = await self.analyze_site_structure(start_url)
+            
+            # Phase 2: Site Type Detection for Quality Thresholds
+            site_type = None
+            if self.site_detector:
+                try:
+                    site_type = self.site_detector.detect_site_type(start_url, "", "")
+                    self.logger.info(f"  Site type detected: {site_type.value}")
+                except Exception as e:
+                    self.logger.warning(f"Site type detection failed: {e}")
+            
+            # Phase 3: Strategy Selection & Crawl Plan Creation
+            self.logger.info(" Phase 2: Strategy selection and crawl planning") 
+            plan = self.create_crawl_plan(start_url, analysis, site_type)
+            
+            # Phase 4: Crawler Configuration
+            self.logger.info("  Phase 3: Configuring adaptive crawler")
+            if not crawl_config:
+                domain = urllib.parse.urlparse(start_url).netloc
+                crawl_config = CrawlConfig(
+                    domain=domain,
+                    output_root=self.output_dir / domain.replace('.', '_'),
+                    #max_pages=plan.max_pages_recommendation,
+                    max_pages=10,  # TEMPORARY TEST LIMIT
+                    request_gap=0.8,  # Respectful crawling
+                    respect_robots=False,  # Demo purposes - ignore robots.txt
+                    start_url=start_url,
+                    # Configure for JS-heavy sites by default
+                    javascript=True,
+                    wait_for='networkidle',
+                    timeout=30,
+                    headless=True
+                )
+            
+            # Phase 4.5: Initialize Session Classification Cache
+            classification_cache = {}  # Session-scoped classification cache
+            self.logger.info("Initialized session classification cache - will use sitemap worthy classifications during crawl")
+            
+            # Phase 5: Execute Crawling with Classification Cache
+            self.logger.info(f"Phase 5: Executing {plan.strategy.value} crawl with cached classifications")
+            
+            # Add classification cache to crawl config
+            crawl_config.classification_cache = classification_cache
+            results, stats = await generic_crawl(crawl_config)
+            
+            # Phase 6: Comprehensive Results Analysis
+            crawl_time = time.time() - start_time
+            
+            comprehensive_results = {
+                'success': len(results) > 0,
+                'strategy_used': plan.strategy.value,
+                'us54_implementation': {
+                    'scenario': 'A' if plan.strategy == DiscoveryStrategy.SITEMAP_FIRST else 'B',
+                    'sitemap_detected': analysis.has_sitemap,
+                    'ai_classification_enabled': AI_AVAILABLE,
+                    'quality_plateau_enabled': 'quality_plateau_stats' in stats
+                },
+                'sitemap_analysis': {
+                    'had_sitemap': analysis.has_sitemap,
+                    'sitemap_urls_found': len(analysis.sitemap_urls) if analysis.sitemap_urls else 0,
+                    'ai_classifications': len(analysis.ai_classified_urls) if analysis.ai_classified_urls else 0
+                },
+                'crawl_results': {
+                    'pages_crawled': stats['pages_crawled'],
+                    'successful_crawls': stats['successful_crawls'],
+                    'failed_crawls': stats['failed_crawls'],
+                    'total_urls_discovered': stats['total_urls_discovered'],
+                    'filtering_efficiency': stats['filtering_efficiency']
+                },
+                'quality_plateau_results': stats.get('quality_plateau_stats', {}),
+                'performance': {
+                    'total_crawl_time': crawl_time,
+                    'avg_time_per_page': crawl_time / max(1, stats['pages_crawled']),
+                    'urls_per_second': stats['total_urls_discovered'] / max(1, crawl_time)
+                },
+                'plan_execution': {
+                    'target_coverage': plan.estimated_coverage_target,
+                    'actual_pages': stats['pages_crawled'],
+                    'coverage_ratio': stats['pages_crawled'] / max(1, plan.estimated_coverage_target),
+                    'strategy_reasoning': plan.reasoning
+                },
+                'output_location': str(crawl_config.output_root)
+            }
+            
+            # Log comprehensive summary
+            self.logger.info("    US-54 hybrid crawl completed:")
+            self.logger.info(f"   Scenario: {comprehensive_results['us54_implementation']['scenario']}")
+            self.logger.info(f"   Strategy: {plan.strategy.value}")
+            self.logger.info(f"   Pages crawled: {stats['pages_crawled']}")
+            self.logger.info(f"   Success rate: {stats['successful_crawls']}/{stats['pages_crawled']}")
+            self.logger.info(f"   Total time: {crawl_time:.1f}s")
+            
+            if 'quality_plateau_stats' in stats:
+                plateau_stats = stats['quality_plateau_stats']
+                if plateau_stats:
+                    self.logger.info(f"   Final quality: {plateau_stats.get('overall_worthy_ratio', 0):.1%} overall")
+                    if plateau_stats.get('should_stop', False):
+                        self.logger.info(f"   Intelligent stopping: {plateau_stats.get('stop_reason', 'N/A')}")
+            
+            return True, comprehensive_results
+            
+        except Exception as e:
+            self.logger.error(f"US-54 hybrid crawl failed: {e}")
+            return False, {
+                'success': False,
+                'error': str(e),
+                'strategy_attempted': plan.strategy.value if 'plan' in locals() else 'unknown'
+            }
+
+    async def execute_crawl_plan(self, plan, cost_tracker=None) -> Tuple[List, Dict]:
+        """
+        Execute crawl plan with cost tracking - matches SmartMirrorAgent interface
+        
+        Args:
+            plan: CrawlPlan object with strategy and priority URLs
+            cost_tracker: CostTracker instance for tracking AI costs
+            
+        Returns:
+            Tuple of (results: List, stats: Dict)
+        """
+        try:
+            # Create crawl config from plan
+            domain = urllib.parse.urlparse(plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]).netloc
+            crawl_config = CrawlConfig(
+                domain=domain,
+                output_root=self.output_dir / domain.replace('.', '_'),
+                max_pages=plan.max_pages_recommendation,
+                request_gap=0.8,
+                respect_robots=False,
+                start_url=plan.priority_urls[0] if plan.priority_urls else plan.start_url,
+                cost_tracker=cost_tracker  # Add cost tracking
+            )
+            
+            # Execute the crawl using existing method
+            success, detailed_results = await self.execute_hybrid_crawl(plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0], crawl_config)
+            
+            # Convert to expected format
+            results = []
+            if 'crawl_results' in detailed_results:
+                for url, result_data in detailed_results['crawl_results'].items():
+                    # Create mock result objects that match expected interface
+                    class MockResult:
+                        def __init__(self, url, success, data):
+                            self.url = url
+                            self.success = success
+                            self.data = data
+                    
+                    results.append(MockResult(url, result_data.get('success', False), result_data))
+            
+            # Extract stats
+            stats = {
+                'ai_classifications': detailed_results.get('ai_analysis', {}).get('total_ai_classifications', 0),
+                'quality_plateau_triggered': detailed_results.get('quality_monitoring', {}).get('quality_plateau_triggered', False),
+                'pages_crawled': detailed_results.get('crawl_summary', {}).get('pages_attempted', 0),
+                'success_rate': detailed_results.get('crawl_summary', {}).get('success_rate', 0.0)
+            }
+            
+            return results, stats
+            
+        except Exception as e:
+            self.logger.error(f"execute_crawl_plan failed: {e}")
+            return [], {'error': str(e)}
+
+
+# Convenience functions for integration with existing systems
+
+async def hybrid_crawl_url(start_url: str, output_dir: str = "./hybrid_output") -> Tuple[bool, Dict[str, Any]]:
+    """
+    Simple interface for US-54 hybrid crawling a single URL.
+    
+    Args:
+        start_url: URL to crawl
+        output_dir: Output directory for results
+        
+    Returns:
+        Tuple of (success: bool, results: Dict)
+    """
+    crawler = HybridCrawler(output_dir)
+    return await crawler.execute_hybrid_crawl(start_url)
+
+
+def create_hybrid_crawler_for_agent(agent_output_dir: str) -> HybridCrawler:
+    """
+    Create a HybridCrawler instance configured for SmartMirrorAgent integration.
+    
+    Args:
+        agent_output_dir: Output directory from agent
+        
+    Returns:
+        Configured HybridCrawler instance
+    """
+    return HybridCrawler(output_dir=agent_output_dir)
+
+
+# Example usage and testing
+async def test_hybrid_crawler():
+    """Test the US-54 hybrid crawler with different site types"""
+    test_urls = [
+        "https://www.nab.com.au",      # Banking site with sitemap (Scenario A)
+        "https://www.commbank.com.au", # Banking site, JS-heavy (Scenario A/B)
+        # Add more test URLs as needed
+    ]
+    
+    for url in test_urls:
+        print(f"\n{'='*60}")
+        print(f"Testing US-54 hybrid crawler with: {url}")
+        print(f"{'='*60}")
+        
+        crawler = HybridCrawler()
+        success, results = await crawler.execute_hybrid_crawl(url)
+        
+        print(f"Success: {success}")
+        if success:
+            scenario = results['us54_implementation']['scenario']
+            strategy = results['strategy_used']
+            pages = results['crawl_results']['pages_crawled']
+            
+            print(f"US-54 Scenario: {scenario}")
+            print(f"Strategy used: {strategy}")
+            print(f"Pages crawled: {pages}")
+            print(f"Output: {results['output_location']}")
+
+
+if __name__ == "__main__":
+    # Run test
+    asyncio.run(test_hybrid_crawler())
