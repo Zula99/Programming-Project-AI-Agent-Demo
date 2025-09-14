@@ -816,10 +816,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     if DEDUPLICATION_AVAILABLE and config.enable_deduplication:
         try:
             deduplicator = ContentDeduplicator(
-                similarity_threshold=config.dedup_similarity_threshold,
+                simhash_threshold=4,  # ~94% similarity threshold
                 min_content_length=config.dedup_min_content_length
             )
-            _logger.info(f"Content deduplication enabled (threshold: {config.dedup_similarity_threshold:.1%})")
+            _logger.info(f"Content deduplication enabled (simhash threshold: 4 = ~94% similarity)")
         except Exception as e:
             _logger.warning(f"Could not initialize content deduplicator: {e}")
             deduplicator = None
