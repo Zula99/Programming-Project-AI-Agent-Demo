@@ -1,485 +1,313 @@
 """
-Content Deduplication System for SmartMirrorAgent
-
-US-045: Content Deduplication System
-As a demo factory operator I want the system to detect and skip duplicate content
-So that demos contain only unique, valuable content
-
-Features:
-- Text similarity detection using cosine similarity
-- URL pattern duplicate detection (e.g., /product/123 vs /product/456)
-- Content hash comparison for exact duplicates
-- Template-based page identification with different data
+Robust Content Deduplication System for SmartMirrorAgent
+Handles exact duplicates, near-duplicates, and redirect stubs
 """
 
-import hashlib
-import re
-import logging
+import re, hashlib, html
+from bs4 import BeautifulSoup
 from typing import Dict, List, Set, Optional, Tuple, Any
-from dataclasses import dataclass, field
-from urllib.parse import urlparse, parse_qs
+from dataclasses import dataclass
 
-# Optional sklearn imports with fallback
-try:
-    import numpy as np
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.metrics.pairwise import cosine_similarity
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    print("Note: sklearn not available - text similarity detection will use simple fallback method")
+# Global regex patterns
+WS_RE = re.compile(r'\s+')
+DATE_WORD_RE = re.compile(r'\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b', re.I)
+DATE_NUMERIC_RE = re.compile(r'\b(?:\d{1,2}[\/\-.]){1,2}\d{2,4}\b')
+DATE_ISO_RE = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+TIME_RE = re.compile(r'\b(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\s?[AP]M)?\b', re.I)
+NUMERIC_RE = re.compile(r'\b(?:\$|€|£)?\d[\d,]*(?:\.\d+)?%?\b')
 
-
-@dataclass
-class ContentFingerprint:
-    """Fingerprint for content deduplication"""
-    url: str
-    content_hash: str
-    text_vector: Optional[np.ndarray] = None
-    url_pattern: str = ""
-    template_signature: str = ""
-    content_length: int = 0
-    title: str = ""
-
+# Common redirect stub phrases
+REDIRECT_PHRASES = [
+    r'\bthis page has moved\b',
+    r'\bpage moved to\b',
+    r'\bredirect(?:ing)? to\b',
+    r'\bclick here to continue\b',
+    r'\bhas been relocated\b',
+]
 
 @dataclass
-class DuplicationStats:
-    """Statistics about deduplication process"""
-    total_pages_processed: int = 0
-    exact_duplicates: int = 0
-    url_pattern_duplicates: int = 0
-    text_similarity_duplicates: int = 0
-    template_duplicates: int = 0
-    unique_pages_kept: int = 0
-    duplicate_examples: Dict[str, List[str]] = field(default_factory=dict)
+class DeduplicationResult:
+    """Result of deduplication decision"""
+    status: str  # "canon", "dup", "alias"
+    canonical_url: str  # The canonical URL for this content
+    reason: str  # Why this decision was made
 
-
-class ContentDeduplicator:
+class RobustContentDeduplicator:
     """
-    Comprehensive content deduplication system for web crawling
-
-    Implements multiple deduplication strategies:
-    1. Exact content hash matching
-    2. URL pattern recognition
-    3. Text similarity using cosine similarity
-    4. Template-based page detection
+    Production-ready content deduplication system
     """
 
-    def __init__(self,
-                 similarity_threshold: float = 0.85,
-                 min_content_length: int = 100,
-                 max_vectorizer_features: int = 5000):
+    def __init__(self, simhash_threshold: int = 4, min_content_length: int = 100):
         """
-        Initialize the deduplicator
+        Initialize deduplicator
 
         Args:
-            similarity_threshold: Cosine similarity threshold (0.85 = 85% similar)
+            simhash_threshold: Hamming distance threshold for near-duplicates (4 = ~94% similarity)
             min_content_length: Minimum content length to analyze
-            max_vectorizer_features: Maximum features for TF-IDF vectorizer
         """
-        self.logger = logging.getLogger(__name__)
-        self.similarity_threshold = similarity_threshold
+        self.simhash_threshold = simhash_threshold
         self.min_content_length = min_content_length
 
-        # Storage for seen content
-        self.content_fingerprints: List[ContentFingerprint] = []
-        self.content_hashes: Set[str] = set()
-        self.url_patterns: Dict[str, List[str]] = {}
-        self.template_signatures: Dict[str, List[str]] = {}
-
-        # TF-IDF vectorizer for text similarity (if sklearn available)
-        self.vectorizer = None
-        self.text_vectors: List[Any] = []
-        self.vectorizer_fitted = False
-        self.simple_text_hashes: Set[str] = set()  # Fallback for text similarity
-
-        if SKLEARN_AVAILABLE:
-            self.vectorizer = TfidfVectorizer(
-                max_features=max_vectorizer_features,
-                stop_words='english',
-                lowercase=True,
-                strip_accents='ascii'
-            )
+        # Storage for deduplication data
+        self.exact_map: Dict[str, str] = {}  # exact_hash -> canonical_url
+        self.fuzzy_buckets: Dict[str, List[str]] = {}  # fuzzy_hash -> [urls]
+        self.sim_map: Dict[str, str] = {}  # url -> simhash_hex
+        self.canon_map: Dict[str, str] = {}  # url -> canonical_url (for aliases)
 
         # Statistics
-        self.stats = DuplicationStats()
+        self.stats = {
+            "total_processed": 0,
+            "exact_duplicates": 0,
+            "near_duplicates": 0,
+            "redirect_stubs": 0,
+            "unique_pages": 0
+        }
+
+    def extract_meaningful_text(self, html_content: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        Extract meaningful text from HTML and gather metadata
+
+        Returns:
+            (text, meta) where text is boilerplate-reduced, meta contains hints
+        """
+        soup = BeautifulSoup(html_content, "lxml")
+
+        # Remove scripts, styles, and other non-content tags
+        for tag in soup(["script", "style", "template", "noscript"]):
+            tag.decompose()
+
+        meta = {
+            "title": (soup.title.get_text(" ", strip=True) if soup.title else "").strip(),
+            "canonical": None,
+            "meta_refresh": False,
+            "js_redirect_hint": False,
+            "body_len": 0,
+        }
+
+        # Check for canonical URL
+        link_canon = soup.find("link", rel=lambda v: v and "canonical" in v)
+        if link_canon and link_canon.has_attr("href"):
+            meta["canonical"] = link_canon["href"].strip()
+
+        # Meta refresh detection
+        for m in soup.find_all("meta", attrs={"http-equiv": True, "content": True}):
+            if m["http-equiv"].lower() == "refresh":
+                meta["meta_refresh"] = True
+                break
+
+        # JS redirect hint (lightweight detection)
+        if (soup.find(string=re.compile(r'location\.(href|replace)\s*=')) or
+            soup.find(string=re.compile(r'window\.location'))):
+            meta["js_redirect_hint"] = True
+
+        # Extract meaningful content
+        root = soup.find(["main", "article"]) or soup.body or soup
+        chunks = []
+
+        if meta["title"]:
+            chunks.append(meta["title"])
+
+        for tag in root.find_all(["h1", "h2", "h3", "p", "li", "th", "td", "figcaption"]):
+            txt = tag.get_text(" ", strip=True)
+            if txt:
+                chunks.append(txt)
+
+        text = html.unescape(" ".join(chunks))
+        text = WS_RE.sub(" ", text).strip()
+        meta["body_len"] = len(text)
+
+        return text, meta
+
+    def normalize_exact(self, text: str) -> str:
+        """Normalize text for exact matching"""
+        return WS_RE.sub(" ", text.strip().lower())
+
+    def normalize_fuzzy(self, text: str, neutralize_numbers=True, neutralize_dates=True) -> str:
+        """Normalize text for fuzzy matching"""
+        t = text.lower()
+
+        if neutralize_dates:
+            # Replace various date formats with <date>
+            t = DATE_ISO_RE.sub(" <date> ", t)
+            t = DATE_NUMERIC_RE.sub(" <date> ", t)
+            t = re.sub(rf'(\b\d{{1,2}}\b[ ,.-/]*)?{DATE_WORD_RE.pattern}([ ,.-/]*\b\d{{2,4}}\b)?',
+                      " <date> ", t, flags=re.I)
+            t = TIME_RE.sub(" <time> ", t)
+            t = re.sub(r'\b(last|updated|as of|published)\b.*?(<date>|<time>)',
+                      " <upd> ", t, flags=re.I)
+
+        if neutralize_numbers:
+            t = NUMERIC_RE.sub(" <num> ", t)
+
+        # Remove common stopwords lightly
+        STOP = {"a","an","the","of","in","on","at","for","to","from","by","and","or","if","this","that","with","as","is","are","be","was","were","it"}
+        toks = [tok for tok in WS_RE.sub(" ", t).split(" ") if tok and tok not in STOP]
+        return " ".join(toks)
+
+    def sha256_hex(self, s: str) -> str:
+        """Compute SHA-256 hash"""
+        return hashlib.sha256(s.encode("utf-8")).hexdigest()
+
+    def _ngrams(self, tokens, n=3):
+        """Generate n-grams from tokens"""
+        return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)] if len(tokens) >= n else tokens
+
+    def _hash64(self, s: str) -> int:
+        """Convert string to 64-bit integer hash"""
+        h = hashlib.md5(s.encode("utf-8")).digest()
+        return int.from_bytes(h[:8], "big", signed=False)
+
+    def simhash64(self, text: str, n=3) -> int:
+        """Compute 64-bit SimHash for near-duplicate detection"""
+        toks = [t for t in WS_RE.sub(" ", text).split(" ") if t]
+        grams = self._ngrams(toks, n)
+
+        # Simple TF weighting
+        freq = {}
+        for g in grams:
+            freq[g] = freq.get(g, 0) + 1
+
+        vec = [0] * 64
+        for g, w in freq.items():
+            h = self._hash64(g)
+            for i in range(64):
+                vec[i] += w if ((h >> i) & 1) else -w
+
+        fp = 0
+        for i in range(64):
+            if vec[i] >= 0:
+                fp |= (1 << i)
+        return fp
+
+    def hamming64(self, a: int, b: int) -> int:
+        """Compute Hamming distance between two 64-bit integers"""
+        return (a ^ b).bit_count()
+
+    def is_redirect_stub(self, html_content: str, text: str, meta: Dict[str, Any]) -> bool:
+        """Detect redirect stub pages"""
+        if meta["meta_refresh"]:
+            return True
+
+        if meta["js_redirect_hint"] and meta["body_len"] < 240:
+            return True
+
+        # Tiny pages that announce a move
+        if meta["body_len"] < 180:
+            for pattern in REDIRECT_PHRASES:
+                if re.search(pattern, text, re.I):
+                    return True
+        return False
+
+    def compute_hash_bundle(self, html_content: str, neutralize_numbers=True, neutralize_dates=True) -> Dict[str, Any]:
+        """Compute all hashes and metadata for a page"""
+        text, meta = self.extract_meaningful_text(html_content)
+        exact_norm = self.normalize_exact(text)
+        fuzzy_norm = self.normalize_fuzzy(text, neutralize_numbers, neutralize_dates)
+
+        return {
+            "meta": meta,
+            "exact_hash": self.sha256_hex(exact_norm),
+            "fuzzy_hash": self.sha256_hex(fuzzy_norm),
+            "simhash_hex": f"{self.simhash64(fuzzy_norm, n=3):016x}",
+            "len_norm": len(exact_norm),
+            "title": meta.get("title", "")
+        }
+
+    def decide_dedup(self, url: str, html_content: str) -> DeduplicationResult:
+        """
+        Main deduplication decision logic
+
+        Returns:
+            DeduplicationResult with status, canonical_url, and reason
+        """
+        self.stats["total_processed"] += 1
+
+        bundle = self.compute_hash_bundle(html_content)
+
+        # Skip very short content
+        if bundle["len_norm"] < self.min_content_length:
+            return DeduplicationResult("canon", url, "content_too_short")
+
+        # 0) Redirect / canonical short-circuits
+        if self.is_redirect_stub(html_content, bundle["title"], bundle["meta"]):
+            self.stats["redirect_stubs"] += 1
+            target = bundle["meta"]["canonical"] or "unknown"
+            return DeduplicationResult("alias", target, "redirect_stub")
+
+        # 1) Exact duplicate
+        if bundle["exact_hash"] in self.exact_map:
+            self.stats["exact_duplicates"] += 1
+            return DeduplicationResult("dup", self.exact_map[bundle["exact_hash"]], "exact_hash")
+
+        # 2) Near-duplicate (fuzzy pre-bucket → SimHash compare)
+        candidates = self.fuzzy_buckets.get(bundle["fuzzy_hash"], [])
+        for c_url in candidates:
+            if c_url in self.sim_map:
+                current_simhash = int(bundle["simhash_hex"], 16)
+                candidate_simhash = int(self.sim_map[c_url], 16)
+                if self.hamming64(current_simhash, candidate_simhash) <= self.simhash_threshold:
+                    self.stats["near_duplicates"] += 1
+                    return DeduplicationResult("dup", c_url, f"near_dup_simhash<={self.simhash_threshold}")
+
+        # 3) New canonical - store all hashes
+        self.exact_map[bundle["exact_hash"]] = url
+        self.fuzzy_buckets.setdefault(bundle["fuzzy_hash"], []).append(url)
+        self.sim_map[url] = bundle["simhash_hex"]
+        self.stats["unique_pages"] += 1
+
+        return DeduplicationResult("canon", url, "unique")
 
     def is_duplicate(self, url: str, content: str, title: str = "") -> Tuple[bool, str]:
         """
-        Check if content is a duplicate using multiple strategies
+        Compatibility method for existing crawler integration
 
         Args:
             url: Page URL
-            content: Page content (markdown/text)
-            title: Page title
+            content: Page content (HTML or markdown)
+            title: Page title (unused in new implementation)
 
         Returns:
-            is_duplicate: Boolean indicating if content is duplicate
-            reason: Reason for duplication decision
+            (is_duplicate, reason)
         """
-        self.stats.total_pages_processed += 1
+        result = self.decide_dedup(url, content)
 
-        # Skip very short content
-        if len(content) < self.min_content_length:
-            return False, "content_too_short"
-
-        # 1. Exact content hash duplicate check
-        content_hash = self._compute_content_hash(content)
-        if content_hash in self.content_hashes:
-            self.stats.exact_duplicates += 1
-            self._add_duplicate_example("exact_hash", url)
-            return True, "exact_content_duplicate"
-
-        # 2. URL pattern duplicate check
-        url_pattern = self._extract_url_pattern(url)
-        if self._is_url_pattern_duplicate(url_pattern, url):
-            self.stats.url_pattern_duplicates += 1
-            self._add_duplicate_example("url_pattern", url)
-            return True, "url_pattern_duplicate"
-
-        # 3. Template-based duplicate check
-        template_sig = self._extract_template_signature(content, title)
-        if self._is_template_duplicate(template_sig, url):
-            self.stats.template_duplicates += 1
-            self._add_duplicate_example("template", url)
-            return True, "template_duplicate"
-
-        # 4. Text similarity duplicate check
-        if self._is_text_similarity_duplicate(content, url):
-            self.stats.text_similarity_duplicates += 1
-            self._add_duplicate_example("text_similarity", url)
-            return True, "text_similarity_duplicate"
-
-        # Not a duplicate - add to fingerprints
-        self._add_content_fingerprint(url, content, title, content_hash, url_pattern, template_sig)
-        self.stats.unique_pages_kept += 1
-
-        return False, "unique_content"
-
-    def _compute_content_hash(self, content: str) -> str:
-        """Compute SHA-256 hash of normalized content"""
-        # Normalize content for hashing
-        normalized = re.sub(r'\s+', ' ', content.strip().lower())
-        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()
-
-    def _extract_url_pattern(self, url: str) -> str:
-        """
-        Extract URL pattern by replacing dynamic parts with placeholders
-
-        Examples:
-        - /product/123 -> /product/{id}
-        - /article/2024/01/15/title -> /article/{year}/{month}/{day}/{slug}
-        - /user/profile?id=456 -> /user/profile?id={param}
-        """
-        try:
-            parsed = urlparse(url)
-            path = parsed.path
-
-            # Replace common dynamic patterns
-            patterns = [
-                (r'/\d{4}/\d{2}/\d{2}/', '/{year}/{month}/{day}/'),  # Date patterns
-                (r'/\d{4}/\d{2}/', '/{year}/{month}/'),              # Year/month
-                (r'/\d{4}/', '/{year}/'),                            # Year only
-                (r'/\d+/', '/{id}/'),                                # Numeric IDs
-                (r'/[a-f0-9]{8,}/', '/{hash}/'),                     # Hash-like strings
-                (r'/[a-zA-Z0-9-]{20,}/', '/{slug}/'),                # Long slugs
-            ]
-
-            pattern_path = path
-            for regex, replacement in patterns:
-                pattern_path = re.sub(regex, replacement, pattern_path)
-
-            # Handle query parameters
-            if parsed.query:
-                # Replace parameter values with placeholders
-                query_pattern = re.sub(r'=([^&]+)', '={param}', parsed.query)
-                return f"{pattern_path}?{query_pattern}"
-
-            return pattern_path
-
-        except Exception as e:
-            self.logger.warning(f"URL pattern extraction failed for {url}: {e}")
-            return url
-
-    def _is_url_pattern_duplicate(self, pattern: str, url: str) -> bool:
-        """Check if URL pattern already exists"""
-        if pattern in self.url_patterns:
-            # Allow some variety within the same pattern (e.g., 3 products max)
-            if len(self.url_patterns[pattern]) >= 3:
-                self.logger.debug(f"URL pattern duplicate: {pattern} (from {url})")
-                return True
-        else:
-            self.url_patterns[pattern] = []
-
-        self.url_patterns[pattern].append(url)
-        return False
-
-    def _extract_template_signature(self, content: str, title: str) -> str:
-        """
-        Extract template signature to identify pages with same structure but different data
-
-        This looks at content structure patterns rather than actual content
-        """
-        try:
-            # Extract structural elements
-            structural_elements = []
-
-            # Count different types of content elements
-            heading_count = len(re.findall(r'^#+\s', content, re.MULTILINE))
-            list_count = len(re.findall(r'^\s*[-*+]\s', content, re.MULTILINE))
-            link_count = len(re.findall(r'\[([^\]]+)\]\([^)]+\)', content))
-            image_count = len(re.findall(r'!\[([^\]]*)\]\([^)]+\)', content))
-
-            # Extract common template phrases (navigation, footer, etc.)
-            template_phrases = []
-            common_patterns = [
-                r'home\s*>\s*\w+',  # Breadcrumbs
-                r'contact\s*us',
-                r'about\s*us',
-                r'privacy\s*policy',
-                r'terms\s*of\s*service',
-                r'copyright\s*\d{4}',
-                r'all\s*rights\s*reserved'
-            ]
-
-            for pattern in common_patterns:
-                if re.search(pattern, content, re.IGNORECASE):
-                    template_phrases.append(pattern)
-
-            # Create signature based on structure
-            signature = f"h{heading_count}_l{list_count}_lnk{link_count}_img{image_count}"
-            if template_phrases:
-                signature += f"_tpl{'_'.join(template_phrases[:3])}"  # Max 3 phrases
-
-            # Add content length category
-            length_category = "short" if len(content) < 500 else "medium" if len(content) < 2000 else "long"
-            signature += f"_{length_category}"
-
-            return signature
-
-        except Exception as e:
-            self.logger.warning(f"Template signature extraction failed: {e}")
-            return "unknown_template"
-
-    def _is_template_duplicate(self, template_sig: str, url: str) -> bool:
-        """Check if template signature indicates duplicate structure"""
-        if template_sig in self.template_signatures:
-            # Allow some variety within same template (e.g., 5 pages max)
-            if len(self.template_signatures[template_sig]) >= 5:
-                self.logger.debug(f"Template duplicate: {template_sig} (from {url})")
-                return True
-        else:
-            self.template_signatures[template_sig] = []
-
-        self.template_signatures[template_sig].append(url)
-        return False
-
-    def _is_text_similarity_duplicate(self, content: str, url: str) -> bool:
-        """Check text similarity using cosine similarity or fallback method"""
-        try:
-            if not SKLEARN_AVAILABLE:
-                # Use simple text hash fallback
-                return self._is_text_similarity_duplicate_fallback(content, url)
-
-            if not self.text_vectors:
-                # First document - not a duplicate
-                return False
-
-            # Prepare text for vectorization
-            clean_content = self._clean_text_for_similarity(content)
-
-            if not self.vectorizer_fitted:
-                # Fit vectorizer with existing content
-                all_content = [fp.title + " " + self._clean_text_for_similarity(content)
-                              for fp in self.content_fingerprints]
-                if len(all_content) < 1:
-                    return False
-
-                all_content.append(clean_content)
-                try:
-                    self.vectorizer.fit(all_content)
-                    self.vectorizer_fitted = True
-
-                    # Re-vectorize all existing content
-                    self.text_vectors = []
-                    for content_text in all_content:
-                        vector = self.vectorizer.transform([content_text]).toarray()[0]
-                        self.text_vectors.append(vector)
-
-                    # The last vector is for the new content - check against others
-                    new_vector = self.text_vectors[-1]
-                    for i, existing_vector in enumerate(self.text_vectors[:-1]):
-                        similarity = cosine_similarity(new_vector.reshape(1, -1), existing_vector.reshape(1, -1))[0][0]
-                        if similarity >= self.similarity_threshold:
-                            self.logger.debug(f"Text similarity duplicate: {similarity:.3f} vs {self.similarity_threshold} (from {url})")
-                            return True
-
-                    return False
-
-                except Exception as e:
-                    self.logger.warning(f"Vectorizer fitting failed for {url}: {e}")
-                    # Fall back to simple method
-                    return self._is_text_similarity_duplicate_fallback(content, url)
-
-            # Transform new content using fitted vectorizer
-            try:
-                new_vector = self.vectorizer.transform([clean_content]).toarray()[0]
-
-                # Compare with existing vectors
-                for i, existing_vector in enumerate(self.text_vectors):
-                    similarity = cosine_similarity(new_vector.reshape(1, -1), existing_vector.reshape(1, -1))[0][0]
-                    if similarity >= self.similarity_threshold:
-                        self.logger.debug(f"Text similarity duplicate: {similarity:.3f} vs {self.similarity_threshold} (from {url})")
-                        return True
-
-                # Not a duplicate - store vector
-                self.text_vectors.append(new_vector)
-                return False
-
-            except Exception as e:
-                self.logger.warning(f"Vectorization failed for {url}: {e}")
-                return self._is_text_similarity_duplicate_fallback(content, url)
-
-        except Exception as e:
-            self.logger.warning(f"Text similarity check failed for {url}: {e}")
-            return self._is_text_similarity_duplicate_fallback(content, url)
-
-    def _is_text_similarity_duplicate_fallback(self, content: str, url: str) -> bool:
-        """Simple fallback text similarity using word overlap"""
-        try:
-            # Clean and normalize content
-            clean_content = self._clean_text_for_similarity(content)
-            words = set(clean_content.split())
-
-            # Very short content is not useful for comparison
-            if len(words) < 10:
-                return False
-
-            # Create a simple hash based on most common words
-            common_words = sorted(words)[:50]  # Take up to 50 most frequent words
-            text_signature = " ".join(common_words)
-            text_hash = hashlib.md5(text_signature.encode()).hexdigest()
-
-            if text_hash in self.simple_text_hashes:
-                self.logger.debug(f"Simple text similarity duplicate detected for {url}")
-                return True
-
-            self.simple_text_hashes.add(text_hash)
-            return False
-
-        except Exception as e:
-            self.logger.warning(f"Fallback text similarity check failed for {url}: {e}")
-            return False
-
-    def _clean_text_for_similarity(self, content: str) -> str:
-        """Clean and normalize text for similarity analysis"""
-        # Remove URLs, special characters, extra whitespace
-        clean = re.sub(r'http[s]?://[^\s]+', '', content)
-        clean = re.sub(r'[^\w\s]', ' ', clean)
-        clean = re.sub(r'\s+', ' ', clean)
-        return clean.strip().lower()
-
-    def _add_content_fingerprint(self, url: str, content: str, title: str,
-                                content_hash: str, url_pattern: str, template_sig: str):
-        """Add content fingerprint to storage"""
-        # For text similarity, prepare and store vector
-        text_vector = None
-        try:
-            clean_content = self._clean_text_for_similarity(content)
-
-            if not self.vectorizer_fitted and len(self.content_fingerprints) >= 1:
-                # Fit vectorizer with existing content + new content
-                all_content = [self._clean_text_for_similarity(fp.title + " " + content)
-                              for fp in self.content_fingerprints]
-                all_content.append(clean_content)
-
-                self.vectorizer.fit(all_content)
-                self.vectorizer_fitted = True
-
-                # Re-vectorize all existing content
-                self.text_vectors = []
-                for content_text in all_content:
-                    vector = self.vectorizer.transform([content_text]).toarray()[0]
-                    self.text_vectors.append(vector)
-
-                # The last vector is for the new content
-                text_vector = self.text_vectors[-1]
-
-            elif self.vectorizer_fitted:
-                # Transform new content using fitted vectorizer
-                vector = self.vectorizer.transform([clean_content]).toarray()[0]
-                self.text_vectors.append(vector)
-                text_vector = vector
-
-        except Exception as e:
-            self.logger.warning(f"Vector preparation failed for {url}: {e}")
-
-        # Create and store fingerprint
-        fingerprint = ContentFingerprint(
-            url=url,
-            content_hash=content_hash,
-            text_vector=text_vector,
-            url_pattern=url_pattern,
-            template_signature=template_sig,
-            content_length=len(content),
-            title=title
-        )
-
-        self.content_fingerprints.append(fingerprint)
-        self.content_hashes.add(content_hash)
-
-    def _add_duplicate_example(self, category: str, url: str):
-        """Add example URL to duplicate statistics"""
-        if category not in self.stats.duplicate_examples:
-            self.stats.duplicate_examples[category] = []
-
-        # Keep only first 5 examples per category
-        if len(self.stats.duplicate_examples[category]) < 5:
-            self.stats.duplicate_examples[category].append(url)
-
-    def get_deduplication_stats(self) -> DuplicationStats:
-        """Get comprehensive deduplication statistics"""
-        return self.stats
+        # Map new statuses to old boolean logic
+        is_duplicate = result.status in ["dup", "alias"]
+        return is_duplicate, result.reason
 
     def get_deduplication_summary(self) -> Dict[str, Any]:
         """Get human-readable deduplication summary"""
-        total_duplicates = (self.stats.exact_duplicates +
-                          self.stats.url_pattern_duplicates +
-                          self.stats.text_similarity_duplicates +
-                          self.stats.template_duplicates)
+        total_duplicates = (self.stats["exact_duplicates"] +
+                          self.stats["near_duplicates"] +
+                          self.stats["redirect_stubs"])
 
-        duplicate_rate = total_duplicates / self.stats.total_pages_processed if self.stats.total_pages_processed > 0 else 0
+        duplicate_rate = total_duplicates / self.stats["total_processed"] if self.stats["total_processed"] > 0 else 0
 
         return {
-            "total_processed": self.stats.total_pages_processed,
-            "unique_kept": self.stats.unique_pages_kept,
+            "total_processed": self.stats["total_processed"],
+            "unique_kept": self.stats["unique_pages"],
             "total_duplicates": total_duplicates,
             "duplicate_rate": f"{duplicate_rate:.1%}",
             "breakdown": {
-                "exact_duplicates": self.stats.exact_duplicates,
-                "url_pattern_duplicates": self.stats.url_pattern_duplicates,
-                "text_similarity_duplicates": self.stats.text_similarity_duplicates,
-                "template_duplicates": self.stats.template_duplicates
-            },
-            "examples": self.stats.duplicate_examples
+                "exact_duplicates": self.stats["exact_duplicates"],
+                "near_duplicates": self.stats["near_duplicates"],
+                "redirect_stubs": self.stats["redirect_stubs"]
+            }
         }
 
     def reset(self):
         """Reset deduplicator state for new crawl session"""
-        self.content_fingerprints.clear()
-        self.content_hashes.clear()
-        self.url_patterns.clear()
-        self.template_signatures.clear()
-        self.text_vectors.clear()
-        self.simple_text_hashes.clear()
-        self.vectorizer_fitted = False
-        self.stats = DuplicationStats()
+        self.exact_map.clear()
+        self.fuzzy_buckets.clear()
+        self.sim_map.clear()
+        self.canon_map.clear()
+        self.stats = {
+            "total_processed": 0,
+            "exact_duplicates": 0,
+            "near_duplicates": 0,
+            "redirect_stubs": 0,
+            "unique_pages": 0
+        }
 
-        # Reinitialize vectorizer if sklearn is available
-        if SKLEARN_AVAILABLE:
-            self.vectorizer = TfidfVectorizer(
-                max_features=5000,
-                stop_words='english',
-                lowercase=True,
-                strip_accents='ascii'
-            )
+# Backward compatibility alias
+ContentDeduplicator = RobustContentDeduplicator
