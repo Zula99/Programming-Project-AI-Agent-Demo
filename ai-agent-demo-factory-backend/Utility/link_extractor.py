@@ -275,6 +275,9 @@ class LinkExtractor:
             return [(url, 0.5, "AI not available - using all URLs") for url in urls]
         
         prioritized_urls = []
+        print(f"\n{'='*60}")
+        print(f" STARTING AI CLASSIFICATION OF SITEMAP URLS")
+        print(f"{'='*60}")
         print(f"Applying AI classification to {len(urls)} URLs...")
         
         # Initialize cost tracking for this sitemap analysis
@@ -327,15 +330,15 @@ class LinkExtractor:
                     content_length = len(content_sample + title)
                     cost_tracker.track_classification(url, result, content_length)
                     
-                    # Verbose output for each URL
+                    # Verbose output for each URL with separator
                     status = "WORTHY" if result.is_worthy else "FILTERED"
                     method_indicator = "AI" if result.method_used == "ai" else result.method_used.upper()
                     
-                    print(f"  [{i+1:4d}/{len(urls)}] {status} ({confidence:.2f}) - {url[:70]}...")
+                    print(f"\n  [{i+1:4d}/{len(urls)}] {status} ({confidence:.2f}) - {url[:70]}...")
                     print(f"        {method_indicator}: {reasoning[:120]}...")
                         
                 except Exception as ai_error:
-                    print(f"  [{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
+                    print(f"\n  [{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
                     print(f"        Error: {ai_error}")
                     # Fallback to simple URL pattern analysis
                     confidence = self._simple_url_scoring(url)
@@ -351,12 +354,15 @@ class LinkExtractor:
         # Sort by confidence score (highest first)
         prioritized_urls.sort(key=lambda x: x[1], reverse=True)
         
+        print(f"\n{'='*50}")
+        print(f" URL CLASSIFICATION RESULTS")
+        print(f"{'='*50}")
         print(f"URL classification complete. Top 10 URLs by confidence:")
         for i, (url, confidence, reasoning) in enumerate(prioritized_urls[:10]):
             print(f"  {i+1}. {confidence:.2f} - {url[:60]}... ({reasoning[:50]}...)")
         
-        # Show cost summary
-        cost_tracker.print_session_summary()
+        # Show detailed cost summary
+        cost_tracker.print_session_summary(compact=False)
         cost_tracker.save_final_session()
         
         return prioritized_urls

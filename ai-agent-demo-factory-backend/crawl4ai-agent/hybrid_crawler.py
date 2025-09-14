@@ -153,7 +153,7 @@ class HybridCrawler:
                     
                     # Test sitemap accessibility and extract URLs with AI analysis
                     urls, metadata = await extractor.process_sitemap_with_ai(
-                        max_urls=2,  # Test with just 2 URLs
+                        max_urls=10,  # Limit to 10 URLs for testing
                         sample_content=True  # Get content samples for AI classification
                     )
                     
@@ -163,7 +163,7 @@ class HybridCrawler:
                         # TEMPORARY TEST LIMIT: Only use first 10 sitemap URLs
                         analysis.sitemap_urls = urls[:10]
                         analysis.estimated_total_urls = len(analysis.sitemap_urls)
-                        self.logger.info(f"TEST LIMIT: Using only {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap URLs")
+                        self.logger.info(f"LIMIT: Using {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap URLs (max_urls=10)")
                         analysis.ai_classified_urls = metadata.get('ai_classifications', [])
                         analysis.discovery_metadata.update(metadata)
                         

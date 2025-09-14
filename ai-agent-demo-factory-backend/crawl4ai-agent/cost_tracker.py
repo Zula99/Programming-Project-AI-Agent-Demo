@@ -201,26 +201,16 @@ class CostTracker:
             'session_duration': time.time() - self.session_start
         }
     
-    def print_session_summary(self):
-        """Print detailed session cost summary"""
+    def print_session_summary(self, compact=False):
+        """Print session cost summary - compact or detailed"""
         stats = self.get_session_stats()
         
-        print("\n" + "="*60)
-        print("💰 AI COST TRACKING SUMMARY")
-        print("="*60)
-        print(f"📊 Domain: {stats['domain']}")
-        print(f"🔗 URLs processed: {stats['urls_processed']}")
-        print(f"🤖 AI classifications: {stats['ai_calls']}")
-        print(f"📋 Cached results: {stats['cached_calls']}")
-        print(f"🔧 Heuristic fallbacks: {stats['heuristic_calls']}")
-        print(f"💸 Total cost: ${stats['total_cost']:.4f}")
-        print(f"🎯 Tokens used: {stats['total_tokens']:,}")
-        print(f"📈 Avg cost/URL: ${stats['average_cost_per_url']:.6f}")
-        if stats['ai_calls'] > 0:
-            print(f"💎 Avg cost/AI call: ${stats['average_cost_per_ai_call']:.6f}")
-        print(f"✅ Worthy content: {stats['worthy_percentage']:.1f}%")
-        print(f"⏱️  Session duration: {stats['session_duration']:.1f}s")
-        print("="*60)
+        if compact:
+            # Compact one-liner
+            print(f"💰 ${stats['total_cost']:.4f} | {stats['ai_calls']} calls, {stats['cached_calls']} cached | {stats['worthy_percentage']:.1f}% worthy")
+        else:
+            # Full summary (only when needed)
+            print(f"\n💰 AI Cost: ${stats['total_cost']:.4f} ({stats['ai_calls']} calls, {stats['cached_calls']} cached) | {stats['worthy_percentage']:.1f}% worthy")
     
     def save_final_session(self) -> SessionSummary:
         """Save complete session data and return summary"""
@@ -351,7 +341,7 @@ class CostTrackingSession:
         return self.tracker
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.tracker.print_session_summary()
+        self.tracker.print_session_summary(compact=True)  # Use compact summary by default
         summary = self.tracker.save_final_session()
         
         if exc_type is None:

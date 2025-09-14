@@ -978,9 +978,9 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 # Save result
                 saved_path = save_crawl_result(result, config)
                 if saved_path:
-                    print(f" [{pages_crawled}/{config.max_pages}] {url} -> {saved_path.name}")
+                    print(f"\n [{pages_crawled}/{config.max_pages}] {url} -> {saved_path.name}")
                 else:
-                    print(f" [{pages_crawled}/{config.max_pages}] {url} -> [save failed]")
+                    print(f"\n [{pages_crawled}/{config.max_pages}] {url} -> [save failed]")
                 
                 # Queue new links with filtering
                 all_links = list(result.links)
@@ -1010,6 +1010,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         new_queued += 1
                         
                 print(f"  found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
+                print()  # Add blank line after each crawl link processing
                 
                 # Quality plateau monitoring and intelligent stopping
                 if plateau_monitor:

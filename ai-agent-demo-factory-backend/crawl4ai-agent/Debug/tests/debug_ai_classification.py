@@ -13,7 +13,7 @@ async def debug_ai_classification():
     print(f"✓ Preferred model: {config.preferred_model}")
     
     if not config.openai_api_key:
-        print("❌ No OpenAI API key found!")
+        print(" No OpenAI API key found!")
         return
     
     try:
@@ -42,7 +42,7 @@ async def debug_ai_classification():
             print(f"   Total tokens: {result.total_tokens}")
         
     except Exception as e:
-        print(f"❌ AI classification failed: {e}")
+        print(f" AI classification failed: {e}")
         import traceback
         traceback.print_exc()
         
@@ -52,7 +52,7 @@ async def debug_ai_classification():
             result = classifier._classify_with_heuristics('https://www.nab.com.au/business/business-bank-accounts')
             print(f"✓ Heuristic fallback working: {result.method_used}")
         except Exception as e2:
-            print(f"❌ Even heuristic failed: {e2}")
+            print(f" Even heuristic failed: {e2}")
 
 if __name__ == "__main__":
     asyncio.run(debug_ai_classification())

@@ -181,6 +181,9 @@ class SmartMirrorAgent:
         crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results)
         
         # Step 5: Quality assessment
+        print("\n" + "="*70)
+        print(" STARTING QUALITY ASSESSMENT & ANALYSIS")
+        print("="*70)
         quality_metrics = await self.assess_quality(crawl_data)
         
         # Step 6: Get output path for OpenSearch indexing
@@ -292,7 +295,10 @@ class SmartMirrorAgent:
                     output_dir=f"./output/agent_crawls/{domain}"
                 )
                 
-                self.logger.info(f"🔍 Using US-54 Hybrid Crawler System")
+                print("\n" + "="*70)
+                print(" STARTING SITE ANALYSIS & STRATEGY SELECTION")
+                print("="*70)
+                self.logger.info(f" Using US-54 Hybrid Crawler System")
                 
                 # Step 1: Analyze site structure (sitemap-first vs progressive)
                 analysis = await hybrid_crawler.analyze_site_structure(url)
@@ -305,6 +311,10 @@ class SmartMirrorAgent:
                 self.logger.info(f"   Max pages: {plan.max_pages_recommendation}")
                 self.logger.info(f"   Priority URLs: {len(plan.priority_urls)}")
                 self.logger.info(f"   Reasoning: {plan.reasoning}")
+                
+                print("\n" + "="*70)
+                print("🚀 STARTING HYBRID CRAWL EXECUTION")
+                print("="*70)
                 
                 # Step 3: Execute hybrid crawl with cost tracking
                 try:

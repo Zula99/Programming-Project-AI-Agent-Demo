@@ -10,7 +10,7 @@ import httpx
 import uuid
 
 # Setup logging  
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(message)s', datefmt='%H:%M:%S')
 
 async def auto_configure_proxy(target_url: str, run_id: str = None):
     """Auto-configure proxy server when crawl completes successfully"""
