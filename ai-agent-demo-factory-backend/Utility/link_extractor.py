@@ -452,8 +452,10 @@ class LinkExtractor:
                 else:
                     # Direct sitemap with URLs
                     urls = [loc.text for loc in sitemap_refs]
-                    all_urls.extend(urls)
+                    
                     print(f"     ...extracted {len(urls)} URLs")
+                    
+                    all_urls.extend(urls)
                 
                 processing_stats['total_sitemaps_processed'] += 1
                 

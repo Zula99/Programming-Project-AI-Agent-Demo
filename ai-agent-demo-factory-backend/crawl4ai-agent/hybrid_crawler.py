@@ -153,15 +153,16 @@ class HybridCrawler:
                     
                     # Test sitemap accessibility and extract URLs with AI analysis
                     urls, metadata = await extractor.process_sitemap_with_ai(
-                        max_urls=100,  # Sample for analysis
                         sample_content=True  # Get content samples for AI classification
                     )
                     
                     if urls and len(urls) > 5:  # Reasonable minimum for valid sitemap
                         successful_sitemap = sitemap_url
                         analysis.has_sitemap = True
-                        analysis.sitemap_urls = urls
-                        analysis.estimated_total_urls = len(urls)
+                        # TEMPORARY TEST LIMIT: Only use first 10 sitemap URLs
+                        analysis.sitemap_urls = urls[:10]
+                        analysis.estimated_total_urls = len(analysis.sitemap_urls)
+                        self.logger.info(f"TEST LIMIT: Using only {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap URLs")
                         analysis.ai_classified_urls = metadata.get('ai_classifications', [])
                         analysis.discovery_metadata.update(metadata)
                         
@@ -342,8 +343,51 @@ class HybridCrawler:
                     headless=True
                 )
             
-            # Phase 5: Execute Crawling with Quality Plateau Detection  
-            self.logger.info(f"🕷️  Phase 4: Executing {plan.strategy.value} crawl with intelligent stopping")
+            # Phase 4.5: Initialize Classification Cache and Sequential Sitemap Classification
+            classification_cache = {}  # Session-scoped classification cache
+            
+            if analysis.has_sitemap and analysis.sitemap_urls and AI_AVAILABLE:
+                self.logger.info(f"Pre-classifying {len(analysis.sitemap_urls)} sitemap URLs sequentially to avoid duplicates during crawl")
+                try:
+                    # Import AI classification function
+                    from crawler_utils import is_demo_worthy_url_ai
+                    
+                    # Sequential classification of sitemap URLs
+                    classified_count = 0
+                    for url in analysis.sitemap_urls[:10]:  # Temporary test limit of 10 URLs
+                        try:
+                            # Use minimal content for sitemap classification (just URL)
+                            is_worthy, reason, details = await is_demo_worthy_url_ai(
+                                url=url, 
+                                content="", 
+                                title="", 
+                                cost_tracker=crawl_config.cost_tracker, 
+                                classification_cache=classification_cache
+                            )
+                            classified_count += 1
+                            
+                            if classified_count % 50 == 0:
+                                self.logger.info(f"Classified {classified_count}/{len(analysis.sitemap_urls)} sitemap URLs")
+                                
+                        except Exception as e:
+                            self.logger.warning(f"Failed to classify {url}: {e}")
+                            continue
+                    
+                    worthy_count = sum(1 for result in classification_cache.values() if result['is_worthy'])
+                    self.logger.info(f"Bulk classification complete: {worthy_count}/{classified_count} URLs marked as demo-worthy")
+                    
+                except Exception as e:
+                    self.logger.warning(f"Bulk classification failed: {e}, proceeding with normal crawl")
+                    classification_cache = {}  # Reset cache on failure
+            else:
+                self.logger.info("No sitemap available - will classify URLs progressively during crawl")
+            
+            # Phase 5: Execute Crawling with Classification Cache
+            self.logger.info(f"Phase 5: Executing {plan.strategy.value} crawl with cached classifications")
+            
+            # Add classification cache to crawl config
+            crawl_config.classification_cache = classification_cache
+            
             results, stats = await generic_crawl(crawl_config)
             
             # Phase 6: Comprehensive Results Analysis
