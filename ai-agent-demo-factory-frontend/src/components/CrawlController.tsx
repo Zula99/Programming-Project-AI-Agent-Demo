@@ -125,18 +125,60 @@ const CMS_TEMPLATES: CMSTemplate[] = [
     urlPatterns: ['/s/', '/blog/', '/gallery/', '/events/']
   },
   {
-    id: 'generic',
-    name: 'Generic',
-    description: 'General purpose template for unknown or custom platforms',
-    platform: 'Generic',
-    maxDepth: 2,           
-    maxDocuments: 250,     
+    id: 'shopify',
+    name: 'Shopify',
+    description: 'Optimized for Shopify e-commerce stores with products, collections, and pages',
+    platform: 'Shopify',
+    maxDepth: 3,           
+    maxDocuments: 400,     
+    numThreads: 2,         
+    delay: 2000,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['admin', 'checkout', 'cart', 'account', 'apps', 'cdn.shopify.com'],
+    urlPatterns: ['/products/', '/collections/', '/pages/', '/blogs/', '/cart/', '/checkout/']
+  },
+  {
+    id: 'magento',
+    name: 'Magento',
+    description: 'Optimized for Magento e-commerce platforms with catalog and customer areas',
+    platform: 'Magento',
+    maxDepth: 3,           
+    maxDocuments: 350,     
+    numThreads: 2,         
+    delay: 2500,           
+    stayOnDomain: true,
+    includeSubdomains: false,
+    fileExclusions: ['admin', 'customer', 'checkout', 'catalogsearch', 'media', 'var'],
+    urlPatterns: ['/catalog/', '/customer/', '/checkout/', '/catalogsearch/', '/sales/']
+  },
+  {
+    id: 'ghost',
+    name: 'Ghost',
+    description: 'Optimized for Ghost publishing platform with posts, pages, and members',
+    platform: 'Ghost',
+    maxDepth: 3,           
+    maxDocuments: 300,     
     numThreads: 2,         
     delay: 1500,           
     stayOnDomain: true,
     includeSubdomains: false,
-    fileExclusions: ['admin', 'api', 'assets', 'static'],
-    urlPatterns: ['/blog/', '/news/', '/about/', '/contact/']
+    fileExclusions: ['admin', 'members', 'api', 'assets', 'content'],
+    urlPatterns: ['/tag/', '/author/', '/page/', '/members/', '/api/']
+  },
+  {
+    id: 'webflow',
+    name: 'Webflow',
+    description: 'Optimized for Webflow designer-friendly websites with custom structures',
+    platform: 'Webflow',
+    maxDepth: 2,           
+    maxDocuments: 250,     
+    numThreads: 1,         
+    delay: 3000,           
+    stayOnDomain: true,
+    includeSubdomains: true,
+    fileExclusions: ['admin', 'api', 'assets', 'uploads', 'webflow.io'],
+    urlPatterns: ['/blog/', '/projects/', '/about/', '/contact/', '/portfolio/']
   }
 ];
 
@@ -147,6 +189,7 @@ export default function CrawlController() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const startCrawl = async () => {
     if (!url.trim()) {
@@ -239,6 +282,29 @@ export default function CrawlController() {
   const clearTemplate = () => {
     setSelectedTemplate(null);
     setShowTemplatePreview(false);
+  };
+
+  // Pagination logic
+  const templatesPerPage = 6; // 3x2 grid
+  const totalPages = Math.ceil(CMS_TEMPLATES.length / templatesPerPage);
+  const startIndex = (currentPage - 1) * templatesPerPage;
+  const endIndex = startIndex + templatesPerPage;
+  const currentTemplates = CMS_TEMPLATES.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const stopCrawl = async (runId: string) => {
@@ -541,7 +607,7 @@ export default function CrawlController() {
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-          {CMS_TEMPLATES.map((template) => (
+          {currentTemplates.map((template) => (
             <div
               key={template.id}
               className={`p-4 border rounded-lg cursor-pointer transition-all ${
@@ -583,6 +649,49 @@ export default function CrawlController() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-gray-600">
+              Showing {startIndex + 1}-{Math.min(endIndex, CMS_TEMPLATES.length)} of {CMS_TEMPLATES.length} templates
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToPrevPage}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              
+              {/* Page numbers */}
+              <div className="flex space-x-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`px-3 py-1 text-sm border rounded ${
+                      currentPage === page
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {selectedTemplate && (
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
