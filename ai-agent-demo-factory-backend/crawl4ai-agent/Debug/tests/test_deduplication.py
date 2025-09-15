@@ -57,9 +57,8 @@ def test_robust_deduplication():
     print("🧪 Testing Robust Content Deduplication System")
     print("=" * 60)
 
-    # Initialize deduplicator with new parameters
+    # Initialize deduplicator for exact duplicates only
     deduplicator = RobustContentDeduplicator(
-        simhash_threshold=4,  # ~94% similarity threshold
         min_content_length=50
     )
 
