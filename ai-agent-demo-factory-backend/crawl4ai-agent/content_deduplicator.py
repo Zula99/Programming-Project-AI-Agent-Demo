@@ -1,6 +1,6 @@
 """
-Robust Content Deduplication System for SmartMirrorAgent
-Handles exact duplicates, near-duplicates, and redirect stubs
+Exact Content Deduplication System for SmartMirrorAgent
+Handles exact duplicates and redirect stubs only
 """
 
 import re, hashlib, html
@@ -10,11 +10,6 @@ from dataclasses import dataclass
 
 # Global regex patterns
 WS_RE = re.compile(r'\s+')
-DATE_WORD_RE = re.compile(r'\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b', re.I)
-DATE_NUMERIC_RE = re.compile(r'\b(?:\d{1,2}[\/\-.]){1,2}\d{2,4}\b')
-DATE_ISO_RE = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
-TIME_RE = re.compile(r'\b(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?(?:\s?[AP]M)?\b', re.I)
-NUMERIC_RE = re.compile(r'\b(?:\$|€|£)?\d[\d,]*(?:\.\d+)?%?\b')
 
 # Common redirect stub phrases
 REDIRECT_PHRASES = [
@@ -34,31 +29,26 @@ class DeduplicationResult:
 
 class RobustContentDeduplicator:
     """
-    Production-ready content deduplication system
+    Exact content deduplication system - only detects identical content
     """
 
-    def __init__(self, simhash_threshold: int = 4, min_content_length: int = 100):
+    def __init__(self, min_content_length: int = 100, **kwargs):
         """
-        Initialize deduplicator
+        Initialize deduplicator for exact duplicate detection only
 
         Args:
-            simhash_threshold: Hamming distance threshold for near-duplicates (4 = ~94% similarity)
             min_content_length: Minimum content length to analyze
+            **kwargs: Ignored parameters for backward compatibility
         """
-        self.simhash_threshold = simhash_threshold
         self.min_content_length = min_content_length
 
-        # Storage for deduplication data
+        # Storage for exact duplicate detection
         self.exact_map: Dict[str, str] = {}  # exact_hash -> canonical_url
-        self.fuzzy_buckets: Dict[str, List[str]] = {}  # fuzzy_hash -> [urls]
-        self.sim_map: Dict[str, str] = {}  # url -> simhash_hex
-        self.canon_map: Dict[str, str] = {}  # url -> canonical_url (for aliases)
 
         # Statistics
         self.stats = {
             "total_processed": 0,
             "exact_duplicates": 0,
-            "near_duplicates": 0,
             "redirect_stubs": 0,
             "unique_pages": 0
         }
@@ -122,66 +112,9 @@ class RobustContentDeduplicator:
         """Normalize text for exact matching"""
         return WS_RE.sub(" ", text.strip().lower())
 
-    def normalize_fuzzy(self, text: str, neutralize_numbers=True, neutralize_dates=True) -> str:
-        """Normalize text for fuzzy matching"""
-        t = text.lower()
-
-        if neutralize_dates:
-            # Replace various date formats with <date>
-            t = DATE_ISO_RE.sub(" <date> ", t)
-            t = DATE_NUMERIC_RE.sub(" <date> ", t)
-            t = re.sub(rf'(\b\d{{1,2}}\b[ ,.-/]*)?{DATE_WORD_RE.pattern}([ ,.-/]*\b\d{{2,4}}\b)?',
-                      " <date> ", t, flags=re.I)
-            t = TIME_RE.sub(" <time> ", t)
-            t = re.sub(r'\b(last|updated|as of|published)\b.*?(<date>|<time>)',
-                      " <upd> ", t, flags=re.I)
-
-        if neutralize_numbers:
-            t = NUMERIC_RE.sub(" <num> ", t)
-
-        # Remove common stopwords lightly
-        STOP = {"a","an","the","of","in","on","at","for","to","from","by","and","or","if","this","that","with","as","is","are","be","was","were","it"}
-        toks = [tok for tok in WS_RE.sub(" ", t).split(" ") if tok and tok not in STOP]
-        return " ".join(toks)
-
     def sha256_hex(self, s: str) -> str:
         """Compute SHA-256 hash"""
         return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
-    def _ngrams(self, tokens, n=3):
-        """Generate n-grams from tokens"""
-        return [" ".join(tokens[i:i+n]) for i in range(len(tokens)-n+1)] if len(tokens) >= n else tokens
-
-    def _hash64(self, s: str) -> int:
-        """Convert string to 64-bit integer hash"""
-        h = hashlib.md5(s.encode("utf-8")).digest()
-        return int.from_bytes(h[:8], "big", signed=False)
-
-    def simhash64(self, text: str, n=3) -> int:
-        """Compute 64-bit SimHash for near-duplicate detection"""
-        toks = [t for t in WS_RE.sub(" ", text).split(" ") if t]
-        grams = self._ngrams(toks, n)
-
-        # Simple TF weighting
-        freq = {}
-        for g in grams:
-            freq[g] = freq.get(g, 0) + 1
-
-        vec = [0] * 64
-        for g, w in freq.items():
-            h = self._hash64(g)
-            for i in range(64):
-                vec[i] += w if ((h >> i) & 1) else -w
-
-        fp = 0
-        for i in range(64):
-            if vec[i] >= 0:
-                fp |= (1 << i)
-        return fp
-
-    def hamming64(self, a: int, b: int) -> int:
-        """Compute Hamming distance between two 64-bit integers"""
-        return (a ^ b).bit_count()
 
     def is_redirect_stub(self, html_content: str, text: str, meta: Dict[str, Any]) -> bool:
         """Detect redirect stub pages"""
@@ -198,17 +131,14 @@ class RobustContentDeduplicator:
                     return True
         return False
 
-    def compute_hash_bundle(self, html_content: str, neutralize_numbers=True, neutralize_dates=True) -> Dict[str, Any]:
-        """Compute all hashes and metadata for a page"""
+    def compute_hash_bundle(self, html_content: str) -> Dict[str, Any]:
+        """Compute exact hash and metadata for a page"""
         text, meta = self.extract_meaningful_text(html_content)
         exact_norm = self.normalize_exact(text)
-        fuzzy_norm = self.normalize_fuzzy(text, neutralize_numbers, neutralize_dates)
 
         return {
             "meta": meta,
             "exact_hash": self.sha256_hex(exact_norm),
-            "fuzzy_hash": self.sha256_hex(fuzzy_norm),
-            "simhash_hex": f"{self.simhash64(fuzzy_norm, n=3):016x}",
             "len_norm": len(exact_norm),
             "title": meta.get("title", "")
         }
@@ -234,25 +164,13 @@ class RobustContentDeduplicator:
             target = bundle["meta"]["canonical"] or "unknown"
             return DeduplicationResult("alias", target, "redirect_stub")
 
-        # 1) Exact duplicate
+        # 1) Exact duplicate only
         if bundle["exact_hash"] in self.exact_map:
             self.stats["exact_duplicates"] += 1
-            return DeduplicationResult("dup", self.exact_map[bundle["exact_hash"]], "exact_hash")
+            return DeduplicationResult("dup", self.exact_map[bundle["exact_hash"]], "exact_duplicate")
 
-        # 2) Near-duplicate (fuzzy pre-bucket → SimHash compare)
-        candidates = self.fuzzy_buckets.get(bundle["fuzzy_hash"], [])
-        for c_url in candidates:
-            if c_url in self.sim_map:
-                current_simhash = int(bundle["simhash_hex"], 16)
-                candidate_simhash = int(self.sim_map[c_url], 16)
-                if self.hamming64(current_simhash, candidate_simhash) <= self.simhash_threshold:
-                    self.stats["near_duplicates"] += 1
-                    return DeduplicationResult("dup", c_url, f"near_dup_simhash<={self.simhash_threshold}")
-
-        # 3) New canonical - store all hashes
+        # 2) New canonical - store exact hash only
         self.exact_map[bundle["exact_hash"]] = url
-        self.fuzzy_buckets.setdefault(bundle["fuzzy_hash"], []).append(url)
-        self.sim_map[url] = bundle["simhash_hex"]
         self.stats["unique_pages"] += 1
 
         return DeduplicationResult("canon", url, "unique")
@@ -278,7 +196,6 @@ class RobustContentDeduplicator:
     def get_deduplication_summary(self) -> Dict[str, Any]:
         """Get human-readable deduplication summary"""
         total_duplicates = (self.stats["exact_duplicates"] +
-                          self.stats["near_duplicates"] +
                           self.stats["redirect_stubs"])
 
         duplicate_rate = total_duplicates / self.stats["total_processed"] if self.stats["total_processed"] > 0 else 0
@@ -290,7 +207,6 @@ class RobustContentDeduplicator:
             "duplicate_rate": f"{duplicate_rate:.1%}",
             "breakdown": {
                 "exact_duplicates": self.stats["exact_duplicates"],
-                "near_duplicates": self.stats["near_duplicates"],
                 "redirect_stubs": self.stats["redirect_stubs"]
             }
         }
@@ -298,13 +214,9 @@ class RobustContentDeduplicator:
     def reset(self):
         """Reset deduplicator state for new crawl session"""
         self.exact_map.clear()
-        self.fuzzy_buckets.clear()
-        self.sim_map.clear()
-        self.canon_map.clear()
         self.stats = {
             "total_processed": 0,
             "exact_duplicates": 0,
-            "near_duplicates": 0,
             "redirect_stubs": 0,
             "unique_pages": 0
         }
