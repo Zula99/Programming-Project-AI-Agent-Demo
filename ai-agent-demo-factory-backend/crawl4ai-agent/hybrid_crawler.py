@@ -21,6 +21,16 @@ import time
 from crawler_utils import CrawlConfig, generic_crawl, is_same_site
 from quality_plateau import HybridQualityMonitor, QualityMetrics as PlateauQualityMetrics
 
+# Import coverage tracking components
+try:
+    from dashboard_metrics import CrawlPhase, create_coverage_calculator, get_coverage_calculator
+    from coverage_api import initialize_coverage_tracking, finalize_coverage_tracking, generate_run_id
+    from websocket_manager import notify_crawl_start, notify_crawl_complete, broadcast_coverage_update
+    COVERAGE_TRACKING_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Coverage tracking not available: {e}")
+    COVERAGE_TRACKING_AVAILABLE = False
+
 # Import AI components if available
 try:
     from ai_content_classifier import AIContentClassifier, BusinessSiteDetector, BusinessSiteType
@@ -287,7 +297,8 @@ class HybridCrawler:
         
         return plan
     
-    async def execute_hybrid_crawl(self, start_url: str, crawl_config: Optional[CrawlConfig] = None) -> Tuple[bool, Dict[str, Any]]:
+    async def execute_hybrid_crawl(self, start_url: str, crawl_config: Optional[CrawlConfig] = None, 
+                                 run_id: Optional[str] = None, enable_coverage_tracking: bool = True) -> Tuple[bool, Dict[str, Any]]:
         """
         Execute complete hybrid crawling workflow with intelligent strategy selection.
         
@@ -309,6 +320,10 @@ class HybridCrawler:
             self.logger.info(f" Starting US-54 hybrid crawl of {start_url}")
             start_time = time.time()
             
+            # Generate run_id if not provided
+            if not run_id:
+                run_id = generate_run_id() if COVERAGE_TRACKING_AVAILABLE else f"crawl_{int(time.time())}"
+            
             # Phase 1: Site Structure Analysis & Sitemap Detection
             self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
             analysis = await self.analyze_site_structure(start_url)
@@ -325,6 +340,27 @@ class HybridCrawler:
             # Phase 3: Strategy Selection & Crawl Plan Creation
             self.logger.info(" Phase 2: Strategy selection and crawl planning") 
             plan = self.create_crawl_plan(start_url, analysis, site_type)
+            
+            # Phase 3.5: Initialize Coverage Tracking
+            coverage_calculator = None
+            if enable_coverage_tracking and COVERAGE_TRACKING_AVAILABLE:
+                try:
+                    sitemap_urls = analysis.sitemap_urls if analysis.has_sitemap else None
+                    coverage_calculator = await initialize_coverage_tracking(run_id, start_url, sitemap_urls)
+                    coverage_calculator.set_phase(CrawlPhase.CRAWLING)
+                    
+                    # Notify WebSocket clients that crawl is starting
+                    await notify_crawl_start(run_id, {
+                        'start_url': start_url,
+                        'strategy': plan.strategy.value,
+                        'has_sitemap': analysis.has_sitemap,
+                        'estimated_coverage_target': plan.estimated_coverage_target
+                    })
+                    
+                    self.logger.info(f"📊 Coverage tracking initialized for run_id: {run_id}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to initialize coverage tracking: {e}")
+                    enable_coverage_tracking = False
             
             # Phase 4: Crawler Configuration
             self.logger.info("  Phase 3: Configuring adaptive crawler")
@@ -352,21 +388,38 @@ class HybridCrawler:
             # Phase 5: Execute Crawling with Classification Cache
             self.logger.info(f"Phase 5: Executing {plan.strategy.value} crawl with cached classifications")
             
-            # Add classification cache to crawl config
+            # Add classification cache and run_id to crawl config
             crawl_config.classification_cache = classification_cache
+            crawl_config.run_id = run_id  # Pass run_id for coverage tracking integration
             results, stats = await generic_crawl(crawl_config)
             
             # Phase 6: Comprehensive Results Analysis
             crawl_time = time.time() - start_time
+            success = len(results) > 0
+            
+            # Phase 6.5: Finalize Coverage Tracking
+            coverage_summary = None
+            if enable_coverage_tracking and COVERAGE_TRACKING_AVAILABLE and coverage_calculator:
+                try:
+                    coverage_summary = await finalize_coverage_tracking(run_id, success, {
+                        'crawl_strategy': plan.strategy.value,
+                        'us54_scenario': 'A' if plan.strategy == DiscoveryStrategy.SITEMAP_FIRST else 'B',
+                        'quality_plateau_triggered': stats.get('quality_plateau_stats', {}).get('should_stop', False)
+                    })
+                    self.logger.info(f"📊 Coverage tracking finalized: {coverage_summary['final_coverage_percentage']:.1f}% coverage")
+                except Exception as e:
+                    self.logger.warning(f"Failed to finalize coverage tracking: {e}")
             
             comprehensive_results = {
-                'success': len(results) > 0,
+                'run_id': run_id,
+                'success': success,
                 'strategy_used': plan.strategy.value,
                 'us54_implementation': {
                     'scenario': 'A' if plan.strategy == DiscoveryStrategy.SITEMAP_FIRST else 'B',
                     'sitemap_detected': analysis.has_sitemap,
                     'ai_classification_enabled': AI_AVAILABLE,
-                    'quality_plateau_enabled': 'quality_plateau_stats' in stats
+                    'quality_plateau_enabled': 'quality_plateau_stats' in stats,
+                    'coverage_tracking_enabled': enable_coverage_tracking and COVERAGE_TRACKING_AVAILABLE
                 },
                 'sitemap_analysis': {
                     'had_sitemap': analysis.has_sitemap,
@@ -392,6 +445,7 @@ class HybridCrawler:
                     'coverage_ratio': stats['pages_crawled'] / max(1, plan.estimated_coverage_target),
                     'strategy_reasoning': plan.reasoning
                 },
+                'coverage_tracking': coverage_summary if coverage_summary else {},
                 'output_location': str(crawl_config.output_root)
             }
             
@@ -500,19 +554,21 @@ class HybridCrawler:
 
 # Convenience functions for integration with existing systems
 
-async def hybrid_crawl_url(start_url: str, output_dir: str = "./hybrid_output") -> Tuple[bool, Dict[str, Any]]:
+async def hybrid_crawl_url(start_url: str, output_dir: str = "./hybrid_output", 
+                          enable_coverage_tracking: bool = True) -> Tuple[bool, Dict[str, Any]]:
     """
     Simple interface for US-54 hybrid crawling a single URL.
     
     Args:
         start_url: URL to crawl
         output_dir: Output directory for results
+        enable_coverage_tracking: Enable real-time coverage monitoring
         
     Returns:
         Tuple of (success: bool, results: Dict)
     """
     crawler = HybridCrawler(output_dir)
-    return await crawler.execute_hybrid_crawl(start_url)
+    return await crawler.execute_hybrid_crawl(start_url, enable_coverage_tracking=enable_coverage_tracking)
 
 
 def create_hybrid_crawler_for_agent(agent_output_dir: str) -> HybridCrawler:

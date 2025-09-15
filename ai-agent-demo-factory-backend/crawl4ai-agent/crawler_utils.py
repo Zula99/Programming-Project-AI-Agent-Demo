@@ -37,6 +37,15 @@ except ImportError as e:
     DEDUPLICATION_AVAILABLE = False
     print(f"Content deduplication not available: {e}")
 
+# Coverage tracking integration
+try:
+    from websocket_manager import notify_page_crawled, notify_urls_discovered
+    from dashboard_metrics import get_coverage_calculator
+    COVERAGE_TRACKING_AVAILABLE = True
+except ImportError as e:
+    COVERAGE_TRACKING_AVAILABLE = False
+    print(f"Coverage tracking not available: {e}")
+
 # Enable long paths on Windows
 if os.name == 'nt':
     try:
@@ -198,6 +207,9 @@ class CrawlConfig:
     # Anti-detection features
     stealth_mode: bool = False
     realistic_viewport: bool = True
+    # Coverage tracking integration
+    run_id: Optional[str] = None  # Run ID for real-time coverage monitoring
+    classification_cache: Optional[Dict] = None  # Session-scoped classification cache
     extra_headers: dict = None
     # Enhanced JS rendering features
     wait_for_selector: Optional[str] = None  # CSS selector to wait for
@@ -972,6 +984,18 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     # Continue processing if deduplication fails
             results.append(result)
 
+            # Coverage tracking: Notify page crawled
+            if COVERAGE_TRACKING_AVAILABLE and config.run_id:
+                try:
+                    # Get quality score if available (from AI classification)
+                    quality_score = None
+                    if hasattr(result, 'ai_classification') and result.ai_classification:
+                        quality_score = result.ai_classification.get('confidence', None)
+                    
+                    await notify_page_crawled(config.run_id, url, result.success and not is_duplicate, quality_score)
+                except Exception as e:
+                    _logger.debug(f"Coverage tracking notification failed: {e}")
+
             if result.success and not is_duplicate:
                 pages_crawled += 1
 
@@ -1004,13 +1028,22 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 
                 # Add to queue
                 new_queued = 0
+                new_urls = []
                 for u in worthy_links:
                     if u not in q:
                         q.append(u)
+                        new_urls.append(u)
                         new_queued += 1
                         
                 print(f"  found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
                 print()  # Add blank line after each crawl link processing
+                
+                # Coverage tracking: Notify new URLs discovered
+                if COVERAGE_TRACKING_AVAILABLE and config.run_id and new_urls:
+                    try:
+                        await notify_urls_discovered(config.run_id, new_urls)
+                    except Exception as e:
+                        _logger.debug(f"Coverage tracking URL discovery notification failed: {e}")
                 
                 # Quality plateau monitoring and intelligent stopping
                 if plateau_monitor:
