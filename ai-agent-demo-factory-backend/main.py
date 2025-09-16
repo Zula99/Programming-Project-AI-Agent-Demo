@@ -131,75 +131,101 @@ crawl_jobs = {}
 # Dictionary to track running processes for stop functionality
 running_processes = {}
 
-def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
-                                  index_name: str = "demo_factory") -> str:
+def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
+                                  index_name: str = "demo_factory", template: str = "search365-basic") -> str:
     """
-    Create a Norconex config using the NAB template as a base.
+    Create a Norconex config using the Search365 template as a base.
+    This template includes comprehensive metadata extraction for Search365 schema compatibility.
     """
     
-    # Copy working-example.xml and modify it to ONLY crawl the target URL
+    # Template selection - choose which Search365 template to use
+    template_options = {
+        "working-example": "working-example.xml",
+        "search365-basic": "search365-basic-template.xml",
+        "search365-simple": "search365-simple-template.xml",
+        "search365-complete": "search365-template.xml",
+        "search365-complete-fixed": "search365-complete-fixed.xml",
+        "search365-complete-minimal": "search365-complete-minimal.xml",
+        "search365-enhanced": "search365-enhanced.xml",
+    }
+
+    template_file = template_options.get(template, "search365-basic-template.xml")
+    print(f"Using template: {template} -> {template_file}")
+
     try:
-        with open("/opt/norconex/configs/working-example.xml", 'r') as f:
+        template_path = f"/opt/norconex/configs/{template_file}"
+
+        # Fallback for development environment
+        if not os.path.exists(template_path):
+            template_path = f"./norconex-runner/configs/{template_file}"
+        
+        with open(template_path, 'r') as f:
             config = f.read()
         
-        # Replace the URL and index name
-        config = config.replace('<url>https://example.com/</url>', f'<url>{url}</url>')
-        config = config.replace('indexName>demo_factory</indexName>', f'indexName>{index_name}</indexName>')
-        
-        # Fix the domain restrictions to ONLY allow the target URL's domain
-        import re
+        # Parse URL first to get domain info
         from urllib.parse import urlparse
         parsed_url = urlparse(url)
         target_domain = parsed_url.netloc
+
+        # Replace the URL and index name - handle multiple possible template URLs
+        config = config.replace('<url>https://example.com/</url>', f'<url>{url}</url>')
+        config = config.replace('<url>https://example.com</url>', f'<url>{url}</url>')
+        config = config.replace('<indexName>demo_factory</indexName>', f'<indexName>{index_name}</indexName>')
+
+        # Also replace domain in regex patterns (handle both escaped and unescaped)
+        escaped_domain = target_domain.replace('.', '\\.')
+        config = config.replace('example\\.com', escaped_domain)
+        config = config.replace('example.com', target_domain)
         
         # Create unique collector and crawler IDs based on domain
         domain_safe = target_domain.replace('.', '-').replace('www-', '')
-        collector_id = f"collector-{domain_safe}"
-        crawler_id = f"crawler-{domain_safe}"
+        collector_id = f"search365-collector-{domain_safe}"
+        crawler_id = f"search365-crawler-{domain_safe}"
         
         # Replace collector and crawler IDs for domain-specific datastores
         config = config.replace('id="nab-banking-collector"', f'id="{collector_id}"')
         config = config.replace('id="nab-banking-crawler"', f'id="{crawler_id}"')
+        config = config.replace('id="search365-collector"', f'id="{collector_id}"')
+        config = config.replace('id="search365-crawler"', f'id="{crawler_id}"')
         
-        # Set reasonable but limited crawl parameters for testing
-        config = config.replace('<maxDocuments>5000</maxDocuments>', '<maxDocuments>50</maxDocuments>')
-        config = config.replace('<maxDepth>8</maxDepth>', '<maxDepth>2</maxDepth>')
+        # Set crawl parameters
+        config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+        config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
         
-        # Ensure stayOnDomain is true and add domain restriction
-        config = config.replace('stayOnDomain="true"', 'stayOnDomain="true"')
-        
-        # Add a reference filter to ONLY allow the target domain
-        reference_filter = f'''
-    <!-- Reference filters - ONLY allow target domain -->
-    <referenceFilters>
-        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
-            <valueMatcher method="regex">^https?://([a-z0-9-]+\\.)*{re.escape(target_domain.replace('www.', ''))}(/.*)?$</valueMatcher>
-        </filter>
-        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
-            css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
-        </filter>
-    </referenceFilters>'''
-        
-        # Replace the existing referenceFilters section
-        config = re.sub(
-            r'<referenceFilters>.*?</referenceFilters>',
-            reference_filter,
-            config,
-            flags=re.DOTALL
-        )
+        # The reference filter regex is not needed since we use stayOnDomain="true"
+        # which automatically restricts crawling to the target domain
         
         return config
         
     except Exception as e:
-        print(f"Error reading working-example template: {e}")
-        return f'<!-- Error: {e} -->'
-    
-    return config
+        print(f"Error reading Search365 basic template: {e}")
+        # Fallback to a basic config if template is not found
+        return f'''<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fallback config - Error: {e} -->
+<httpcollector id="fallback-collector">
+    <workDir>/opt/norconex/data/workdir</workDir>
+    <crawlers>
+        <crawler id="fallback-crawler">
+            <startURLs stayOnDomain="true">
+                <url>{url}</url>
+            </startURLs>
+            <maxDocuments>{max_documents}</maxDocuments>
+            <maxDepth>{max_depth}</maxDepth>
+            <committers>
+                <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+                    <nodes>http://opensearch:9200</nodes>
+                    <indexName>{index_name}</indexName>
+                </committer>
+            </committers>
+        </crawler>
+    </crawlers>
+</httpcollector>'''
 
 # Pydantic model for validating the request body when starting a crawl.
 # FastAPI uses this to automatically validate incoming JSON data.
 class CrawlRequest(BaseModel):
     target_url: str
+    template: Optional[str] = "search365-basic"
 
 # Pydantic model for search requests
 class SearchRequest(BaseModel):
@@ -238,13 +264,15 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
     running_processes[run_id] = None
 
     try:
-        # Use the NAB config as template and modify for the target URL
-        print(f"[{run_id}] Using NAB config template...")
+        # Use the selected config template and modify for the target URL
+        template_name = crawl_jobs[run_id].get('template', 'search365-basic')
+        print(f"[{run_id}] Using template: {template_name}")
         xml_config = create_config_from_nab_template(
             url=target_url,
             max_depth=3,
             max_documents=500,
-            index_name="demo_factory"
+            index_name="demo_factory",
+            template=template_name
         )
         
         # Write config to temporary file
@@ -483,11 +511,13 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
     The actual crawling process runs in a background task.
     """
     target_url = request.target_url
+    template = request.template
     run_id = str(uuid.uuid4()) # Generate a unique ID for this crawl run
 
     # Initialize the job details in the in-memory dictionary
     crawl_jobs[run_id] = {
         'target_url': target_url,
+        'template': template,
         'status': 'pending', # Initial status
         'progress': 0,
         'results': [],
