@@ -472,9 +472,9 @@ class AIContentClassifier:
         self.cache = {}
         self._load_cache()
         
-        # Rate limiting
-        self.last_api_call = 0
-        self.min_api_interval = 1.0  # seconds between API calls
+        # Rate limiting removed for faster processing
+        # self.last_api_call = 0
+        # self.min_api_interval = 1.0  # seconds between API calls
         
     def _load_cache(self):
         """Load cached classifications"""
@@ -636,13 +636,13 @@ class AIContentClassifier:
         # Try AI classification if API key available
         if self.api_key:
             try:
-                # Rate limiting
-                import time
-                now = time.time()
-                if now - self.last_api_call < self.min_api_interval:
-                    await asyncio.sleep(self.min_api_interval - (now - self.last_api_call))
-                
-                self.last_api_call = time.time()
+                # Rate limiting removed for faster processing
+                # import time
+                # now = time.time()
+                # if now - self.last_api_call < self.min_api_interval:
+                #     await asyncio.sleep(self.min_api_interval - (now - self.last_api_call))
+                #
+                # self.last_api_call = time.time()
                 
                 # Prepare AI prompt
                 prompt = self._create_ai_prompt(url, content, title)

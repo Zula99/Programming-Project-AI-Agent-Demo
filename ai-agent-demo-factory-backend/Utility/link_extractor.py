@@ -292,7 +292,12 @@ class LinkExtractor:
         for i, url in enumerate(urls):
             if i % 50 == 0 and i > 0:
                 print(f"  Processed {i}/{len(urls)} URLs...")
-                
+
+            # Clear header for each URL
+            print(f"\n{'='*80}")
+            print(f"[{i+1:4d}/{len(urls)}] PROCESSING: {url}")
+            print(f"{'='*80}")
+
             try:
                 # Extract basic information from URL
                 url_path = urlparse(url).path
@@ -330,12 +335,13 @@ class LinkExtractor:
                     content_length = len(content_sample + title)
                     cost_tracker.track_classification(url, result, content_length)
                     
-                    # Verbose output for each URL with separator
+                    # Final result output
                     status = "WORTHY" if result.is_worthy else "FILTERED"
                     method_indicator = "AI" if result.method_used == "ai" else result.method_used.upper()
-                    
-                    print(f"\n  [{i+1:4d}/{len(urls)}] {status} ({confidence:.2f}) - {url[:70]}...")
-                    print(f"        {method_indicator}: {reasoning[:120]}...")
+
+                    print(f"\n🏁 FINAL RESULT: {status} ({confidence:.2f})")
+                    print(f"   Method: {method_indicator}")
+                    print(f"   Reasoning: {reasoning[:100]}...")
                         
                 except Exception as ai_error:
                     print(f"\n  [{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
