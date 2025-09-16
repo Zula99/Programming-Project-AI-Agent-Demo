@@ -163,17 +163,17 @@ class HybridCrawler:
                     
                     # Test sitemap accessibility and extract URLs with AI analysis
                     urls, metadata = await extractor.process_sitemap_with_ai(
-                        max_urls=10,  # Limit to 10 URLs for testing
+                        max_urls=None,  # No limit - process full sitemap
                         sample_content=True  # Get content samples for AI classification
                     )
                     
                     if urls and len(urls) > 1:  # Test minimum for valid sitemap (normally > 5)
                         successful_sitemap = sitemap_url
                         analysis.has_sitemap = True
-                        # TEMPORARY TEST LIMIT: Only use first 10 sitemap URLs
-                        analysis.sitemap_urls = urls[:10]
+                        # Use all sitemap URLs
+                        analysis.sitemap_urls = urls
                         analysis.estimated_total_urls = len(analysis.sitemap_urls)
-                        self.logger.info(f"LIMIT: Using {len(analysis.sitemap_urls)} URLs from {len(urls)} total sitemap URLs (max_urls=10)")
+                        self.logger.info(f"SUCCESS: Using all {len(analysis.sitemap_urls)} URLs from sitemap (no limit applied)")
                         analysis.ai_classified_urls = metadata.get('ai_classifications', [])
                         analysis.discovery_metadata.update(metadata)
                         
@@ -265,7 +265,7 @@ class HybridCrawler:
                 priority_urls = analysis.sitemap_urls[:50]  # Reasonable starting set
             
             estimated_coverage = len(analysis.sitemap_urls)
-            max_pages = min(500, len(analysis.sitemap_urls) * 2)  # Allow for additional discovered URLs
+            max_pages = len(analysis.sitemap_urls) * 3  # Allow for additional discovered URLs (no 500 limit)
             
         else:  # PROGRESSIVE
             # Scenario B: Start with homepage and main navigation extraction
@@ -276,7 +276,7 @@ class HybridCrawler:
             
             priority_urls = [start_url]
             estimated_coverage = 150  # Conservative estimate without sitemap
-            max_pages = 300  # Reasonable limit for progressive discovery with plateau detection
+            max_pages = 1000  # Higher limit for full testing (was 300)
         
         plan = CrawlPlan(
             strategy=strategy,
@@ -369,8 +369,8 @@ class HybridCrawler:
                 crawl_config = CrawlConfig(
                     domain=domain,
                     output_root=self.output_dir / domain.replace('.', '_'),
-                    #max_pages=plan.max_pages_recommendation,
-                    max_pages=2,  # Test with just 2 pages
+                    max_pages=plan.max_pages_recommendation,  # Use full recommendation
+                    #max_pages=2,  # LIMIT DISABLED FOR FULL TESTING
                     request_gap=0.8,  # Respectful crawling
                     respect_robots=False,  # Demo purposes - ignore robots.txt
                     start_url=start_url,

@@ -113,17 +113,8 @@ As a demo factory operator I want the agent to adapt crawling parameters in real
 US:39 - Batch Processing and Statistics
 
 As a demo factory operator I want to process multiple URLs simultaneously So that I can efficiently create demos for multiple client websites
-- Processes multiple URLs in sequence with configurable delays
-
 - Provides aggregate statistics across all processed URLs
-
 - Calculates batch success rate and average quality scores
-
-- Tracks strategy usage distribution across batch
-
-- Provides performance grading against 90% targets
-
-- Generates comprehensive batch reports with individual URL results
 
 **US-40: Performance Targets and Monitoring**
 As a demo factory operator I want the agent to meet specific performance targets So that the system is efficient and meets quality standards
@@ -491,3 +482,25 @@ Implemented Features:
   - Sites without sitemaps: Scenario B with homepage-based progressive discovery
   - Automatic fallback ensures crawling proceeds regardless of sitemap availability
   - Quality plateau detection provides intelligent stopping in both scenarios
+
+**US-65: Hybrid AI + Heuristic Classification System**
+As a demo factory operator I want AI classification only for uncertain cases So that I get intelligent decisions with faster processing and reduced costs
+
+Approach Benefits:
+- **Smart Processing Flow**: Heuristics handle obvious cases (70-80%) instantly, AI only analyzes uncertain cases (20-30%)
+- **Cost Optimization**: Reduce AI API calls by 60-70% (1693 URLs: ~1000 heuristic + ~693 AI = $0.35 vs $0.85)
+- **Speed Improvement**: High-confidence heuristics skip AI delay, overall processing ~2 minutes vs 5 minutes
+- **Quality Preservation**: AI still handles complex cases where heuristics are uncertain
+
+Technical Implementation:
+- **Heuristic Confidence Scoring**: URLs get confidence score (0.0-1.0) from pattern matching
+- **AI Threshold**: Only call AI if heuristic confidence < 0.8 (configurable threshold)
+- **Smart Categories**:
+  - High Confidence (≥0.8): `/login` → 0.95 NOT WORTHY, `/products/home-loans/` → 0.85 WORTHY
+  - Low Confidence (<0.8): `/resources/guides/` → 0.4, `/mobile-app-features/` → 0.6 (needs AI)
+- **Hybrid Results**: Combine heuristic + AI classifications with method tracking
+
+Value Proposition:
+- **Heuristics Excel At**: URL patterns, obvious keywords, file extensions, common structures
+- **AI Adds Value For**: Content context, semantic understanding, quality assessment, edge cases
+- **Best of Both**: Algorithmic speed + AI intelligence without redundant processing
