@@ -798,15 +798,58 @@ async def index_crawl_logs_endpoint(run_id: str):
     """
     try:
         result = index_crawl_logs_to_opensearch(run_id)
-        
+
         if "error" in result:
             raise HTTPException(status_code=500, detail=result["error"])
-        
+
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Log indexing error: {str(e)}")
+
+@app.get("/crawl/list")
+async def list_all_crawl_runs():
+    """
+    Get a list of all crawl runs with their current status, for frontend persistence.
+    Returns both active and completed runs.
+    """
+    try:
+        runs = []
+        for run_id, job in crawl_jobs.items():
+            run_data = {
+                "run_id": run_id,
+                "url": job.get("target_url", ""),
+                "status": job.get("status", "unknown"),
+                "progress": job.get("progress", 0),
+                "started_at": job.get("started_at", 0),
+                "completed_at": job.get("completed_at"),
+                "template": job.get("template", "unknown"),
+                "stats": job.get("stats", {})
+            }
+
+            # Add pages count from stats if available
+            if "total_pages_crawled" in job.get("stats", {}):
+                run_data["pages_crawled"] = job["stats"]["total_pages_crawled"]
+            elif "pages_indexed" in job.get("stats", {}):
+                run_data["pages_crawled"] = job["stats"]["pages_indexed"]
+            else:
+                run_data["pages_crawled"] = 0
+
+            runs.append(run_data)
+
+        # Sort by started_at timestamp, most recent first
+        runs.sort(key=lambda x: x.get("started_at", 0), reverse=True)
+
+        return {
+            "runs": runs,
+            "total": len(runs),
+            "active_count": len([r for r in runs if r["status"] == "running"]),
+            "completed_count": len([r for r in runs if r["status"] == "complete"])
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list crawl runs: {str(e)}")
 
 
