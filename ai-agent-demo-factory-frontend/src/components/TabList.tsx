@@ -1,5 +1,5 @@
 import { useId } from "react";
-type Tab = "data" | "config" | "logs";
+type Tab = "data" | "config" | "logs" | "stats";
 
 export default function TabList({
   value,
@@ -13,6 +13,7 @@ export default function TabList({
     { key: "data", label: "Data" },
     { key: "config", label: "Config" },
     { key: "logs", label: "Logs" },
+    { key: "stats", label: "Stats" },
   ];
 
   return (
