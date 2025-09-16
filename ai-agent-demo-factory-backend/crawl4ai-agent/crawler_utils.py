@@ -1104,7 +1104,14 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         try:
             deduplication_stats = deduplicator.get_deduplication_summary()
             print(f"Content deduplication summary: {deduplication_stats['duplicate_rate']} duplicates filtered")
-            print(f"  Breakdown: {deduplication_stats['breakdown']['exact_duplicates']} exact, {deduplication_stats['breakdown']['url_pattern_duplicates']} URL pattern, {deduplication_stats['breakdown']['text_similarity_duplicates']} text similarity, {deduplication_stats['breakdown']['template_duplicates']} template")
+
+            # Get available breakdown stats
+            breakdown = deduplication_stats.get('breakdown', {})
+            exact_dups = breakdown.get('exact_duplicates', 0)
+            redirect_stubs = breakdown.get('redirect_stubs', 0)
+
+            if exact_dups > 0 or redirect_stubs > 0:
+                print(f"  Breakdown: {exact_dups} exact duplicates, {redirect_stubs} redirect stubs")
         except Exception as e:
             _logger.warning(f"Could not get deduplication statistics: {e}")
 
