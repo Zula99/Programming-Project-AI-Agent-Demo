@@ -349,12 +349,27 @@ def is_demo_worthy_url(url: str) -> tuple[bool, str]:
 _ai_classifier = None  # Global classifier instance
 _logger = logging.getLogger(__name__)
 
-def get_ai_classifier() -> Optional[AIContentClassifier]:
-    """Get or create the global AI classifier instance"""
+def get_ai_classifier(domain: Optional[str] = None) -> Optional[AIContentClassifier]:
+    """Get or create an AI classifier instance, optionally domain-specific"""
     global _ai_classifier
     if not AI_AVAILABLE:
         return None
-        
+
+    # For domain-specific classifiers, create a new instance each time
+    # (since each domain needs its own cache)
+    if domain:
+        try:
+            config = get_ai_config()
+            return AIContentClassifier(
+                api_key=config.openai_api_key or config.anthropic_api_key,
+                model=config.preferred_model,
+                domain=domain
+            )
+        except Exception as e:
+            _logger.warning(f"Could not initialize domain-specific AI classifier for {domain}: {e}")
+            return None
+
+    # For backwards compatibility, maintain global classifier
     if _ai_classifier is None:
         try:
             config = get_ai_config()
@@ -365,20 +380,98 @@ def get_ai_classifier() -> Optional[AIContentClassifier]:
         except Exception as e:
             _logger.warning(f"Could not initialize AI classifier: {e}")
             return None
-    
+
     return _ai_classifier
 
-async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", cost_tracker=None, classification_cache=None) -> tuple[bool, str, dict]:
+async def is_demo_worthy_url_ai_cached(url: str, cost_tracker=None, domain: Optional[str] = None) -> tuple[bool, str, dict]:
+    """
+    Fast URL-only classification using persistent domain-specific cache for sitemap and discovered links.
+    This avoids re-classifying the same URLs across different crawl sessions.
+
+    Args:
+        url: URL to classify (no content needed)
+        cost_tracker: Cost tracking instance
+        domain: Domain for cache organization (e.g., 'nab.com.au')
+
+    Returns:
+        (is_worthy, reason, classification_details)
+    """
+    classification_details = {
+        'method': 'unknown',
+        'confidence': 0.0,
+        'reasoning': '',
+        'ai_available': AI_AVAILABLE
+    }
+
+    # First, check basic technical filters (these are still useful)
+    basic_worthy, basic_reason = is_demo_worthy_url(url)
+    if not basic_worthy:
+        classification_details.update({
+            'method': 'basic_filter',
+            'confidence': 0.9,
+            'reasoning': f'Failed basic filter: {basic_reason}'
+        })
+        return False, basic_reason, classification_details
+
+    # Try AI URL-only classification if available
+    ai_classifier = get_ai_classifier(domain=domain)
+    if ai_classifier:
+        try:
+            result: ClassificationResult = await ai_classifier.classify_url_only(url)
+
+            # Track costs if cost_tracker provided
+            if cost_tracker:
+                cost_tracker.track_classification(url, result, 0)  # 0 content length for URL-only
+
+            classification_details.update({
+                'method': result.method_used,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning
+            })
+
+            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+
+        except Exception as e:
+            _logger.warning(f"AI URL-only classification failed for {url}: {e}")
+            # Fall through to heuristic
+
+    # Fallback to enhanced heuristic (better than just basic filters)
+    if AI_AVAILABLE:
+        try:
+            heuristic_classifier = HeuristicClassifier()
+            result = heuristic_classifier.classify(url, "", "")  # URL only
+            classification_details.update({
+                'method': result.method_used,
+                'confidence': result.confidence,
+                'reasoning': result.reasoning
+            })
+
+            return result.is_worthy, result.reasoning if not result.is_worthy else "", classification_details
+
+        except Exception as e:
+            _logger.warning(f"Heuristic classification failed for {url}: {e}")
+
+    # Final fallback to basic filters (already passed above)
+    classification_details.update({
+        'method': 'basic_only',
+        'confidence': 0.7,
+        'reasoning': 'Only basic filtering applied'
+    })
+
+    return True, "", classification_details
+
+async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", cost_tracker=None, classification_cache=None, domain: Optional[str] = None) -> tuple[bool, str, dict]:
     """
     AI-enhanced URL worthiness check with fallback to heuristics and session cache
-    
+
     Args:
         url: URL to classify
         content: Page content (if available)
         title: Page title (if available)
         cost_tracker: Cost tracking instance
         classification_cache: Session cache dict to avoid duplicate classifications
-    
+        domain: Domain for cache organization (e.g., 'nab.com.au')
+
     Returns:
         (is_worthy, reason, classification_details)
     """
@@ -416,7 +509,7 @@ async def is_demo_worthy_url_ai(url: str, content: str = "", title: str = "", co
         return result
     
     # Try AI classification if available
-    ai_classifier = get_ai_classifier()
+    ai_classifier = get_ai_classifier(domain=domain)
     if ai_classifier:
         try:
             result: ClassificationResult = await ai_classifier.classify_content(url, content, title)
@@ -498,12 +591,15 @@ def is_demo_worthy_url_sync(url: str, content: str = "", title: str = "") -> tup
     """
     Synchronous version of AI-enhanced URL worthiness check
     Uses heuristics only (no async AI calls)
+
+    For discovered links (no content/title), this will use URL-only heuristic classification
+    which can benefit from the patterns learned during sitemap analysis.
     """
     # Basic technical filters first
     basic_worthy, basic_reason = is_demo_worthy_url(url)
     if not basic_worthy:
         return False, basic_reason
-    
+
     # Try enhanced heuristic if available
     if AI_AVAILABLE:
         try:
@@ -521,7 +617,7 @@ def is_demo_worthy_url_sync(url: str, content: str = "", title: str = "") -> tup
                 return False, reason
         except Exception as e:
             _logger.warning(f"Heuristic classification failed for {url}: {e}")
-    
+
     # Fallback to basic (already passed)
     return True, ""
 
@@ -711,8 +807,15 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, co
         
         if AI_AVAILABLE:
             try:
+                # Extract domain for domain-specific caching
+                from urllib.parse import urlparse
+                parsed_url = urlparse(url)
+                domain = parsed_url.netloc.lower()
+                if domain.startswith('www.'):
+                    domain = domain[4:]
+
                 # Use AI to classify the actual page content
-                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title, cost_tracker, classification_cache)
+                is_worthy, reason, details = await is_demo_worthy_url_ai(url, content_md, title, cost_tracker, classification_cache, domain)
                 ai_worthy = is_worthy
                 ai_reasoning = details.get('reasoning', reason)
                 ai_confidence = details.get('confidence', 0.7)
@@ -1140,8 +1243,17 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "deduplication_stats": deduplication_stats  # Include content deduplication results
     }
     
+    # Save discovered link classifications to persistent cache for future crawls
+    if AI_AVAILABLE and hasattr(config, 'classification_cache') and config.classification_cache:
+        try:
+            from ai_content_classifier import populate_url_cache_from_session
+            populate_url_cache_from_session(config.classification_cache)
+            _logger.info(f"Saved {len(config.classification_cache)} link classifications to persistent cache")
+        except Exception as e:
+            _logger.warning(f"Failed to save link classifications to persistent cache: {e}")
+
     print(f"Done. Crawled {pages_crawled} quality page(s), filtered {total_filtered} junk URLs")
     print(f"URL Quality Ratio: {quality_ratio:.1%} (higher is better)")
     print(f"Output in: {config.output_root.resolve()}")
-    
+
     return results, stats

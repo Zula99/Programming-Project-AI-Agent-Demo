@@ -44,16 +44,34 @@ class LinkExtractor:
             try:
                 # Initialize both the site detector and the full AI classifier
                 self.site_detector = BusinessSiteDetector()
-                
+
+                # Extract domain from sitemap URL for domain-specific caching
+                from urllib.parse import urlparse
+                parsed_url = urlparse(self.sitemap_url)
+                self.domain = parsed_url.netloc.lower()
+                # Remove www. prefix for cleaner domain names
+                if self.domain.startswith('www.'):
+                    self.domain = self.domain[4:]
+
                 # Get AI configuration and initialize classifier with API key
                 from ai_config import get_ai_config
                 ai_config = get_ai_config()
                 
                 self.ai_classifier = AIContentClassifier(
                     api_key=ai_config.openai_api_key,
-                    model=ai_config.preferred_model
+                    model=ai_config.preferred_model,
+                    domain=self.domain
                 )
                 print("AI classification enabled for intelligent URL filtering")
+
+                # Trigger domain site type detection early using homepage
+                try:
+                    homepage_url = f"https://{self.domain}/"
+                    self.ai_classifier.detect_and_cache_domain_site_type(homepage_url, "", "")
+                    print(f"Domain site type cached for {self.domain}: {self.ai_classifier.get_domain_site_type().value}")
+                except Exception as e:
+                    print(f"Could not pre-detect domain site type: {e}")
+                    # Not critical - will be detected on first URL
             except Exception as e:
                 print(f"Failed to initialize AI classifier: {e}")
                 self.use_ai = False
@@ -322,8 +340,14 @@ class LinkExtractor:
                 
                 # Use full AI classifier to assess demo worthiness
                 try:
-                    # Use the comprehensive AIContentClassifier (async)
-                    result = await self.ai_classifier.classify_content(url, content_sample, title)
+                    # Choose classification method based on available content
+                    if not content_sample and not title:
+                        # URL-only classification for sitemap analysis (uses persistent cache)
+                        result = await self.ai_classifier.classify_url_only(url)
+                    else:
+                        # Content-based classification when we have page data
+                        result = await self.ai_classifier.classify_content(url, content_sample, title)
+
                     confidence = result.confidence
                     reasoning = result.reasoning
                     

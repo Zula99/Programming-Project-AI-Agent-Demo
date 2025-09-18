@@ -8,6 +8,7 @@ from typing import Tuple, Optional, Dict, Any
 from dataclasses import dataclass
 import hashlib
 import json
+import time
 from pathlib import Path
 from enum import Enum
 
@@ -457,20 +458,31 @@ class HeuristicClassifier:
 
 class AIContentClassifier:
     """AI-powered content classifier for demo worthiness"""
-    
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini", 
-                 cache_dir: Optional[Path] = None):
+
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini",
+                 cache_dir: Optional[Path] = None, domain: Optional[str] = None):
         self.api_key = api_key
         self.model = model
         self.logger = logging.getLogger(__name__)
         self.site_detector = BusinessSiteDetector()
         self.fallback_classifier = HeuristicClassifier()
-        
-        # Simple cache for repeated URLs
-        self.cache_dir = cache_dir or Path("output/ai_cache")
+        self.domain = domain
+
+        # Domain-specific cache for better organization and faster lookups
+        if domain:
+            # Use domain-specific cache directory
+            self.cache_dir = Path("output") / domain / "ai_cache"
+        else:
+            # Fallback to provided cache_dir or global cache
+            self.cache_dir = cache_dir or Path("output/ai_cache")
+
         self.cache_dir.mkdir(exist_ok=True, parents=True)
         self.cache = {}
         self._load_cache()
+
+        # Domain-level site type detection cache
+        self.domain_site_type = None  # Cached site type for this domain
+        self._load_domain_site_type()
         
         # Rate limiting removed for faster processing
         # self.last_api_call = 0
@@ -496,11 +508,135 @@ class AIContentClassifier:
                 json.dump(self.cache, f, indent=2, ensure_ascii=False)
         except Exception as e:
             self.logger.warning(f"Could not save cache: {e}")
+
+    def _load_domain_site_type(self):
+        """Load cached domain site type"""
+        if not self.domain:
+            return
+
+        site_type_file = self.cache_dir / "domain_site_type.json"
+        if site_type_file.exists():
+            try:
+                with open(site_type_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    site_type_str = data.get('site_type')
+                    if site_type_str:
+                        # Convert string back to enum
+                        for site_type in BusinessSiteType:
+                            if site_type.value == site_type_str:
+                                self.domain_site_type = site_type
+                                self.logger.info(f"Loaded cached site type for {self.domain}: {site_type.value}")
+                                break
+            except Exception as e:
+                self.logger.warning(f"Could not load domain site type: {e}")
+
+    def _save_domain_site_type(self):
+        """Save domain site type to cache"""
+        if not self.domain or not self.domain_site_type:
+            return
+
+        site_type_file = self.cache_dir / "domain_site_type.json"
+        try:
+            data = {
+                'domain': self.domain,
+                'site_type': self.domain_site_type.value,
+                'detected_at': time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            }
+            with open(site_type_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            self.logger.info(f"Cached site type for {self.domain}: {self.domain_site_type.value}")
+        except Exception as e:
+            self.logger.warning(f"Could not save domain site type: {e}")
+
+    def detect_and_cache_domain_site_type(self, sample_url: str, sample_content: str = "", sample_title: str = ""):
+        """
+        Detect and cache the site type for this domain based on sample content.
+        This should be called once per domain, typically with homepage or first analyzed URL.
+        """
+        if not self.domain:
+            self.logger.warning("Cannot detect site type without domain")
+            return BusinessSiteType.UNKNOWN
+
+        # Return cached site type if available
+        if self.domain_site_type:
+            return self.domain_site_type
+
+        # If we don't have content, try to fetch homepage content for better detection
+        if not sample_content and not sample_title:
+            try:
+                import requests
+                homepage_url = f"https://{self.domain}/"
+                self.logger.info(f"Fetching homepage content for domain detection: {homepage_url}")
+
+                response = requests.get(homepage_url, timeout=10, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                })
+
+                if response.status_code == 200:
+                    from bs4 import BeautifulSoup
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    # Extract title
+                    title_tag = soup.find('title')
+                    sample_title = title_tag.get_text().strip() if title_tag else ""
+
+                    # Extract meaningful content (headers, paragraphs, etc.)
+                    content_elements = soup.find_all(['h1', 'h2', 'h3', 'p', 'div', 'article', 'main'])[:10]
+                    sample_content = ' '.join([elem.get_text().strip()[:200] for elem in content_elements])
+
+                    self.logger.info(f"Fetched content - Title: '{sample_title[:100]}...', Content: {len(sample_content)} chars")
+
+            except Exception as e:
+                self.logger.warning(f"Could not fetch homepage content for {self.domain}: {e}")
+                # Continue with URL-only detection
+
+        # Prepare content for detection
+        homepage_url = f"https://{self.domain}/"
+        combined_content = f"{sample_url} {sample_title} {sample_content}"
+
+        # Use BusinessSiteDetector for analysis
+        detection_result = self.site_detector.detect_site_type_with_confidence(
+            homepage_url, sample_title, combined_content
+        )
+
+        self.domain_site_type = detection_result['site_type']
+        confidence = detection_result['confidence']
+        score = detection_result['score']
+
+        # Save to cache
+        self._save_domain_site_type()
+
+        self.logger.info(f"🏢 Domain site type detected for {self.domain}: {self.domain_site_type.value} "
+                        f"(confidence: {confidence}, score: {score})")
+
+        return self.domain_site_type
+
+    def get_domain_site_type(self) -> BusinessSiteType:
+        """Get the cached domain site type, defaulting to UNKNOWN if not detected"""
+        return self.domain_site_type or BusinessSiteType.UNKNOWN
     
-    def _get_cache_key(self, url: str, content: str, title: str) -> str:
-        """Generate cache key for URL + content"""
-        content_hash = hashlib.md5(f"{url}:{title}:{content[:500]}".encode()).hexdigest()
-        return content_hash
+    def _get_cache_key(self, url: str, content: str = "", title: str = "") -> str:
+        """
+        Generate cache key for domain-specific caching.
+
+        With domain-specific caches, we can use simpler, more stable keys:
+        - URL-only caching for fast re-scrapes of sitemap URLs
+        - URL+title caching for content when available (more stable than including content)
+        """
+        # Always use URL as base (extract path for shorter keys)
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        url_path = parsed.path or "/"
+
+        if not content and not title:
+            # Pure URL-based cache key for sitemap analysis
+            url_hash = hashlib.md5(url_path.encode()).hexdigest()
+            return f"url_{url_hash}"
+
+        # URL + title for more stable caching (titles change less than content)
+        cache_data = f"{url_path}:{title}" if title else url_path
+        content_hash = hashlib.md5(cache_data.encode()).hexdigest()
+        return f"page_{content_hash}"
     
     async def _call_ai_api(self, prompt: str) -> Tuple[bool, float, str]:
         """Call OpenAI API for content classification"""
@@ -619,16 +755,23 @@ class AIContentClassifier:
         except Exception as e:
             raise Exception(f"OpenAI API call failed: {e}")
     
+    async def classify_url_only(self, url: str) -> ClassificationResult:
+        """
+        Fast URL-only classification for sitemap analysis and discovered links.
+        Uses URL-based caching to avoid re-classifying the same URLs across different crawls.
+        """
+        return await self.classify_content(url, "", "")
+
     async def classify_content(self, url: str, content: str = "", title: str = "") -> ClassificationResult:
         """Main classification method"""
-        
+
         # Check cache first
         cache_key = self._get_cache_key(url, content, title)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
             return ClassificationResult(
                 is_worthy=cached['is_worthy'],
-                confidence=cached['confidence'], 
+                confidence=cached['confidence'],
                 reasoning=cached['reasoning'],
                 method_used="cache"
             )
@@ -677,20 +820,24 @@ class AIContentClassifier:
         return self.fallback_classifier.classify(url, content, title)
     
     def _create_ai_prompt(self, url: str, content: str, title: str) -> str:
-        """Create site-specific AI prompt for content classification"""
+        """Create site-specific AI prompt for content classification using cached domain site type"""
         content_preview = content[:800] if content else "No content provided"
-        
-        # Detect site type first
-        site_type = self.site_detector.detect_site_type(url, title, content)
-        # Get detailed detection info for debugging
-        detection_info = self.site_detector.detect_site_type_with_confidence(url, title, content)
-        site_type = detection_info['site_type']
-        confidence = detection_info['confidence'] 
-        score = detection_info['score']
-        
-        self.logger.info(f"🔍 Site type detected for {url}: {site_type.value} (confidence: {confidence}, score: {score})")
-        
-        # Get site-specific prompt
+
+        # Use cached domain site type instead of per-URL detection
+        if not self.domain_site_type:
+            # First URL for this domain - detect and cache site type
+            self.detect_and_cache_domain_site_type(url, content, title)
+
+        site_type = self.get_domain_site_type()
+
+        # Log once per domain, not per URL
+        if hasattr(self, '_logged_domain_site_type'):
+            pass  # Already logged for this domain
+        else:
+            self.logger.info(f" Using cached site type for {self.domain}: {site_type.value}")
+            self._logged_domain_site_type = True
+
+        # Get site-specific prompt using domain site type
         return self._get_site_specific_prompt(site_type, url, title, content_preview)
     
     def _get_site_specific_prompt(self, site_type: BusinessSiteType, url: str, title: str, content: str) -> str:
@@ -706,30 +853,30 @@ class AIContentClassifier:
         if site_type == BusinessSiteType.BANKING:
             return base_info + """
         BANKING SITE SEARCH DEMO EVALUATION:
-        This is for a comprehensive SEARCH SOLUTION DEMO - users need to find ALL types of banking information.
-        
-        HIGH VALUE (MARK AS WORTHY - be inclusive):
-        - ALL customer services (personal, business, corporate, institutional)
-        - Investment products (securities, bonds, funds, trading, wealth management)
-        - Corporate banking (treasury, commercial lending, capital markets)
-        - Institutional services (custody, fund administration, investment management)  
-        - Technical financial products (derivatives, structured products, institutional cash management)
-        - Application processes and eligibility criteria for ALL services
-        - Educational content (financial literacy, market insights, economic research)
-        - Rate sheets, product disclosure statements, and detailed service information
-        - Regulatory information and compliance content
-        - Professional resources (advisor tools, business banking guides)
-        - Company information (about, careers, news, investor relations)
-        - ALL support content (FAQs, help guides, contact information)
-        
-        LOW VALUE (avoid space-wasting content):
-        - Large PDF documents unless they contain critical searchable information
+        Question: "Is this valuable banking content that customers would search for?"
+
+        MARK AS WORTHY - Banking customers search for:
+        - Personal banking (accounts, loans, credit cards, mortgages, savings)
+        - Business banking (business loans, cash management, merchant services)
+        - Investment services (trading, wealth management, financial planning)
+        - Digital banking tools (mobile app features, online banking, calculators)
+        - Financial education (budgeting, investing, loan guides, market insights)
+        - Product information (rates, fees, terms, eligibility, applications)
+        - Customer support (FAQs, how-to guides, contact information)
+        - Company information (branches, careers, news, about us)
+        - Specialized services (buy-now-pay-later, expense management, insurance)
+        - Regulatory content (terms, disclosures, compliance information)
+
+        ONLY FILTER OUT:
         - Broken or error pages
-        - Empty placeholder pages
-        - Duplicate content with identical text
-        
-        CRITICAL: For search demos, include professional/investor content that users might search for.
-        
+        - Empty placeholder pages with no content
+        - Duplicate pages with identical content
+        - Pure legal text without banking context
+
+        IMPORTANT: Each page stands alone - it doesn't need to cover "comprehensive banking."
+        If customers might search for this banking content, mark it WORTHY.
+        Better to include too much than miss valuable banking information.
+
         Respond with: WORTHY: true/false, CONFIDENCE: 0.0-1.0, REASONING: brief explanation
         """
         
@@ -1071,12 +1218,60 @@ class AIContentClassifier:
         """
 
 # Convenience functions for easy integration
-async def classify_url_for_demo(url: str, content: str = "", title: str = "", 
-                              api_key: Optional[str] = None) -> bool:
+async def classify_url_for_demo(url: str, content: str = "", title: str = "",
+                              api_key: Optional[str] = None, domain: Optional[str] = None) -> bool:
     """Quick classification function that returns just true/false"""
-    classifier = AIContentClassifier(api_key=api_key)
+    classifier = AIContentClassifier(api_key=api_key, domain=domain)
     result = await classifier.classify_content(url, content, title)
     return result.is_worthy
+
+async def classify_url_only_for_demo(url: str, api_key: Optional[str] = None, domain: Optional[str] = None) -> bool:
+    """
+    Fast URL-only classification for sitemap analysis and discovered links.
+    Uses domain-specific caching to avoid re-classifying the same URLs across crawls.
+    Returns True if URL is worthy for demo, False otherwise.
+    """
+    classifier = AIContentClassifier(api_key=api_key, domain=domain)
+    result = await classifier.classify_url_only(url)
+    return result.is_worthy
+
+def populate_url_cache_from_session(session_cache: Dict[str, Any], api_key: Optional[str] = None):
+    """
+    Pre-populate the persistent URL cache from a session cache of discovered links.
+    This allows subsequent crawls to benefit from classifications made during the current crawl.
+
+    Args:
+        session_cache: Dictionary with URL keys and classification results
+        api_key: Optional API key for classifier initialization
+    """
+    if not session_cache:
+        return
+
+    try:
+        import hashlib
+        classifier = AIContentClassifier(api_key=api_key)
+
+        # Convert session cache entries to persistent URL-based cache entries
+        for url, cached_result in session_cache.items():
+            if isinstance(cached_result, dict) and 'is_worthy' in cached_result:
+                # Generate URL-based cache key
+                url_hash = hashlib.md5(url.encode()).hexdigest()
+                url_cache_key = f"url_{url_hash}"
+
+                # Add to persistent cache if not already present
+                if url_cache_key not in classifier.cache:
+                    classifier.cache[url_cache_key] = {
+                        'is_worthy': cached_result['is_worthy'],
+                        'confidence': cached_result.get('details', {}).get('confidence', 0.7),
+                        'reasoning': cached_result.get('reasoning', 'Imported from session cache')
+                    }
+
+        # Save the updated cache
+        classifier._save_cache()
+        logging.getLogger(__name__).info(f"Populated persistent cache with {len(session_cache)} URL classifications")
+
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Failed to populate URL cache from session: {e}")
 
 def classify_url_sync(url: str, content: str = "", title: str = "") -> bool:
     """Synchronous version using heuristics only"""

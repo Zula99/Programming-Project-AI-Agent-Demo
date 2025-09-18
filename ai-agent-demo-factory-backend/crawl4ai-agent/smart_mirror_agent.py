@@ -251,9 +251,6 @@ class SmartMirrorAgent:
             self.logger.info(f"   Site type: {site_type.value}")
             self.logger.info(f"   Frameworks: {frameworks}")
             self.logger.info(f"   Main sections: {len(main_sections)} identified")
-            self.logger.info(f"   Estimated pages: {estimated_total_pages}")
-            self.logger.info(f"   Recommended sample: {recommended_sample_size}")
-            self.logger.info(f"   Strategy: {recommended_strategy.value}")
             
             return ReconResults(
                 site_type=site_type,
