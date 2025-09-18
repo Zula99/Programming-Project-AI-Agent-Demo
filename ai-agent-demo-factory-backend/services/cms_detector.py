@@ -7,7 +7,7 @@ import requests
 import re
 from urllib.parse import urljoin, urlparse
 from typing import Dict, List, Optional, Tuple
-from services.wus_utilites_lib import WusUtilities, Search365Lib
+from services.search365.wus_utilites_lib import WusUtilities, Search365Lib
 import json
 
 
