@@ -482,24 +482,99 @@ Implemented Features:
   - Automatic fallback ensures crawling proceeds regardless of sitemap availability
   - Quality plateau detection provides intelligent stopping in both scenarios
 
-**US-65: Hybrid AI + Heuristic Classification System**
-As a demo factory operator I want AI classification only for uncertain cases So that I get intelligent decisions with faster processing and reduced costs
+S
+
+**US-64: Fallback Floating Search Injection**
+As a demo factory operator I want a floating search overlay as universal fallback So that every proxied site gets search capabilities regardless of their existing search implementation
 
 Approach Benefits:
-- **Smart Processing Flow**: Heuristics handle obvious cases (70-80%) instantly, AI only analyzes uncertain cases (20-30%)
-- **Cost Optimization**: Reduce AI API calls by 60-70% (1693 URLs: ~1000 heuristic + ~693 AI = $0.35 vs $0.85)
-- **Speed Improvement**: High-confidence heuristics skip AI delay, overall processing ~2 minutes vs 5 minutes
-- **Quality Preservation**: AI still handles complex cases where heuristics are uncertain
+- **Universal Compatibility**: Works on any site regardless of existing search
+- **No Layout Disruption**: Floating overlay doesn't affect original page structure
+- **Visual Mimicry**: Copies styling from existing search elements when available
+- **Always Available**: Guaranteed search injection when API replacement isn't possible
+- **Flexible Positioning**: Adaptable placement (corner, top, side) based on page layout
 
 Technical Implementation:
-- **Heuristic Confidence Scoring**: URLs get confidence score (0.0-1.0) from pattern matching
-- **AI Threshold**: Only call AI if heuristic confidence < 0.8 (configurable threshold)
-- **Smart Categories**:
-  - High Confidence (≥0.8): `/login` → 0.95 NOT WORTHY, `/products/home-loans/` → 0.85 WORTHY
-  - Low Confidence (<0.8): `/resources/guides/` → 0.4, `/mobile-app-features/` → 0.6 (needs AI)
-- **Hybrid Results**: Combine heuristic + AI classifications with method tracking
+- **CSS Style Extraction**: Clone appearance of existing search elements
+- **Intelligent Positioning**: Analyze page layout for optimal overlay placement
+- **Responsive Design**: Adapt to mobile/desktop viewports
+- **DOM Injection**: JavaScript creates search overlay after page load
+- **Fallback Triggers**:
+  - No search API endpoints detected
+  - Form-based search (non-AJAX)
+  - Complex/proprietary search systems
+  - Sites with no existing search functionality
 
-Value Proposition:
-- **Heuristics Excel At**: URL patterns, obvious keywords, file extensions, common structures
-- **AI Adds Value For**: Content context, semantic understanding, quality assessment, edge cases
-- **Best of Both**: Algorithmic speed + AI intelligence without redundant processing
+Search Functionality:
+- **OpenSearch Integration**: Queries routed to our indexed content
+- **Results Interface**: Custom results popup/panel with site-appropriate styling
+- **Clickable Results**: Direct links to proxied pages
+- **Auto-complete**: Optional suggestions based on indexed content
+- **Search History**: Session-based search tracking
+
+Acceptance Criteria:
+- Floating search appears on all proxied pages when API replacement unavailable
+- Search overlay matches site's visual design when possible
+- Results return clickable links to relevant indexed content
+- Overlay positioning doesn't interfere with site navigation
+- Search functionality works across desktop and mobile viewports
+- Fallback gracefully handles sites with existing search
+
+**US-63: API Replacement Search Injection** ✅ COMPLETED
+As a demo factory operator I want to intercept and replace site search APIs with OpenSearch results So that users get enhanced search capabilities powered by our comprehensive indexed content
+
+✅ **Implemented Features:**
+- **Universal API Detection**: Detects search APIs using path indicators (search, find, query, lookup, results, api/search) + search parameters (q, query, search, term, keyword, text)
+- **Request Interception**: Proxy server intercepts matching requests before forwarding to target site
+- **OpenSearch Integration**: Queries routed to indexed crawl content with relevance scoring
+- **Response Formatting**: Returns results in standard search API JSON format
+- **Container Integration**: Works in Docker with opensearch-demo service networking
+
+✅ **Working Implementation:**
+- Path `/search?term=about` successfully intercepted and returns OpenSearch results
+- 270+ NAB pages indexed and searchable via demo-nab index
+- JSON response format with query, total, results, source fields
+- Universal detection works across all target sites
+
+❌ **Current Issue: Raw JSON Response**
+- Search returns raw JSON instead of styled HTML results page
+- Links in results point to original site URLs instead of proxy URLs
+- No visual integration with target site's search results styling
+
+**US-65: HTML Search Results Rendering & URL Rewriting**
+As a demo factory operator I want search API responses to return properly formatted HTML pages with proxy-rewritten URLs So that users get a seamless search experience that looks native to the target site
+
+**Implementation Approach:**
+- **Smart Template System**: Fetch target site's search results page once, extract styling/structure, cache template
+- **Dynamic HTML Generation**: Fill cached template with OpenSearch results using site-appropriate styling
+- **URL Rewriting**: Convert all result URLs from `https://nab.com.au/page` to `http://localhost:8000/proxy/page`
+- **Universal Compatibility**: Template system works with any target site automatically
+- **Response Format**: Return HTMLResponse instead of JSONResponse for browser compatibility
+
+**Technical Implementation:**
+```python
+async def handle_search_request(query: str, original_path: str) -> HTMLResponse:
+    # 1. Get cached search template for target site
+    template = await get_search_template(proxy_config["target_url"])
+
+    # 2. Get OpenSearch results
+    results = opensearch_integration.search(query, index_name)
+
+    # 3. Rewrite URLs to proxy
+    for result in results["hits"]:
+        result["url"] = rewrite_to_proxy_url(result["url"])
+
+    # 4. Generate HTML page using template + results
+    html = render_search_results(template, results, query)
+
+    return HTMLResponse(content=html)
+```
+
+**Acceptance Criteria:**
+- Search requests return styled HTML pages that match target site design
+- All result links point to proxy URLs (localhost:8000/proxy/...) and are clickable
+- Search results page integrates seamlessly with target site navigation
+- Template system automatically adapts to different target sites (NAB, CommBank, etc.)
+- Search functionality maintains target site's look and feel
+- Page loading performance remains fast (<500ms for search results)
+

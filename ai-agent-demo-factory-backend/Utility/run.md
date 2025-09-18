@@ -1,173 +1,294 @@
-# OpenSearch Integration Testing Guide
+# Complete OpenSearch & Proxy Server Testing Guide
 
-## Prerequisites
+## Overview
+This guide provides step-by-step instructions to test the complete search injection system:
+1. OpenSearch integration for indexing crawled content
+2. Proxy server with API replacement search injection (US-63)
+3. End-to-end testing of search functionality
 
-1. **Start OpenSearch Docker container:**
+---
+
+## Quick Start (All-in-One Testing)
+
+### Step 1: Start OpenSearch Container
 ```bash
-# From project root
+# From project root directory
+cd "H:/Bachelor Sem 2/Programming Project/Project/Programming-Project-AI-Agent-Demo"
 docker-compose up -d opensearch-demo
-```
 
-2. **Verify OpenSearch is running:**
-```bash
+# Verify OpenSearch is running (wait ~10 seconds)
 curl -X GET "localhost:9200/"
 ```
 
-## Testing OpenSearch Integration
+**Expected Response:**
+```json
+{
+  "name" : "opensearch-demo",
+  "cluster_name" : "docker-cluster",
+  "version" : {
+    "number" : "2.11.0"
+  }
+}
+```
 
-### 1. Install Dependencies
-
+### Step 2: Index Your Existing Crawl Data
 ```bash
-pip install opensearch-py beautifulsoup4
+# Navigate to Utility directory
+cd ai-agent-demo-factory-backend/Utility
+
+# Index NAB crawl data (you have 753+ pages ready)
+python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/agent_crawls/nab.com.au" --index-name "demo-nab" --host localhost --port 9200
+
+# Verify indexing worked
+curl -X GET "localhost:9200/demo-nab/_count"
 ```
 
-### 2. Index Existing Crawl Data
-
-```bash
-# Index NAB crawl data (if you have it)
-python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/nab" --index-name "nab-demo" --host localhost --port 9200
-
-# Or index any other crawl data
-python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/your-site" --index-name "your-index" --host localhost --port 9200
+**Expected Output:**
 ```
-
-### 3. Test Basic Functionality
-
-```bash
-# Test with search query
-python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/nab" --index-name "nab-demo" --search "banking loans"
-```
-
-### 4. Manual Testing with curl
-
-#### Check available indices:
-```bash
-curl -X GET "localhost:9200/_cat/indices?v"
-```
-
-#### Search all content:
-```bash
-curl -X GET "localhost:9200/_search" -H 'Content-Type: application/json' -d '{"query":{"match_all":{}},"_source":["title","url","meta_desc"],"size":5}'
-```
-
-#### Search for specific terms:
-```bash
-curl -X GET "localhost:9200/_search" -H 'Content-Type: application/json' -d '{"query":{"multi_match":{"query":"banking loans","fields":["title^3","content_md","meta_desc^2"]}},"_source":["title","url","meta_desc"],"size":10}'
-```
-
-#### Get document count:
-```bash
-curl -X GET "localhost:9200/_count"
-```
-
-### 5. Python Testing Script
-
-Create a test script `test_search.py`:
-
-```python
-#!/usr/bin/env python3
-
-from opensearch_integration import Crawl4AIOpenSearchIntegration, OpenSearchConfig
-import json
-
-def test_opensearch():
-    # Connect to OpenSearch
-    config = OpenSearchConfig(host="localhost", port=9200)
-    integration = Crawl4AIOpenSearchIntegration(config)
-
-    # Test search
-    results = integration.search("banking", "nab-demo", size=5)
-
-    print(f"Found {results['total_hits']} results:")
-    for i, hit in enumerate(results['hits']):
-        print(f"{i+1}. {hit['title']} - {hit['url']} (score: {hit['score']:.2f})")
-
-    # Test index stats
-    stats = integration.get_index_stats("nab-demo")
-    print(f"\nIndex stats: {json.dumps(stats, indent=2)}")
-
-if __name__ == "__main__":
-    test_opensearch()
-```
-
-Run the test:
-```bash
-python test_search.py
-```
-
-## Expected Output
-
-### Successful Indexing:
-```
-INFO:__main__:Starting indexing of ../crawl4ai-agent/output/nab into nab-demo
-INFO:__main__:Indexed batch 1: 50 documents
-INFO:__main__:Indexing complete: 150/150 documents indexed in 45.2s
+INFO:__main__:Starting indexing of ../crawl4ai-agent/output/agent_crawls/nab.com.au into demo-nab
+INFO:__main__:Indexed batch 1: 100 documents
+INFO:__main__:Indexed batch 2: 100 documents
+...
+INFO:__main__:Indexing complete: 753/753 documents indexed in 45.2s
 
 Indexing Results:
-  Documents indexed: 150
+  Documents indexed: 753
   Processing time: 45.20s
   Errors: 0
 ```
 
-### Successful Search:
+### Step 3: Start Proxy Server (Separate from Crawler)
+```bash
+# In a NEW terminal/command prompt (separate from your crawling container)
+cd ai-agent-demo-factory-backend/Proxy
+
+# Start proxy server
+python proxy_server.py
 ```
-Testing search: 'banking loans'
-  Found 23 results
-  1. Business Banking Solutions - https://www.nab.com.au/business/loans - (score: 2.45)
-  2. Personal Loans Overview - https://www.nab.com.au/personal/loans - (score: 1.88)
-  3. Home Loans - https://www.nab.com.au/personal/home-loans - (score: 1.34)
+
+**Expected Output:**
 ```
+INFO:     Started server process [12345]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+### Step 4: Configure Proxy for NAB
+```bash
+# In another terminal, configure proxy to point to NAB with search injection
+curl -X POST "http://localhost:8000/auto-configure" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_url": "https://www.nab.com.au",
+    "run_id": "test-search-injection",
+    "enabled": true
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "message": "Auto-proxy configured from crawl completion",
+  "proxy_url": "http://localhost:8000/proxy/",
+  "config": {
+    "target_url": "https://www.nab.com.au",
+    "enabled": true,
+    "search_injection_enabled": true
+  },
+  "search_injection": true,
+  "opensearch_index": "demo-nab"
+}
+```
+
+### Step 5: Test Search API Interception
+```bash
+# Test search API call that would be intercepted
+curl -X GET "http://localhost:8000/proxy/search/api?q=business+loans"
+
+# Test another search pattern
+curl -X GET "http://localhost:8000/proxy/api/search?query=home+mortgage"
+
+# Test with different search parameter
+curl -X GET "http://localhost:8000/proxy/find?term=banking+services"
+```
+
+**Expected Search Response:**
+```json
+{
+  "query": "business loans",
+  "total": 45,
+  "results": [
+    {
+      "title": "Business Banking Solutions",
+      "url": "https://www.nab.com.au/business/loans",
+      "description": "Complete banking solutions for business...",
+      "score": 2.45,
+      "snippet": "...business <em>loans</em> for commercial..."
+    }
+  ],
+  "took": 15,
+  "source": "opensearch"
+}
+```
+
+### Step 6: Test Normal Proxy (Non-Search)
+```bash
+# Test that normal pages still proxy correctly
+curl -I "http://localhost:8000/proxy/"
+curl -I "http://localhost:8000/proxy/about-us"
+```
+
+---
+
+## Detailed Testing Scenarios
+
+### A. Search Detection Testing
+Test which requests trigger search interception:
+
+```bash
+# ✅ SHOULD be intercepted (has search path + search params)
+curl "http://localhost:8000/proxy/search?q=test"
+curl "http://localhost:8000/proxy/api/search?query=test"
+curl "http://localhost:8000/proxy/find?term=test"
+curl "http://localhost:8000/proxy/lookup?search=test"
+
+# ❌ SHOULD NOT be intercepted (missing search params)
+curl "http://localhost:8000/proxy/search"
+curl "http://localhost:8000/proxy/api/search"
+
+# ❌ SHOULD NOT be intercepted (missing search path)
+curl "http://localhost:8000/proxy/about?q=test"
+curl "http://localhost:8000/proxy/contact?query=test"
+```
+
+### B. OpenSearch Direct Testing
+Test OpenSearch directly (bypassing proxy):
+
+```bash
+# Search all content
+curl -X GET "localhost:9200/demo-nab/_search" -H 'Content-Type: application/json' -d '{
+  "query": {"match_all": {}},
+  "_source": ["title", "url", "meta_desc"],
+  "size": 5
+}'
+
+# Search for specific terms
+curl -X GET "localhost:9200/demo-nab/_search" -H 'Content-Type: application/json' -d '{
+  "query": {
+    "multi_match": {
+      "query": "banking loans",
+      "fields": ["title^3", "content_md", "meta_desc^2"]
+    }
+  },
+  "_source": ["title", "url", "meta_desc"],
+  "size": 10
+}'
+
+# Get index statistics
+curl -X GET "localhost:9200/demo-nab/_stats"
+curl -X GET "localhost:9200/demo-nab/_count"
+```
+
+### C. Full Browser Testing
+1. **Configure your browser proxy** to use `localhost:8000`
+2. **Navigate to** `nab.com.au`
+3. **Use any search functionality** on the site
+4. **Verify** that search requests are intercepted and return OpenSearch results
+
+---
+
+## Expected Results Summary
+
+| Test | Expected Behavior |
+|------|-------------------|
+| `proxy/search?q=loans` | Returns OpenSearch results |
+| `proxy/about-us` | Returns proxied NAB page |
+| `proxy/api/search?query=banking` | Returns OpenSearch results |
+| `proxy/contact` | Returns proxied NAB page |
 
 ## Troubleshooting
 
-### OpenSearch not responding:
+### OpenSearch Issues
 ```bash
-# Check if container is running
+# Check if OpenSearch is running
 docker ps | grep opensearch
+curl -X GET "localhost:9200/_cluster/health"
 
-# Check logs
+# View OpenSearch logs
 docker logs opensearch-demo
 
-# Restart container
+# Restart OpenSearch
 docker restart opensearch-demo
 ```
 
-### Index not found error:
+### Proxy Server Issues
 ```bash
-# Check what indices exist
-curl -X GET "localhost:9200/_cat/indices?v"
+# Check if proxy is responding
+curl -X GET "http://localhost:8000/"
 
-# Create index manually if needed
-curl -X PUT "localhost:9200/test-index"
+# Check proxy configuration
+curl -X GET "http://localhost:8000/config"
+
+# View proxy logs (check terminal where proxy_server.py is running)
 ```
 
-### Connection refused:
-- Verify OpenSearch is running on port 9200
-- Check firewall settings
-- Ensure Docker container has proper port mapping
+### Indexing Issues
+```bash
+# Check if index exists
+curl -X GET "localhost:9200/_cat/indices?v"
+
+# Check index document count
+curl -X GET "localhost:9200/demo-nab/_count"
+
+# Delete and recreate index
+curl -X DELETE "localhost:9200/demo-nab"
+python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/agent_crawls/nab.com.au" --index-name "demo-nab" --recreate
+```
+
+### Search Not Working
+1. **Verify index has data**: `curl "localhost:9200/demo-nab/_count"`
+2. **Check proxy configuration**: `curl "localhost:8000/config"`
+3. **Test search detection**: Use exact URLs from Section A above
+4. **Check logs**: Both proxy server logs and OpenSearch logs
+
+---
 
 ## Cleanup
 
-### Delete specific index:
+### Stop Services
 ```bash
-curl -X DELETE "localhost:9200/nab-demo"
-```
+# Stop proxy server (Ctrl+C in proxy terminal)
 
-### Stop OpenSearch:
-```bash
+# Stop OpenSearch
 docker stop opensearch-demo
+
+# Or stop all containers
+docker-compose down
 ```
 
-### Remove all Docker containers:
+### Remove Test Data
 ```bash
-docker-compose down -v
+# Delete search index
+curl -X DELETE "localhost:9200/demo-nab"
+
+# Remove OpenSearch container
+docker rm -f opensearch-demo
 ```
 
-## Integration with Crawl4AI
+---
 
-The OpenSearch integration automatically works with Crawl4AI output structure:
-- Looks for `index.md` (markdown content)
-- Reads `meta.json` (metadata)
-- Optionally uses `raw.html` (for HTML parsing)
+## Integration Notes
 
-This allows seamless indexing of any Crawl4AI crawl results for immediate search capabilities.
+### Search API Detection Patterns
+The system detects search APIs using these patterns:
+- **Path indicators**: `search`, `find`, `query`, `lookup`, `results`, `api/search`, `search/api`
+- **Parameter names**: `q`, `query`, `search`, `term`, `keyword`, `text`
+- **Requirement**: Must have BOTH path indicator AND search parameter
+
+### OpenSearch Integration
+- **Index naming**: `demo-{domain}` (e.g., `demo-nab`, `demo-commbank`)
+- **Document structure**: Uses `title`, `content_md`, `url`, `meta_desc`, `h1`, `h2`, `h3`
+- **Search scoring**: Title (3x), H1 (2x), meta description (2x), content (1x)
+
+This system provides enhanced search capabilities that surpass the original site's search functionality while maintaining full compatibility with existing site navigation.

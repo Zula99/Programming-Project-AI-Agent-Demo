@@ -1,14 +1,27 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import Response, HTMLResponse
+from fastapi.responses import Response, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
 import logging
 import asyncio
-from typing import Optional
+from typing import Optional, Dict, List, Any
 from bs4 import BeautifulSoup
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, parse_qs
+import json
+import sys
+from pathlib import Path
+
+# Add Utility directory to path for OpenSearch integration
+sys.path.insert(0, str(Path(__file__).parent.parent / "Utility"))
+
+try:
+    from opensearch_integration import Crawl4AIOpenSearchIntegration, OpenSearchConfig
+    OPENSEARCH_AVAILABLE = True
+except ImportError:
+    OPENSEARCH_AVAILABLE = False
+    print("Warning: OpenSearch integration not available")
 
 # Initialize FastAPI app for proxy
 app = FastAPI(title="Auto-Proxy Server")
@@ -31,8 +44,73 @@ proxy_config = {
     "target_url": None,
     "enabled": False,
     "run_id": None,
-    "crawl_completed": False
+    "crawl_completed": False,
+    "search_injection_enabled": True
 }
+
+# OpenSearch integration for search injection
+opensearch_integration = None
+opensearch_index_name = None
+
+def initialize_opensearch(domain: str = None, host: str = "opensearch-demo", port: int = 9200):
+    """Initialize OpenSearch integration for search injection"""
+    global opensearch_integration, opensearch_index_name
+
+    if not OPENSEARCH_AVAILABLE:
+        logger.warning("OpenSearch not available - search injection disabled")
+        return False
+
+    try:
+        config = OpenSearchConfig(host=host, port=port, scheme="http")
+        opensearch_integration = Crawl4AIOpenSearchIntegration(config)
+
+        # Generate index name from domain if provided
+        if domain:
+            domain_clean = domain.replace("www.", "").split(".")[0]
+            opensearch_index_name = f"demo-{domain_clean}"
+
+        logger.info(f"OpenSearch initialized for search injection - Index: {opensearch_index_name}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenSearch: {e}")
+        return False
+
+def is_search_api_request(path: str, query_params: Dict[str, Any]) -> bool:
+    """Generic detection of search API requests for any site"""
+    path_lower = path.lower()
+
+    # Common search API path patterns
+    search_path_indicators = [
+        'search', 'find', 'query', 'lookup', 'results',
+        'api/search', 'search/api', 'search/results'
+    ]
+
+    # Check if path contains search indicators
+    path_has_search = any(indicator in path_lower for indicator in search_path_indicators)
+
+    # Common search query parameter names
+    search_param_names = ['q', 'query', 'search', 'term', 'keyword', 'text']
+
+    # Check if request has search-like parameters
+    has_search_params = any(param.lower() in search_param_names for param in query_params.keys())
+
+    # Must have both path indicator AND search parameters to be considered search API
+    return path_has_search and has_search_params
+
+def extract_search_query(query_params: Dict[str, Any]) -> Optional[str]:
+    """Extract search query from request parameters"""
+    search_param_names = ['q', 'query', 'search', 'term', 'keyword', 'text']
+
+    for param_name in search_param_names:
+        for key, value in query_params.items():
+            if key.lower() == param_name:
+                # Handle both string and list values
+                if isinstance(value, list) and value:
+                    return value[0]
+                elif isinstance(value, str):
+                    return value
+
+    return None
 
 class ProxyConfig(BaseModel):
     target_url: str
@@ -56,12 +134,21 @@ async def auto_configure_from_crawl(config: ProxyConfig):
     proxy_config["run_id"] = config.run_id
     proxy_config["enabled"] = config.enabled
     proxy_config["crawl_completed"] = True
-    
+
+    # Initialize OpenSearch for search injection
+    domain = urlparse(config.target_url).netloc
+    opensearch_initialized = initialize_opensearch(domain)
+
     logger.info(f"Auto-proxy configured from crawl - Target: {proxy_config['target_url']}, Run ID: {config.run_id}")
+    if opensearch_initialized:
+        logger.info(f"OpenSearch search injection enabled for {domain}")
+
     return {
         "message": "Auto-proxy configured from crawl completion",
         "proxy_url": f"http://localhost:8000/proxy/",
-        "config": proxy_config
+        "config": proxy_config,
+        "search_injection": opensearch_initialized,
+        "opensearch_index": opensearch_index_name
     }
 
 @app.get("/config")
@@ -212,18 +299,93 @@ def clean_response_headers(headers: dict) -> dict:
     
     return cleaned
 
+async def handle_search_request(query: str, original_path: str) -> JSONResponse:
+    """Handle search API request using OpenSearch"""
+    if not opensearch_integration or not opensearch_index_name:
+        logger.warning("Search request intercepted but OpenSearch not configured")
+        return JSONResponse(
+            content={"error": "Search not available", "results": []},
+            status_code=503
+        )
+
+    try:
+        # Perform OpenSearch query
+        results = opensearch_integration.search(
+            query=query,
+            index_name=opensearch_index_name,
+            size=10
+        )
+
+        # Format results to look like typical search API response
+        formatted_results = []
+        for hit in results.get("hits", []):
+            formatted_result = {
+                "title": hit.get("title", ""),
+                "url": hit.get("url", ""),
+                "description": hit.get("meta_desc", ""),
+                "score": hit.get("score", 0),
+                "snippet": ""
+            }
+
+            # Extract snippet from highlights if available
+            highlights = hit.get("highlight", {})
+            if highlights.get("content_md"):
+                formatted_result["snippet"] = highlights["content_md"][0]
+            elif highlights.get("meta_desc"):
+                formatted_result["snippet"] = highlights["meta_desc"][0]
+            elif hit.get("meta_desc"):
+                formatted_result["snippet"] = hit["meta_desc"][:200] + "..."
+
+            formatted_results.append(formatted_result)
+
+        # Return in common search API format
+        search_response = {
+            "query": query,
+            "total": results.get("total_hits", 0),
+            "results": formatted_results,
+            "took": results.get("took", 0),
+            "source": "opensearch"
+        }
+
+        logger.info(f"Search handled: '{query}' -> {len(formatted_results)} results")
+        return JSONResponse(content=search_response)
+
+    except Exception as e:
+        logger.error(f"Search error for query '{query}': {e}")
+        return JSONResponse(
+            content={"error": "Search failed", "query": query, "results": []},
+            status_code=500
+        )
+
 @app.api_route("/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy_request(request: Request, path: str):
     """Proxy all requests to the configured target site with URL rewriting"""
-    
+
     if not proxy_config["enabled"] or not proxy_config["target_url"]:
         return Response("Proxy not configured or disabled", status_code=503)
-    
-    # Build target URL
+
+    # Check for search API interception (US-63: API Replacement Search Injection)
+    if proxy_config["search_injection_enabled"]:
+        query_params = dict(request.query_params)
+
+        # Debug logging
+        logger.info(f"DEBUG: Checking path='{path}', params={query_params}")
+        is_search = is_search_api_request(path, query_params)
+        logger.info(f"DEBUG: is_search_api_request={is_search}")
+
+        # Detect if this is a search API request
+        if is_search:
+            search_query = extract_search_query(query_params)
+            logger.info(f"DEBUG: extracted query='{search_query}'")
+            if search_query:
+                logger.info(f"Search API intercepted: {path} -> query: '{search_query}'")
+                return await handle_search_request(search_query, path)
+
+    # Build target URL for normal proxying
     target_url = f"{proxy_config['target_url']}/{path}"
     if request.url.query:
         target_url += f"?{request.url.query}"
-    
+
     logger.info(f"Proxying: {request.method} {target_url}")
     
     try:
