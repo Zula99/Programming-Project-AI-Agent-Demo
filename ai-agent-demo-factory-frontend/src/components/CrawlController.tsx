@@ -274,6 +274,57 @@ export default function CrawlController() {
   const [error, setError] = useState<string | null>(null);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // CMS Detection states
+  const [cmsLoading, setCmsLoading] = useState(false);
+  const [cmsResult, setCmsResult] = useState<any>(null);
+  const [cmsError, setCmsError] = useState<string | null>(null);
+
+  const detectCMS = async () => {
+    if (!url.trim()) {
+      setCmsError('Please enter a URL to detect CMS');
+      return;
+    }
+
+    setCmsLoading(true);
+    setCmsError(null);
+    setCmsResult(null);
+
+    try {
+      const response = await fetch('/api/cms/detect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url.trim(),
+          timeout: 10
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setCmsResult(data);
+        // Auto-select template based on detected CMS
+        const detectedCMS = data.detected_cms;
+        if (detectedCMS && detectedCMS !== 'Unknown') {
+          const matchingTemplate = CMS_TEMPLATES.find(template => 
+            template.platform.toLowerCase() === detectedCMS.toLowerCase()
+          );
+          if (matchingTemplate) {
+            setSelectedTemplate(matchingTemplate);
+          }
+        }
+      } else {
+        setCmsError(data.error || 'Failed to detect CMS');
+      }
+    } catch (error) {
+      setCmsError('Network error: ' + (error as Error).message);
+    } finally {
+      setCmsLoading(false);
+    }
+  };
 
   const startCrawl = async () => {
     if (!url.trim()) {
@@ -666,6 +717,17 @@ export default function CrawlController() {
             disabled={loading || (activeJob?.status === 'running')}
           />
           <button
+            onClick={detectCMS}
+            disabled={loading || (activeJob?.status === 'running') || !url.trim()}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-search">
+              <path d="m21 21-4.34-4.34"></path>
+              <circle cx="11" cy="11" r="8"></circle>
+            </svg>
+            {cmsLoading ? 'Detecting...' : 'Detect CMS'}
+          </button>
+          <button
             onClick={startCrawl}
             disabled={loading || (activeJob?.status === 'running')}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -679,6 +741,49 @@ export default function CrawlController() {
             <strong>Error:</strong> {error}
             <br />
             <small>Make sure the backend API is running and accessible</small>
+          </div>
+        )}
+
+        {/* CMS Detection Results */}
+        {cmsResult && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>CMS Detected:</strong> {cmsResult.detected_cms}
+                {cmsResult.confidence && (
+                  <span className="ml-2 text-sm">
+                    (Confidence: {cmsResult.confidence}%)
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setCmsResult(null)}
+                className="text-green-600 hover:text-green-800"
+              >
+                ✕
+              </button>
+            </div>
+            {cmsResult.detection_methods && cmsResult.detection_methods.length > 0 && (
+              <div className="mt-2 text-sm">
+                <strong>Detection Methods:</strong> {cmsResult.detection_methods.join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {cmsError && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>CMS Detection Failed:</strong> {cmsError}
+              </div>
+              <button
+                onClick={() => setCmsError(null)}
+                className="text-yellow-600 hover:text-yellow-800"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
       </div>
