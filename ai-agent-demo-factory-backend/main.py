@@ -8,6 +8,7 @@ import requests
 #-----Core imports-----
 from services.indexer import index_crawl_results_to_opensearch
 from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_logs
+from services.cms_detector import CMSDetector
 
 
 import uuid # For generating unique IDs
@@ -132,7 +133,7 @@ crawl_jobs = {}
 running_processes = {}
 
 def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
-                                  index_name: str = "demo_factory", template: Optional[TemplateConfig] = None) -> str:
+                                  index_name: str = "demo_factory", template: Optional["TemplateConfig"] = None) -> str:
     """
     Create a Norconex config using the NAB template as a base.
     If template is provided, use template parameters; otherwise use defaults.
@@ -231,7 +232,16 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
     
     return config
 
-# Pydantic model for validating the request body when starting a crawl.
+# FastAPI uses this to automatically validate incoming JSON data.
+class CrawlRequest(BaseModel):
+    target_url: str
+    template: Optional["TemplateConfig"] = None
+
+# Pydantic model for search requests
+class SearchRequest(BaseModel):
+    query: str
+    size: int = 50
+
 # Template configuration model
 class TemplateConfig(BaseModel):
     id: str
@@ -246,22 +256,17 @@ class TemplateConfig(BaseModel):
     fileExclusions: list[str]
     urlPatterns: list[str]
 
-# FastAPI uses this to automatically validate incoming JSON data.
-class CrawlRequest(BaseModel):
-    target_url: str
-    template: Optional[TemplateConfig] = None
-
-# Pydantic model for search requests
-class SearchRequest(BaseModel):
-    query: str
-    size: int = 50
-
 # Pydantic model for crawl log search requests
 class CrawlLogSearchRequest(BaseModel):
     run_id: Optional[str] = None
     log_level: Optional[str] = None
     log_type: Optional[str] = None  # "trigger", "runner", "execution_summary"
     size: int = 100
+
+# Pydantic model for CMS detection requests
+class CMSDetectionRequest(BaseModel):
+    url: str
+    timeout: Optional[int] = 10
 
 # Pydantic model for the structure of a single page result.
 # Used for documenting and validating the 'results' array.
@@ -273,7 +278,7 @@ class PageRow(BaseModel):
     size: int # size in bytes
 
 # --- Helper Function: Runs the Norconex Crawler via Maven ---
-def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[TemplateConfig] = None):
+def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional["TemplateConfig"] = None):
     """
     This function runs the actual Norconex crawler via the Maven-based runner.
     It generates a configuration file, executes the crawler, and monitors progress.
@@ -832,5 +837,50 @@ async def index_crawl_logs_endpoint(run_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Log indexing error: {str(e)}")
+
+@app.post("/cms/detect")
+async def detect_cms(request: CMSDetectionRequest):
+    """
+    Detect CMS/Platform of a given website URL.
+    """
+    try:
+        detector = CMSDetector()
+        result = detector.detect_cms(request.url)
+        
+        return {
+            "success": True,
+            "url": request.url,
+            "detected_cms": result.get("detected_cms", "Unknown"),
+            "confidence": result.get("confidence", 0),
+            "details": result.get("details", {}),
+            "detection_methods": result.get("detection_methods", []),
+            "timestamp": time.time()
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "url": request.url,
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+@app.get("/cms/supported")
+async def get_supported_cms():
+    """
+    Get list of supported CMS/Platforms for detection.
+    """
+    try:
+        detector = CMSDetector()
+        return {
+            "success": True,
+            "supported_cms": list(detector.cms_patterns.keys()),
+            "total_count": len(detector.cms_patterns)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 
