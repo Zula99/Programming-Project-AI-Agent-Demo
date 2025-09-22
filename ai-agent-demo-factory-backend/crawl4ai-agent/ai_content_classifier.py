@@ -606,7 +606,7 @@ class AIContentClassifier:
         # Save to cache
         self._save_domain_site_type()
 
-        self.logger.info(f"🏢 Domain site type detected for {self.domain}: {self.domain_site_type.value} "
+        self.logger.info(f" Domain site type detected for {self.domain}: {self.domain_site_type.value} "
                         f"(confidence: {confidence}, score: {score})")
 
         return self.domain_site_type

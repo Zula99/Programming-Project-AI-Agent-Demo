@@ -41,9 +41,13 @@ python opensearch_integration.py --crawl-dir "../crawl4ai-agent/output/agent_cra
 
 # Verify indexing worked
 curl -X GET "localhost:9200/demo-nab/_count"
+
+# Check volume persistence (data will survive container restarts)
+docker volume inspect opensearch-data
+docker exec opensearch-demo bash -c "ls -la /usr/share/opensearch/data/nodes/"
 ```
 
-**Expected Output:**
+**Expected Output:**OI
 ```
 INFO:__main__:Starting indexing of ../crawl4ai-agent/output/agent_crawls/nab.com.au into demo-nab
 INFO:__main__:Indexed batch 1: 100 documents
@@ -240,6 +244,14 @@ curl -X GET "localhost:9200/_cat/indices?v"
 
 # Check index document count
 curl -X GET "localhost:9200/demo-nab/_count"
+
+# Check Docker volume data persistence
+docker volume ls
+docker volume inspect opensearch-data
+
+# Check files in OpenSearch data directory (verify persistence)
+docker exec opensearch-demo bash -c "ls -la /usr/share/opensearch/data/"
+docker exec opensearch-demo bash -c "ls -la /usr/share/opensearch/data/nodes/"
 
 # Delete and recreate index
 curl -X DELETE "localhost:9200/demo-nab"
