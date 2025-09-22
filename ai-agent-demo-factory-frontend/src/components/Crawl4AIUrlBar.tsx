@@ -28,11 +28,13 @@ export default function Crawl4AIUrlBar({ onStartCrawl, isRunning = false }: Craw
                     className="flex-1 outline-none"
                     disabled={isRunning}
                     required
+                    suppressHydrationWarning={true}
                 />
             </div>
             <button
                 type="submit"
                 disabled={isRunning || !url.trim()}
+                suppressHydrationWarning={true}
                 className={`px-4 py-2 rounded-lg flex items-center gap-1 font-medium transition-all
                     ${isRunning || !url.trim()
                         ? 'bg-gray-400 text-gray-200 cursor-not-allowed'

@@ -17,7 +17,8 @@ app = FastAPI()
 # Adjust the 'origins' list to include the actual URL(s) where your frontend is hosted.
 origins = [
     "http://localhost",
-    "http://localhost:3000", 
+    "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:5000" # Explicitly allow self, if needed for some tests
 ]
 
@@ -252,6 +253,27 @@ async def update_agent_status(run_id: str, status: str, question: Optional[str] 
             "question": question
         })
 
+async def update_progress(run_id: str, pages_crawled: int, total_pages: int, crawl_speed: float = 0):
+    """Update crawl progress and broadcast to WebSocket connections"""
+    if run_id in crawl4ai_sessions:
+        progress = crawl4ai_sessions[run_id]["progress"]
+        progress["pages_crawled"] = pages_crawled
+        progress["total_pages"] = total_pages
+        progress["pages_remaining"] = max(0, total_pages - pages_crawled)
+        progress["percentage"] = (pages_crawled / total_pages * 100) if total_pages > 0 else 0
+        progress["crawl_speed"] = crawl_speed
+
+        # Calculate estimated time remaining (in seconds)
+        if crawl_speed > 0 and progress["pages_remaining"] > 0:
+            progress["estimated_time_remaining"] = int((progress["pages_remaining"] / crawl_speed) * 60)
+        else:
+            progress["estimated_time_remaining"] = 0
+
+        await broadcast_to_websockets(run_id, {
+            "type": "progress",
+            "progress": progress
+        })
+
 async def run_crawl4ai_agent_simulation(run_id: str, target_url: str):
     """
     Simulate the Crawl4AI agent process with realistic interaction
@@ -272,60 +294,55 @@ async def run_crawl4ai_agent_simulation(run_id: str, target_url: str):
         await add_agent_log(run_id, "✅ Site type detected: JavaScript-heavy banking site", "success")
         await asyncio.sleep(1)
 
-        # Ask user for confirmation
-        await update_agent_status(run_id, "waiting_for_input",
-                                "I've detected this is a banking site that requires special handling. Should I proceed with full browser rendering? This will take longer but capture dynamic content.")
-        await add_agent_log(run_id, "❓ Waiting for user confirmation...", "question")
+        # Automatically proceed with full browser rendering
+        await add_agent_log(run_id, "🚀 Starting full browser crawl...", "info")
+        await asyncio.sleep(1)
 
-        # Wait for user response
-        while crawl4ai_sessions[run_id]["status"] == "waiting_for_input":
-            await asyncio.sleep(0.5)
+        # Simulate crawling process with realistic progress
+        pages = [
+            "/ (Homepage)", "/business (Business)", "/personal (Personal)",
+            "/loans (Loans)", "/cards (Credit Cards)", "/invest (Investments)",
+            "/business/accounts (Business Accounts)", "/help (Help Center)",
+            "/business/loans (Business Loans)", "/personal/accounts (Personal Accounts)",
+            "/personal/home-loans (Home Loans)", "/business/business-banking (Business Banking)",
+            "/about (About Us)", "/contact (Contact)", "/careers (Careers)",
+            "/investor-relations (Investor Relations)", "/sustainability (Sustainability)",
+            "/financial-wellbeing (Financial Wellbeing)", "/tools-calculators (Tools & Calculators)",
+            "/security (Security)", "/support (Support Centre)"
+        ]
 
-        user_response = crawl4ai_sessions[run_id].get("last_response", "yes")
-        await add_agent_log(run_id, f"📥 User responded: {user_response}", "info")
+        total_pages = len(pages)
+        crawl_speed = 2.5  # pages per minute
 
-        if user_response.lower() in ["yes", "y", "proceed", "continue"]:
-            await update_agent_status(run_id, "running")
-            await add_agent_log(run_id, "🚀 Starting full browser crawl...", "info")
-            await asyncio.sleep(1)
+        # Initialize progress
+        await update_progress(run_id, 0, total_pages, crawl_speed)
+        await add_agent_log(run_id, f"📊 Estimated {total_pages} pages to crawl at {crawl_speed} pages/min", "info")
 
-            # Simulate crawling process
-            pages = [
-                "/ (Homepage)", "/business (Business)", "/personal (Personal)",
-                "/loans (Loans)", "/cards (Credit Cards)", "/invest (Investments)",
-                "/business/accounts (Business Accounts)", "/help (Help Center)"
-            ]
+        for i, page in enumerate(pages):
+            await add_agent_log(run_id, f"📄 Crawling {page}", "info")
 
-            for i, page in enumerate(pages):
-                await add_agent_log(run_id, f"📄 Crawling {page}", "info")
-                await asyncio.sleep(1.5)
-                if i == 3:  # Simulate a question mid-crawl
-                    await update_agent_status(run_id, "waiting_for_input",
-                                            "I found some PDF documents. Should I include them in the crawl?")
-                    await add_agent_log(run_id, "❓ Found PDF documents, asking user...", "question")
+            # Update progress
+            pages_crawled = i + 1
+            await update_progress(run_id, pages_crawled, total_pages, crawl_speed)
 
-                    # Wait for response
-                    while crawl4ai_sessions[run_id]["status"] == "waiting_for_input":
-                        await asyncio.sleep(0.5)
+            await asyncio.sleep(1.2)  # Realistic crawl timing
 
-                    pdf_response = crawl4ai_sessions[run_id].get("last_response", "yes")
-                    await add_agent_log(run_id, f"📥 User responded: {pdf_response}", "info")
-                    await update_agent_status(run_id, "running")
+            if i == 3:  # Automatically include PDF documents
+                await add_agent_log(run_id, "📄 Found PDF documents, including automatically", "info")
+                await add_agent_log(run_id, "📄 Including PDF documents", "success")
+                # Add extra pages for PDFs
+                pages.extend([
+                    "/documents/annual-report.pdf", "/documents/disclosure.pdf",
+                    "/documents/terms-conditions.pdf", "/documents/privacy-policy.pdf"
+                ])
+                total_pages = len(pages)
+                await update_progress(run_id, pages_crawled, total_pages, crawl_speed)
 
-                    if pdf_response.lower() in ["yes", "y"]:
-                        await add_agent_log(run_id, "📄 Including PDF documents", "success")
-                    else:
-                        await add_agent_log(run_id, "⏭️ Skipping PDF documents", "warning")
-
-            # Complete the crawl
-            await add_agent_log(run_id, "✅ Crawl completed successfully!", "success")
-            await add_agent_log(run_id, f"📊 Quality Score: 92% (Excellent)", "success")
-            await add_agent_log(run_id, f"📁 Output saved to: ./output/{target_url.replace('https://', '').replace('/', '_')}", "info")
-            await update_agent_status(run_id, "completed")
-
-        else:
-            await add_agent_log(run_id, "⏹️ Crawl cancelled by user", "warning")
-            await update_agent_status(run_id, "completed")
+        # Complete the crawl
+        await add_agent_log(run_id, "✅ Crawl completed successfully!", "success")
+        await add_agent_log(run_id, f"📊 Quality Score: 92% (Excellent)", "success")
+        await add_agent_log(run_id, f"📁 Output saved to: ./output/{target_url.replace('https://', '').replace('/', '_')}", "info")
+        await update_agent_status(run_id, "completed")
 
     except Exception as e:
         await add_agent_log(run_id, f"❌ Error: {str(e)}", "error")
@@ -345,7 +362,15 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
         "started_at": time.time(),
         "logs": [],
         "current_question": None,
-        "last_response": None
+        "last_response": None,
+        "progress": {
+            "percentage": 0,
+            "pages_crawled": 0,
+            "pages_remaining": 0,
+            "total_pages": 0,
+            "estimated_time_remaining": 0,
+            "crawl_speed": 0  # pages per minute
+        }
     }
 
     # Initialize WebSocket connections list
@@ -375,7 +400,8 @@ async def get_crawl4ai_status(run_id: str):
             "started_at": session["started_at"],
             "current_question": session.get("current_question")
         },
-        "logs": session["logs"]
+        "logs": session["logs"],
+        "progress": session["progress"]
     })
 
 @app.post("/crawl4ai/respond")
@@ -421,6 +447,12 @@ async def crawl4ai_websocket(websocket: WebSocket, run_id: str):
                 "type": "status",
                 "status": session["status"],
                 "question": session.get("current_question")
+            }))
+
+            # Send current progress
+            await websocket.send_text(json.dumps({
+                "type": "progress",
+                "progress": session["progress"]
             }))
 
         # Keep connection alive

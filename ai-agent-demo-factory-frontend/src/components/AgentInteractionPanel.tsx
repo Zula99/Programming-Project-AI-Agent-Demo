@@ -65,6 +65,7 @@ export default function AgentInteractionPanel({
                         <button
                             onClick={() => handleResponse("yes")}
                             disabled={!isWaitingForInput}
+                            suppressHydrationWarning={true}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
                                 ${isWaitingForInput
                                     ? 'bg-green-500 text-white hover:bg-green-600 hover:shadow-md'
@@ -77,6 +78,7 @@ export default function AgentInteractionPanel({
                         <button
                             onClick={() => handleResponse("no")}
                             disabled={!isWaitingForInput}
+                            suppressHydrationWarning={true}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all
                                 ${isWaitingForInput
                                     ? 'bg-red-500 text-white hover:bg-red-600 hover:shadow-md'
@@ -101,6 +103,7 @@ export default function AgentInteractionPanel({
                             onChange={(e) => setTextInput(e.target.value)}
                             placeholder="Type your response..."
                             disabled={!isWaitingForInput}
+                            suppressHydrationWarning={true}
                             className={`flex-1 px-3 py-2 border rounded-lg outline-none transition-colors
                                 ${isWaitingForInput
                                     ? 'border-gray-300 focus:border-blue-500'
@@ -110,6 +113,7 @@ export default function AgentInteractionPanel({
                         <button
                             type="submit"
                             disabled={!isWaitingForInput || !textInput.trim()}
+                            suppressHydrationWarning={true}
                             className={`px-4 py-2 rounded-lg font-medium transition-all
                                 ${isWaitingForInput && textInput.trim()
                                     ? 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-md'

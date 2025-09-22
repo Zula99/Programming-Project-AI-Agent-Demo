@@ -84,6 +84,8 @@ export function createWebSocketConnection(
 ): WebSocket {
   const wsUrl = `${API_BASE.replace('http://', 'ws://').replace('https://', 'wss://')}/crawl4ai/ws/${runId}`;
 
+  console.log('Connecting to WebSocket:', wsUrl);
+
   const ws = new WebSocket(wsUrl);
 
   ws.onmessage = (event) => {
@@ -100,7 +102,14 @@ export function createWebSocketConnection(
     }
   };
 
-  ws.onerror = onError;
+  ws.onerror = (error) => {
+    console.error('WebSocket connection error:', error);
+    onError(error);
+  };
+
+  ws.onclose = (event) => {
+    console.log('WebSocket closed:', event.code, event.reason);
+  };
 
   return ws;
 }
