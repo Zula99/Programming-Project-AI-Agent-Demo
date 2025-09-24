@@ -183,7 +183,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
     try:
         # Initialize session
         await update_agent_status(run_id, "running")
-        await add_agent_log(run_id, "🤖 Crawl4AI SmartMirrorAgent initialized", "info")
+        await add_agent_log(run_id, " Crawl4AI SmartMirrorAgent initialized", "info")
         logger.info("SmartMirrorAgent session initialized successfully")
 
         # Import the SmartMirrorAgent from the crawl4ai-agent directory
@@ -195,7 +195,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
 
         # Create the agent instance
         agent = SmartMirrorAgent(memory_path="backend_agent_memory.json")
-        await add_agent_log(run_id, "📋 Starting site reconnaissance...", "info")
+        await add_agent_log(run_id, " Starting site reconnaissance...", "info")
         logger.info("SmartMirrorAgent created, starting reconnaissance")
 
         # This class will wrap the agent to provide real-time progress updates
@@ -225,7 +225,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
                     if hasattr(original_crawler, 'last_crawl_results') and original_crawler.last_crawl_results:
                         crawled_count = len(original_crawler.last_crawl_results)
                         await update_progress(self.run_id, crawled_count, self.total_pages_estimate, 2.0)
-                        await add_agent_log(self.run_id, f"📄 Crawled {crawled_count} pages", "info")
+                        await add_agent_log(self.run_id, f" Crawled {crawled_count} pages", "info")
 
                     return result
 
@@ -244,7 +244,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         tracking_agent = ProgressTrackingAgent(agent, run_id)
 
         # Run the actual SmartMirrorAgent
-        await add_agent_log(run_id, f"🔍 Analyzing {target_url}", "info")
+        await add_agent_log(run_id, f" Analyzing {target_url}", "info")
         logger.info(f"Starting SmartMirrorAgent process for {target_url}")
 
         # Execute the real agent process
@@ -255,11 +255,11 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
             # Extract quality metrics
             overall_score = getattr(metrics, 'overall_score', 0) * 100 if metrics else 0
 
-            await add_agent_log(run_id, "✅ Crawl completed successfully!", "success")
-            await add_agent_log(run_id, f"📊 Quality Score: {overall_score:.1f}%", "success")
+            await add_agent_log(run_id, " Crawl completed successfully!", "success")
+            await add_agent_log(run_id, f" Quality Score: {overall_score:.1f}%", "success")
 
             if output_path:
-                await add_agent_log(run_id, f"📁 Output saved to: {output_path}", "info")
+                await add_agent_log(run_id, f" Output saved to: {output_path}", "info")
                 logger.info(f"Crawl output saved to: {output_path}")
 
             # Final progress update with actual results
@@ -271,18 +271,18 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
             logger.info(f"SmartMirrorAgent completed successfully with {overall_score:.1f}% quality score")
 
         else:
-            await add_agent_log(run_id, "❌ Crawl failed", "error")
+            await add_agent_log(run_id, " Crawl failed", "error")
             await update_agent_status(run_id, "error")
             logger.error("SmartMirrorAgent process failed")
 
     except ImportError as e:
         error_msg = f"SmartMirrorAgent not available: {str(e)}"
-        await add_agent_log(run_id, f"❌ {error_msg}", "error")
+        await add_agent_log(run_id, f" {error_msg}", "error")
         await update_agent_status(run_id, "error")
         logger.error(error_msg)
     except Exception as e:
         error_msg = f"SmartMirrorAgent error: {str(e)}"
-        await add_agent_log(run_id, f"❌ {error_msg}", "error")
+        await add_agent_log(run_id, f" {error_msg}", "error")
         await update_agent_status(run_id, "error")
         logger.error(error_msg)
 
