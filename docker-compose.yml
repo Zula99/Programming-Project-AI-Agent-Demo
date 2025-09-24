@@ -19,8 +19,8 @@ services:
       # Mount source code for development (optional)
       - ./ai-agent-demo-factory-backend:/app/backend
       - ./crawl4ai:/app/crawl4ai
-      # Mount config files
-      - ./CLAUDE.md:/app/CLAUDE.md
+
+
     ports:
       # Expose port for proxy server (replaces static mirrors)
       - "8000:8000"
@@ -39,6 +39,8 @@ services:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
     ports:
       - "9200:9200"
       - "9600:9600"
@@ -63,5 +65,6 @@ networks:
   ai-agent-network:
     driver: bridge
 
-# volumes:
+volumes:
+  opensearch-data:
 #   postgres_data:

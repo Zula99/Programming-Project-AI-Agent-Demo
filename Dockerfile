@@ -9,12 +9,16 @@ ENV LC_ALL=C.UTF-8
 # Set working directory
 WORKDIR /app
 
-# Install basic system dependencies 
+# Install basic system dependencies including build tools
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
     xvfb \
+    # Build tools for compiling packages like madoka
+    build-essential \
+    gcc \
+    g++ \
     # For crawling and processing
     libxml2-dev \
     libxslt1-dev \
@@ -38,7 +42,6 @@ RUN playwright install-deps chromium || echo "Some deps failed but continuing...
 # Copy the application code
 COPY ai-agent-demo-factory-backend/ /app/backend/
 COPY crawl4ai/ /app/crawl4ai/
-COPY CLAUDE.md /app/
 # Copy application files
 # Note: README.md is optional, build will continue if not found
 
