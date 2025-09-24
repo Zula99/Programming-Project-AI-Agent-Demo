@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Crawl4AIUrlBar from "@/components/Crawl4AIUrlBar";
 import AgentOutputCard from "@/components/AgentOutputCard";
 import CrawlProgressPanel from "@/components/CrawlProgressPanel";
+import BackendLogsDropdown from "@/components/BackendLogsDropdown";
 import { startCrawl4AI, createWebSocketConnection, type AgentLog } from "@/lib/crawl4ai-api";
 
 type AgentStatus = "idle" | "running" | "waiting_for_input" | "completed" | "error";
@@ -23,6 +24,7 @@ export default function Crawl4AIPage() {
   const [status, setStatus] = useState<AgentStatus>("idle");
   const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<AgentLog[]>([]);
+  const [backendLogs, setBackendLogs] = useState<any[]>([]);
   const [progress, setProgress] = useState<CrawlProgress>({
     percentage: 0,
     pages_crawled: 0,
@@ -40,6 +42,7 @@ export default function Crawl4AIPage() {
       setRunId(response.run_id);
       setStatus("running");
       setLogs([]);
+      setBackendLogs([]);
 
       // Reset progress
       setProgress({
@@ -108,6 +111,8 @@ export default function Crawl4AIPage() {
             setStatus(data.status);
           } else if (data.type === 'progress') {
             setProgress(data.progress);
+          } else if (data.type === 'backend_log') {
+            setBackendLogs(prev => [...prev.slice(-49), data.log]); // Keep last 50 logs
           }
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -151,12 +156,19 @@ export default function Crawl4AIPage() {
         </div>
 
         {/* Right: Agent Output */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-4">
           <AgentOutputCard
             runId={runId}
             isConnected={isConnected}
             status={status}
             logs={logs}
+          />
+
+          {/* Backend Logs Dropdown */}
+          <BackendLogsDropdown
+            runId={runId}
+            isConnected={isConnected}
+            backendLogs={backendLogs}
           />
         </div>
       </div>

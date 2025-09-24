@@ -23,6 +23,7 @@ crawl4ai/output/
 
 # SmartMirrorAgent Output
 ai-agent-demo-factory-backend/crawl4ai-agent/output/
+ai-agent-demo-factory-backend/output/
 **/output/agent_crawls/
 
 # Log Files

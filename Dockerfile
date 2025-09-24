@@ -67,5 +67,5 @@ WORKDIR /app/backend/crawl4ai-agent
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; print('AI Agent System Ready'); sys.exit(0)"
 
-# Default command - start proxy server (crawler available via exec)
-CMD ["python", "/app/backend/Proxy/proxy_server.py"]
+# Default command - start FastAPI backend with crawl4ai endpoints
+CMD ["python", "/app/backend/main.py"]

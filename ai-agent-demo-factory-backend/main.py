@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,27 +8,15 @@ import threading # For running the simulation in a separate thread
 import httpx # For auto-proxy integration
 import asyncio
 import json
+import logging
+import sys
 from typing import Dict, List, Optional
+from io import StringIO
 
 # Initialize FastAPI app
 app = FastAPI()
 
-# Configure CORS 
-# Adjust the 'origins' list to include the actual URL(s) where your frontend is hosted.
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:5000" # Explicitly allow self, if needed for some tests
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],    # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],    # Allow all headers
-)
+# No middleware - manual CORS headers on each endpoint
 
 
 # Dictionary stores crawl statuses and simulated results in memory.
@@ -37,6 +25,55 @@ crawl_jobs = {}
 # Dictionary stores Crawl4AI agent sessions and their WebSocket connections
 crawl4ai_sessions: Dict[str, Dict] = {}
 websocket_connections: Dict[str, List[WebSocket]] = {}
+
+# Custom logging handler to broadcast logs via WebSocket
+class WebSocketLogHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.setLevel(logging.DEBUG)
+
+    def emit(self, record):
+        try:
+            # Format the log message
+            backend_log = {
+                "timestamp": time.strftime("%H:%M:%S", time.localtime(record.created)),
+                "level": record.levelname,
+                "source": record.name,
+                "message": record.getMessage()
+            }
+
+            # Broadcast to all WebSocket connections
+            asyncio.create_task(broadcast_backend_log(backend_log))
+        except Exception:
+            pass  # Don't let logging errors crash the app
+
+# Function to broadcast backend logs to all connected clients
+async def broadcast_backend_log(backend_log):
+    message = {
+        "type": "backend_log",
+        "log": backend_log
+    }
+
+    for run_id, connections in websocket_connections.items():
+        for websocket in connections[:]:  # Use slice to avoid modification during iteration
+            try:
+                await websocket.send_text(json.dumps(message))
+            except:
+                # Remove disconnected websockets
+                connections.remove(websocket)
+
+# Set up the custom logging handler
+websocket_handler = WebSocketLogHandler()
+websocket_handler.setFormatter(logging.Formatter('%(name)s - %(message)s'))
+
+# Configure root logger to capture all logs
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+root_logger.addHandler(websocket_handler)
+
+# Configure uvicorn logger specifically
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_logger.addHandler(websocket_handler)
 
 # Pydantic model for validating the request body when starting a crawl.
 # FastAPI uses this to automatically validate incoming JSON data.
@@ -132,7 +169,14 @@ def run_norconex_crawler_simulation(run_id: str, target_url: str):
 
 @app.get("/")
 async def read_root():
-    return {"message": "Welcome to the Crawler Automation API!"}
+    response = JSONResponse({"message": "Welcome to the Crawler Automation API!"})
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+
+
 
 @app.post("/crawl")
 async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
@@ -274,82 +318,130 @@ async def update_progress(run_id: str, pages_crawled: int, total_pages: int, cra
             "progress": progress
         })
 
-async def run_crawl4ai_agent_simulation(run_id: str, target_url: str):
+async def run_crawl4ai_agent_real(run_id: str, target_url: str):
     """
-    Simulate the Crawl4AI agent process with realistic interaction
+    Run the real Crawl4AI SmartMirrorAgent process
     """
-    print(f"[Crawl4AI-{run_id}] Starting agent simulation for: {target_url}")
+    logger = logging.getLogger("crawl4ai")
+    logger.info(f"Starting real SmartMirrorAgent for: {target_url}")
 
     try:
         # Initialize session
         await update_agent_status(run_id, "running")
-        await add_agent_log(run_id, "🤖 Crawl4AI Agent initialized", "info")
-        await asyncio.sleep(1)
+        await add_agent_log(run_id, "🤖 Crawl4AI SmartMirrorAgent initialized", "info")
+        logger.info("SmartMirrorAgent session initialized successfully")
 
-        # Site reconnaissance
+        # Import the SmartMirrorAgent from the crawl4ai-agent directory
+        import sys
+        import os
+        sys.path.append(os.path.join(os.path.dirname(__file__), "crawl4ai-agent"))
+
+        from smart_mirror_agent import SmartMirrorAgent
+
+        # Create the agent instance
+        agent = SmartMirrorAgent(memory_path="backend_agent_memory.json")
         await add_agent_log(run_id, "📋 Starting site reconnaissance...", "info")
-        await asyncio.sleep(2)
+        logger.info("SmartMirrorAgent created, starting reconnaissance")
+
+        # This class will wrap the agent to provide real-time progress updates
+        class ProgressTrackingAgent:
+            def __init__(self, agent, run_id):
+                self.agent = agent
+                self.run_id = run_id
+                self.pages_crawled = 0
+                self.total_pages_estimate = 100  # Initial estimate
+
+            async def process_url_with_progress(self, url):
+                # Set up progress tracking hooks by intercepting crawler methods
+                original_crawler = self.agent.crawler
+
+                # Override the crawler's crawl_website method to track progress
+                original_crawl = original_crawler.crawl_website
+
+                async def tracked_crawl(*args, **kwargs):
+                    # Start with estimated progress
+                    self.total_pages_estimate = kwargs.get('max_pages', 100)
+                    await update_progress(self.run_id, 0, self.total_pages_estimate, 2.0)
+
+                    # Call original crawl method
+                    result = await original_crawl(*args, **kwargs)
+
+                    # Track progress during crawl by monitoring crawler results
+                    if hasattr(original_crawler, 'last_crawl_results') and original_crawler.last_crawl_results:
+                        crawled_count = len(original_crawler.last_crawl_results)
+                        await update_progress(self.run_id, crawled_count, self.total_pages_estimate, 2.0)
+                        await add_agent_log(self.run_id, f"📄 Crawled {crawled_count} pages", "info")
+
+                    return result
+
+                # Replace the method temporarily
+                original_crawler.crawl_website = tracked_crawl
+
+                try:
+                    # Run the real agent process
+                    success, metrics, output_path = await self.agent.process_url(url)
+                    return success, metrics, output_path
+                finally:
+                    # Restore original method
+                    original_crawler.crawl_website = original_crawl
+
+        # Create progress tracking wrapper
+        tracking_agent = ProgressTrackingAgent(agent, run_id)
+
+        # Run the actual SmartMirrorAgent
         await add_agent_log(run_id, f"🔍 Analyzing {target_url}", "info")
-        await asyncio.sleep(2)
-        await add_agent_log(run_id, "✅ Site type detected: JavaScript-heavy banking site", "success")
-        await asyncio.sleep(1)
+        logger.info(f"Starting SmartMirrorAgent process for {target_url}")
 
-        # Automatically proceed with full browser rendering
-        await add_agent_log(run_id, "🚀 Starting full browser crawl...", "info")
-        await asyncio.sleep(1)
+        # Execute the real agent process
+        success, metrics, output_path = await tracking_agent.process_url_with_progress(target_url)
 
-        # Simulate crawling process with realistic progress
-        pages = [
-            "/ (Homepage)", "/business (Business)", "/personal (Personal)",
-            "/loans (Loans)", "/cards (Credit Cards)", "/invest (Investments)",
-            "/business/accounts (Business Accounts)", "/help (Help Center)",
-            "/business/loans (Business Loans)", "/personal/accounts (Personal Accounts)",
-            "/personal/home-loans (Home Loans)", "/business/business-banking (Business Banking)",
-            "/about (About Us)", "/contact (Contact)", "/careers (Careers)",
-            "/investor-relations (Investor Relations)", "/sustainability (Sustainability)",
-            "/financial-wellbeing (Financial Wellbeing)", "/tools-calculators (Tools & Calculators)",
-            "/security (Security)", "/support (Support Centre)"
-        ]
+        # Report results
+        if success:
+            # Extract quality metrics
+            overall_score = getattr(metrics, 'overall_score', 0) * 100 if metrics else 0
 
-        total_pages = len(pages)
-        crawl_speed = 2.5  # pages per minute
+            await add_agent_log(run_id, "✅ Crawl completed successfully!", "success")
+            await add_agent_log(run_id, f"📊 Quality Score: {overall_score:.1f}%", "success")
 
-        # Initialize progress
-        await update_progress(run_id, 0, total_pages, crawl_speed)
-        await add_agent_log(run_id, f"📊 Estimated {total_pages} pages to crawl at {crawl_speed} pages/min", "info")
+            if output_path:
+                await add_agent_log(run_id, f"📁 Output saved to: {output_path}", "info")
+                logger.info(f"Crawl output saved to: {output_path}")
 
-        for i, page in enumerate(pages):
-            await add_agent_log(run_id, f"📄 Crawling {page}", "info")
+            # Final progress update with actual results
+            if hasattr(agent.crawler, 'last_crawl_results') and agent.crawler.last_crawl_results:
+                final_count = len(agent.crawler.last_crawl_results)
+                await update_progress(run_id, final_count, final_count, 2.0)
 
-            # Update progress
-            pages_crawled = i + 1
-            await update_progress(run_id, pages_crawled, total_pages, crawl_speed)
+            await update_agent_status(run_id, "completed")
+            logger.info(f"SmartMirrorAgent completed successfully with {overall_score:.1f}% quality score")
 
-            await asyncio.sleep(1.2)  # Realistic crawl timing
+        else:
+            await add_agent_log(run_id, "❌ Crawl failed", "error")
+            await update_agent_status(run_id, "error")
+            logger.error("SmartMirrorAgent process failed")
 
-            if i == 3:  # Automatically include PDF documents
-                await add_agent_log(run_id, "📄 Found PDF documents, including automatically", "info")
-                await add_agent_log(run_id, "📄 Including PDF documents", "success")
-                # Add extra pages for PDFs
-                pages.extend([
-                    "/documents/annual-report.pdf", "/documents/disclosure.pdf",
-                    "/documents/terms-conditions.pdf", "/documents/privacy-policy.pdf"
-                ])
-                total_pages = len(pages)
-                await update_progress(run_id, pages_crawled, total_pages, crawl_speed)
-
-        # Complete the crawl
-        await add_agent_log(run_id, "✅ Crawl completed successfully!", "success")
-        await add_agent_log(run_id, f"📊 Quality Score: 92% (Excellent)", "success")
-        await add_agent_log(run_id, f"📁 Output saved to: ./output/{target_url.replace('https://', '').replace('/', '_')}", "info")
-        await update_agent_status(run_id, "completed")
-
-    except Exception as e:
-        await add_agent_log(run_id, f"❌ Error: {str(e)}", "error")
+    except ImportError as e:
+        error_msg = f"SmartMirrorAgent not available: {str(e)}"
+        await add_agent_log(run_id, f"❌ {error_msg}", "error")
         await update_agent_status(run_id, "error")
+        logger.error(error_msg)
+    except Exception as e:
+        error_msg = f"SmartMirrorAgent error: {str(e)}"
+        await add_agent_log(run_id, f"❌ {error_msg}", "error")
+        await update_agent_status(run_id, "error")
+        logger.error(error_msg)
+
+@app.options("/crawl4ai/start")
+async def options_crawl4ai_start(response: Response):
+    """Handle CORS preflight for crawl4ai start endpoint"""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.headers["Access-Control-Max-Age"] = "3600"
+    return {"message": "OK"}
 
 @app.post("/crawl4ai/start")
-async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundTasks):
+async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundTasks, response: Response):
     """Start a new Crawl4AI agent session"""
     target_url = request.target_url
     run_id = str(uuid.uuid4())
@@ -376,14 +468,20 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
     # Initialize WebSocket connections list
     websocket_connections[run_id] = []
 
-    # Start the agent simulation
-    background_tasks.add_task(run_crawl4ai_agent_simulation, run_id, target_url)
+    # Start the real agent
+    background_tasks.add_task(run_crawl4ai_agent_real, run_id, target_url)
 
-    return JSONResponse(content={
+    # Add CORS headers directly to response
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    response.status_code = 202
+
+    return {
         "run_id": run_id,
         "message": "Crawl4AI agent started",
         "status": "pending"
-    }, status_code=202)
+    }
 
 @app.get("/crawl4ai/status/{run_id}")
 async def get_crawl4ai_status(run_id: str):
@@ -392,7 +490,7 @@ async def get_crawl4ai_status(run_id: str):
         raise HTTPException(status_code=404, detail="Crawl4AI session not found")
 
     session = crawl4ai_sessions[run_id]
-    return JSONResponse(content={
+    response = JSONResponse(content={
         "session": {
             "run_id": session["run_id"],
             "target_url": session["target_url"],
@@ -403,6 +501,13 @@ async def get_crawl4ai_status(run_id: str):
         "logs": session["logs"],
         "progress": session["progress"]
     })
+
+    # Add CORS headers
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
 
 @app.post("/crawl4ai/respond")
 async def send_agent_response(request: AgentResponseRequest):
@@ -464,3 +569,12 @@ async def crawl4ai_websocket(websocket: WebSocket, run_id: str):
         if run_id in websocket_connections:
             websocket_connections[run_id].remove(websocket)
 
+# --- Server Startup ---
+if __name__ == "__main__":
+    import uvicorn
+    print("Starting AI Agent Demo Factory Backend on port 8000...")
+    print("Crawl4AI endpoints available at:")
+    print("  POST /crawl4ai/start")
+    print("  GET /crawl4ai/status/{run_id}")
+    print("  WebSocket /crawl4ai/ws/{run_id}")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
