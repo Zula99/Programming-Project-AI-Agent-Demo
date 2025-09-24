@@ -767,7 +767,7 @@ def inject_search_functionality(html_content: str, target_url: str) -> str:
                                autocomplete="off" spellcheck="false">
                         <div style="text-align: right; user-select: none;">
                             <button id="demo-cancel-btn" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; outline: none;">Cancel</button>
-                            <button id="demo-search-btn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; outline: none;">Search</button>
+                            <button id="demo-search-btn" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; outline: none;">Go</button>
                         </div>
                     `;
 
@@ -1447,9 +1447,14 @@ def inject_search_functionality(html_content: str, target_url: str) -> str:
                 function isSearchElement(element) {
                     if (!element) return false;
 
+                    // Exclude our modal buttons from being treated as search triggers
+                    const id = (element.id || '').toLowerCase();
+                    if (id === 'demo-search-btn' || id === 'demo-cancel-btn') {
+                        return false;
+                    }
+
                     const text = (element.textContent || '').toLowerCase();
                     const className = (element.className || '').toLowerCase();
-                    const id = (element.id || '').toLowerCase();
                     const ariaLabel = (element.getAttribute('aria-label') || '').toLowerCase();
                     const placeholder = (element.getAttribute('placeholder') || '').toLowerCase();
 
