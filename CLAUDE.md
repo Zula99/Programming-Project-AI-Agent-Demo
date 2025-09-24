@@ -306,3 +306,156 @@ As a demo factory operator I want a live proxy system that serves cached content
 - Learning improvement in success rates over time
 - Reliable fallback during AI service issues
 - I'll do the crawling my self from now on
+
+## OpenSearch Logging System Integration
+
+### How OpenSearch Logging Works
+
+OpenSearch logging provides a **centralized, searchable logging solution** that can handle both synchronous and asynchronous logging patterns. Unlike traditional file-based logging, OpenSearch offers:
+
+#### **Real-time Log Ingestion**
+- **Synchronous mode**: Logs sent immediately to OpenSearch (blocks execution briefly)
+- **Asynchronous mode**: Logs buffered and sent in batches (non-blocking)
+- **Hybrid approach**: Critical errors synchronous, info/debug asynchronous
+
+#### **Structured Logging Format**
+```json
+{
+  "@timestamp": "2024-01-15T10:30:00.000Z",
+  "level": "INFO",
+  "service": "smart-mirror-agent",
+  "component": "ai_content_classifier",
+  "domain": "nab.com.au",
+  "message": "AI classified page as WORTHY with confidence 0.85",
+  "metadata": {
+    "url": "https://www.nab.com.au/business/loans",
+    "ai_confidence": 0.85,
+    "classification_time_ms": 234,
+    "cost_usd": 0.002
+  }
+}
+```
+
+### Integration with Current System
+
+#### **Files Requiring OpenSearch Integration** (Based on Backend Analysis)
+
+**Priority 1 - Main Entry Points** (Critical):
+1. **`proxy_server.py`** - Proxy operations, search requests, demo serving
+   - Current: `logging.basicConfig(level=logging.INFO)`
+   - Add: OpenSearch handler for request/response logging
+   - Display: Real-time proxy status, search queries, errors
+
+2. **`main.py`** - FastAPI crawl automation API endpoints
+   - Current: Multiple `print()` statements for crawl progress
+   - Add: Structured API request logging to OpenSearch
+   - Display: API usage metrics, crawl job status
+
+3. **`run_agent.py`** - SmartMirrorAgent execution and results
+   - Current: Mixed `logging` and `print()` statements
+   - Add: Agent execution flow logging
+   - Display: Live crawling progress, quality metrics
+
+4. **`smart_mirror_agent.py`** - Core agent decisions, quality metrics
+   - Current: `self.logger = logging.getLogger(__name__)`
+   - Add: Agent decision logging with reasoning
+   - Display: Strategy selection, quality assessments
+
+**Priority 2 - AI Components** (High Value):
+5. **`ai_content_classifier.py`** - AI decisions, content worthiness scores
+   - Current: Comprehensive `self.logger` usage
+   - Add: AI decision tracking with confidence scores
+   - Display: Classification results, cost tracking, AI performance
+
+6. **`learning_system.py`** - Pattern recognition, strategy learning
+   - Current: `self.logger = logging.getLogger(__name__)`
+   - Add: Learning pattern storage and retrieval logging
+   - Display: Pattern database growth, learning insights
+
+### Frontend Display Integration
+
+#### **Real-time Log Display Box**
+Yes, you can absolutely add OpenSearch to a display box that shows real-time output! This works through:
+
+**WebSocket Connection**:
+```javascript
+// Frontend WebSocket for real-time logs
+const logSocket = new WebSocket('ws://localhost:8000/ws/logs');
+logSocket.onmessage = function(event) {
+    const logEntry = JSON.parse(event.data);
+    displayLogInBox(logEntry);
+};
+```
+
+**Backend WebSocket Handler** (add to `main.py`):
+```python
+@app.websocket("/ws/logs")
+async def websocket_logs(websocket: WebSocket):
+    await websocket.accept()
+    # Stream logs from OpenSearch to frontend
+    async for log_entry in opensearch_log_stream():
+        await websocket.send_json(log_entry)
+```
+
+#### **Log Display Components**
+
+**Console-style Log Box**:
+- **Scrolling terminal** showing live crawl progress
+- **Color-coded levels** (ERROR=red, WARN=yellow, INFO=blue)
+- **Filtering controls** (service, component, log level)
+- **Search capability** within displayed logs
+
+**Dashboard Widgets**:
+- **Crawl Progress Bar** from agent execution logs
+- **AI Classification Metrics** from classifier logs
+- **Error Alert Panel** for immediate issue visibility
+- **Cost Tracking** from AI usage logs
+
+### Implementation Strategy
+
+#### **Extend Existing `crawl_logger.py`**
+Rather than replacing the existing sophisticated logging system, extend it:
+
+```python
+class OpenSearchLogger:
+    def __init__(self, existing_logger):
+        self.file_logger = existing_logger  # Keep file logging
+        self.opensearch_client = OpenSearch([{'host': 'localhost', 'port': 9200}])
+
+    def log(self, level, message, metadata={}):
+        # Dual logging: file + OpenSearch
+        self.file_logger.log(level, message)
+        self.opensearch_client.index(
+            index=f"ai-agent-logs-{datetime.now():%Y.%m}",
+            body=self.format_log_entry(level, message, metadata)
+        )
+```
+
+#### **Hybrid Approach Benefits**
+- **File logs**: Reliable, always available, debugging
+- **OpenSearch logs**: Searchable, real-time, dashboard integration
+- **Synchronous critical logs**: Errors, AI decisions
+- **Asynchronous info logs**: Routine operations, progress updates
+
+### Technical Implementation
+
+#### **Docker Services Addition**
+- **OpenSearch**: Data storage and search
+- **OpenSearch Dashboards**: Web-based log visualization
+- **Logstash** (optional): Log parsing and transformation
+
+#### **API Endpoints for Frontend**
+- `GET /api/logs/stream` - Real-time log stream
+- `GET /api/logs/search?q=query` - Search historical logs
+- `GET /api/logs/metrics` - Aggregated metrics
+- `WebSocket /ws/logs` - Real-time log updates
+
+### Synchronous vs Asynchronous Logging
+
+**Our Current System**: Mixed synchronous (file writes block briefly)
+**OpenSearch Options**:
+- **Synchronous**: Immediate indexing, blocks execution ~5-10ms
+- **Asynchronous**: Buffered indexing, no execution blocking
+- **Recommended**: Hybrid - sync for errors, async for info
+
+**For Real-time Display**: Both work, but async with WebSocket streaming provides the smoothest user experience while maintaining performance.
