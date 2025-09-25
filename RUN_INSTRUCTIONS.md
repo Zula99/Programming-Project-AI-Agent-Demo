@@ -214,4 +214,4 @@ If you encounter issues:
 
 ---
 
-**Happy Crawling! 🕷️🤖**
+**Happy Crawling!**

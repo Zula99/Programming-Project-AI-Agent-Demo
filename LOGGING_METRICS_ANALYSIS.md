@@ -336,21 +336,234 @@ As a demo factory operator I want to filter, search, and export logs from crawl 
 
 ---
 
+### **US-065: Logstash-OpenSearch Centralized Logging System** 📊
+**Title**: Complete ELK Stack Integration for Centralized Log Management
+**Priority**: HIGH - **CURRENT IMPLEMENTATION FOCUS**
+**Epic**: EPIC-06: Centralized Logging & Observability
+
+**User Story**:
+As a demo factory operator I want all system logs (backend services, AI decisions, frontend events, proxy operations) centralized in OpenSearch via Logstash So that I can search, analyze, and monitor system behavior comprehensively from a single interface
+
+## 🎯 **CURRENT IMPLEMENTATION STRATEGY**
+
+### **Architecture Overview**
+```
+Backend Services → Logstash → OpenSearch → Frontend Dashboard
+     ↓                ↓           ↓            ↓
+Python Logging → JSON Format → Daily Indices → Real-time UI
+WebSocket Logs → HTTP Input  → Log Categories → Historical Search
+```
+
+### **Dual Log Display Design**
+1. **AgentOutputCard** (Top Panel): Clean user-friendly status updates via WebSocket
+   - "Starting crawl", "Analyzing sitemap", "Crawling page 15/50"
+   - Real-time progress without technical noise
+
+2. **BackendLogsDropdown** (Bottom Panel): Comprehensive technical logs via OpenSearch
+   - All backend logs indexed in OpenSearch
+   - Historical search across sessions
+   - Advanced filtering and export capabilities
+
+**Acceptance Criteria**:
+
+**Backend Log Integration** ✅:
+- ✅ **Logstash Pipeline**: Process logs from all backend services (main.py, proxy_server.py, smart_mirror_agent.py, ai_content_classifier.py, learning_system.py)
+- ✅ **Structured Log Format**: Convert existing Python logging to structured JSON format with @timestamp, level, service, component, message, metadata
+- ✅ **WebSocket Log Streaming**: Extend current WebSocketLogHandler to dual-stream (frontend + Logstash)
+- ✅ **File Log Collection**: Process existing CrawlLogger file outputs through Logstash Filebeat
+- ✅ **AI Decision Logging**: Capture AI classification decisions, confidence scores, costs, and reasoning
+- ✅ **Correlation IDs**: Link related log entries across services (crawl sessions, API requests)
+
+**Frontend Log Integration** ✅:
+- ✅ **Client-Side Logging**: Structured browser console logs sent to Logstash
+- ✅ **WebSocket Event Logging**: Connection status, message parsing, API errors
+- ✅ **User Interaction Logging**: Crawl starts, search queries, UI navigation
+- ✅ **Performance Logging**: Component render times, API response times, WebSocket latency
+
+**OpenSearch Index Management** ✅:
+- ✅ **Log Index Structure**: Separate indices for different log types (backend-logs, frontend-logs, ai-decisions, system-metrics)
+- ✅ **Index Templates**: Automated mapping for structured log fields with proper data types
+- ✅ **Retention Policies**: 30-day log retention with automated cleanup
+- ✅ **Index Rotation**: Daily index rotation for optimal performance
+
+**Enhanced Log Search & Analytics** ✅:
+- ✅ **Advanced Search Interface**: Time range, service, component, severity filtering
+- ✅ **Real-time Log Dashboard**: Live log streaming from OpenSearch with filtering
+- ✅ **Log Export Capabilities**: Download filtered logs as JSON/CSV for analysis
+- ✅ **Error Tracking**: Automated error detection and alerting
+- ✅ **Performance Monitoring**: API response times, crawl performance metrics
+- ✅ **AI Cost Analytics**: Track AI API usage and costs across sessions
+
+**UI Components**:
+- **AgentOutputCard** (Top): Keep current design - WebSocket real-time status updates for clean UX
+- **Enhanced BackendLogsDropdown** (Bottom): Comprehensive technical log viewer with:
+  - **OpenSearch Integration**: Historical log search across all crawl sessions
+  - **Advanced Filtering**: By time range, log level, component, correlation ID
+  - **Real-time + Historical**: Current session logs + previous session access
+  - **Export Controls**: Download filtered logs as JSON/CSV
+  - **AI Decision Insights**: Show AI classification reasoning and confidence scores
+  - **Performance Tracking**: Response times, error rates, cost analytics
+  - **Search Capabilities**: Full-text search within technical logs
+
+**Technical Requirements**:
+
+**Docker Infrastructure**:
+- **Logstash Container**: Add logstash:8.11.0 to docker-compose.yml
+- **Logstash Configuration**: Pipeline for parsing Python logs, JSON logs, and frontend logs
+- **Beats Integration**: Filebeat for log file collection from backend services
+- **OpenSearch Integration**: Logstash output to existing OpenSearch container
+
+**Backend Changes**:
+- **Enhanced WebSocketLogHandler**: Dual output (WebSocket + Logstash)
+- **Structured Logging Configuration**: JSON formatter for all Python loggers
+- **Correlation ID System**: Add correlation IDs for tracking related operations
+- **Log API Endpoints**: New endpoints for historical log retrieval from OpenSearch
+
+**Frontend Changes**:
+- **Dual Log Display Architecture**:
+  - **AgentOutputCard** (Top): Keep current WebSocket for clean user-friendly status ("Crawl started", "Analyzing sitemap")
+  - **BackendLogsDropdown** (Bottom): Upgrade to OpenSearch backend for comprehensive technical logs
+- **Enhanced BackendLogsDropdown**: OpenSearch-powered search, filtering, historical access, export
+- **LogstashLogger**: Client-side structured logging to Logstash endpoint
+- **Export Functionality**: Download filtered technical logs as JSON/CSV for debugging
+
+**Configuration Files**:
+- **logstash.conf**: Complete pipeline configuration
+- **index-templates.json**: OpenSearch mapping templates
+- **filebeat.yml**: File log collection configuration
+- **log-retention.json**: Automated cleanup policies
+
+**Security & Performance**:
+- **Authentication**: Secure Logstash endpoints with API keys
+- **Rate Limiting**: Prevent log flooding from frontend
+- **Compression**: Gzip compression for log transport
+- **Buffering**: Logstash buffering for high-volume periods
+
+**Integration Points**:
+- **Existing WebSocket System**: Extend for Logstash dual-streaming
+- **Current OpenSearch**: Add log indices alongside existing content indices
+- **CrawlLogger System**: Maintain file logging + add Logstash shipping
+- **Frontend Log Display**: Enhance with OpenSearch backend queries
+
+**Success Metrics**:
+- **Dual Log Architecture**: AgentOutputCard maintains <100ms real-time updates, BackendLogsDropdown provides comprehensive technical access
+- **Log Centralization**: 100% of backend technical logs captured in OpenSearch via Logstash
+- **Search Performance**: <500ms technical log search response times in BackendLogsDropdown
+- **Historical Access**: Users can search previous crawl sessions and compare performance
+- **Export Performance**: Handle 50,000+ technical log export without UI freezing
+- **User Experience**: Clean status updates (top) + power-user technical access (bottom)
+
+---
+
+### **US-066: Enhanced Backend Logs Interface with OpenSearch Integration** 📱
+**Title**: Upgrade BackendLogsDropdown with OpenSearch Backend While Preserving Clean Agent Status Display
+**Priority**: HIGH
+**Epic**: EPIC-06: Centralized Logging & Observability
+
+**User Story**:
+As a demo factory operator I want the Backend Logs dropdown to show comprehensive technical logs from OpenSearch (current + historical sessions) while keeping the Agent Output card clean and real-time So that I have both user-friendly status updates and power-user technical access when needed
+
+**Acceptance Criteria**:
+
+**Dual Log Architecture** ✅:
+- ✅ **AgentOutputCard (Top)**: Keep current WebSocket implementation unchanged
+  - Real-time status: "Crawl started", "Analyzing sitemap", "Crawling page 15/50"
+  - Clean, user-friendly progress narrative
+  - <100ms latency for status updates
+  - No technical noise or overwhelming details
+- ✅ **BackendLogsDropdown (Bottom)**: Upgrade to OpenSearch backend
+  - All technical logs from Logstash processing
+  - Historical logs from previous crawl sessions
+  - Advanced search and filtering capabilities
+
+**Enhanced BackendLogsDropdown Features** ✅:
+- ✅ **OpenSearch Integration**: Query logs from all OpenSearch indices (ai-decisions, errors, performance, system-logs)
+- ✅ **Real-time + Historical**: Current session logs + access to previous sessions
+- ✅ **Advanced Filtering**:
+  - Time range picker (last hour, today, last week, custom range)
+  - Log level filtering (INFO, WARNING, ERROR, DEBUG)
+  - Component filtering (ai_content_classifier, smart_mirror_agent, crawler, etc.)
+  - Log category filtering (ai_decision, error, performance, crawl_session)
+- ✅ **Search Capabilities**: Full-text search within log messages with highlighting
+- ✅ **Correlation ID Linking**: Click correlation ID to see all related logs from same crawl session
+- ✅ **AI Decision Insights**: Expandable AI classification details with confidence scores and reasoning
+- ✅ **Performance Tracking**: Show response times, error counts, cost analytics
+- ✅ **Export Functionality**: Download filtered logs as JSON/CSV for debugging
+
+**UI/UX Enhancements** ✅:
+- ✅ **Collapsible Design**: Maintain current dropdown behavior, expand for power-user features
+- ✅ **Tabbed Interface**: Separate tabs for Current Session, Historical Logs, AI Decisions, Errors
+- ✅ **Color Coding**: Enhanced color coding for different log sources and levels
+- ✅ **Pagination**: Handle large result sets with lazy loading
+- ✅ **Loading States**: Show loading indicators during OpenSearch queries
+- ✅ **Error Handling**: Graceful fallback when OpenSearch unavailable
+
+**Technical Implementation** ✅:
+- ✅ **New API Endpoints**:
+  - `GET /api/logs/search` - OpenSearch query with filters
+  - `GET /api/logs/session/{run_id}` - All logs for specific crawl session
+  - `GET /api/logs/export` - Download filtered logs
+- ✅ **Frontend Components**:
+  - Upgrade existing `BackendLogsDropdown.tsx` with OpenSearch integration
+  - Add `LogFilterPanel.tsx` for advanced filtering controls
+  - Add `LogExportButton.tsx` for download functionality
+- ✅ **State Management**: Handle real-time logs + historical query results
+- ✅ **Performance**: Efficient OpenSearch queries with proper indexing
+
+**Integration Points** ✅:
+- ✅ **Preserve Current UX**: AgentOutputCard remains unchanged for clean user experience
+- ✅ **WebSocket Compatibility**: BackendLogsDropdown shows current session real-time logs + historical access
+- ✅ **OpenSearch Backend**: All historical and searchable functionality powered by Logstash indices
+- ✅ **Correlation Tracking**: Link logs across services using correlation IDs
+
+**Success Metrics**:
+- **User Experience**: Clean status display (top) + comprehensive technical access (bottom)
+- **Search Performance**: <500ms response time for historical log queries
+- **Real-time Performance**: Current session logs still update in <100ms
+- **Export Performance**: Handle 10,000+ log entries export without UI freezing
+- **Historical Access**: Users can search and compare previous crawl sessions
+- **Power User Features**: Advanced filtering reduces time to find specific issues by 80%
+
+---
+
 ## Implementation Priority 🎯
 
-### **Phase 1: Essential Transparency** (2-3 weeks)
-1. **US-063**: Real-time Cost & Quality Dashboard
-2. **US-060**: AI Classification Prompt Editor
-3. **US-061**: AI Model & Company Selection
+### **🚀 CURRENT PHASE: Centralized Logging Infrastructure** (Week 1-2)
+1. **US-065**: Logstash-OpenSearch Centralized Logging System ⭐ **IN PROGRESS**
+2. **US-066**: Enhanced Backend Logs Interface with OpenSearch Integration ⭐ **IN PROGRESS**
+3. **US-064**: Advanced Log Management & Search (Enhanced with OpenSearch)
 
-### **Phase 2: Advanced Controls** (1-2 weeks)
-4. **US-062**: Crawl History & Cache Management
-5. **US-064**: Advanced Log Management & Search
+### **Phase 2: Essential Transparency** (Week 3-4)
+4. **US-063**: Real-time Cost & Quality Dashboard
+5. **US-060**: AI Classification Prompt Editor
+6. **US-061**: AI Model & Company Selection
 
-### **Phase 3: Polish & Enhancement** (1 week)
-6. UI/UX refinements
-7. Performance optimization
-8. Integration testing
+### **Phase 3: Advanced Controls** (Week 5-6)
+7. **US-062**: Crawl History & Cache Management
+8. Frontend log analytics dashboard integration
+
+### **Phase 4: Polish & Enhancement** (Week 7)
+9. UI/UX refinements
+10. Performance optimization
+11. Integration testing
+
+---
+
+## 🎯 **IMMEDIATE NEXT STEPS**
+
+### **Week 1: Backend Logging Infrastructure**
+1. ✅ Set up Docker Logstash container
+2. ✅ Configure Logstash pipeline for Python logs
+3. ✅ Enhance WebSocketLogHandler for dual-stream (WebSocket + Logstash)
+4. ✅ Add structured logging format with correlation IDs
+5. ✅ Create OpenSearch index templates for log categories
+
+### **Week 2: Frontend Integration**
+1. ✅ Keep AgentOutputCard unchanged (clean UX)
+2. ✅ Upgrade BackendLogsDropdown with OpenSearch backend
+3. ✅ Add log search, filtering, and export capabilities
+4. ✅ Implement real-time + historical log access
+5. ✅ Test end-to-end logging flow
 
 ---
 
@@ -362,6 +575,10 @@ As a demo factory operator I want to filter, search, and export logs from crawl 
 - `/api/crawls/history` - Crawl history with pagination
 - `/api/cache/status/{domain}` - Cache information and management
 - `/api/metrics/realtime` - Enhanced WebSocket metrics streaming
+- `/api/logs/search` - OpenSearch-powered log search with filtering
+- `/api/logs/export` - Download filtered logs as JSON/CSV
+- `/api/logs/metrics` - Aggregated log analytics and statistics
+- `/api/logs/stream` - Real-time log streaming from OpenSearch
 
 ### **Database Schema Extensions**:
 - **CrawlSession** table: Store historical crawl data
