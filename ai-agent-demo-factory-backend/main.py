@@ -12,6 +12,11 @@ import logging
 import sys
 from typing import Dict, List, Optional
 from io import StringIO
+from datetime import datetime
+
+# Import OpenSearch logging utilities
+sys.path.append("./crawl4ai-agent")
+from opensearch_logger import log_to_opensearch
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -23,15 +28,16 @@ app = FastAPI()
 crawl4ai_sessions: Dict[str, Dict] = {}
 websocket_connections: Dict[str, List[WebSocket]] = {}
 
-# Custom logging handler to broadcast logs via WebSocket
+# Enhanced logging handler: WebSocket + OpenSearch dual-stream
 class WebSocketLogHandler(logging.Handler):
-    def __init__(self):
+    def __init__(self, enable_opensearch=True):
         super().__init__()
         self.setLevel(logging.DEBUG)
+        self.enable_opensearch = enable_opensearch
 
     def emit(self, record):
         try:
-            # Format the log message
+            # Format the log message for WebSocket
             backend_log = {
                 "timestamp": time.strftime("%H:%M:%S", time.localtime(record.created)),
                 "level": record.levelname,
@@ -39,10 +45,49 @@ class WebSocketLogHandler(logging.Handler):
                 "message": record.getMessage()
             }
 
-            # Broadcast to all WebSocket connections
+            # Broadcast to all WebSocket connections (existing functionality)
             asyncio.create_task(broadcast_backend_log(backend_log))
+
+            # Also send to OpenSearch (new functionality)
+            if self.enable_opensearch:
+                asyncio.create_task(self._send_to_opensearch(record))
+
         except Exception:
             pass  # Don't let logging errors crash the app
+
+    async def _send_to_opensearch(self, record):
+        """Send log entry to OpenSearch asynchronously"""
+        try:
+            # Skip OpenSearch's own logs to prevent feedback loop
+            if any(skip_logger in record.name for skip_logger in [
+                'opensearch', 'urllib3', 'opensearch_integration'
+            ]):
+                return
+
+            # Extract metadata from record if available
+            metadata = {}
+            if hasattr(record, 'extra_data'):
+                metadata = record.extra_data
+
+            # Add contextual information
+            metadata.update({
+                "thread_id": str(record.thread),
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "funcName": record.funcName
+            })
+
+            # Use the existing log_to_opensearch function
+            log_to_opensearch(
+                service="fastapi-backend",
+                component=record.name.split('.')[-1] if '.' in record.name else record.name,
+                level=record.levelname,
+                message=record.getMessage(),
+                metadata=metadata
+            )
+        except Exception:
+            # Fail silently to not disrupt main application
+            pass
 
 # Function to broadcast backend logs to all connected clients
 async def broadcast_backend_log(backend_log):

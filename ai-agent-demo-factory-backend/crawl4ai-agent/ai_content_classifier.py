@@ -11,6 +11,7 @@ import json
 import time
 from pathlib import Path
 from enum import Enum
+from opensearch_logger import log_to_opensearch
 
 class BusinessSiteType(Enum):
     """Business-focused site categories for demo content evaluation"""
@@ -769,6 +770,22 @@ class AIContentClassifier:
         cache_key = self._get_cache_key(url, content, title)
         if cache_key in self.cache:
             cached = self.cache[cache_key]
+
+            # Log cache hit to OpenSearch
+            log_to_opensearch(
+                service="smart-mirror-agent",
+                component="ai_content_classifier",
+                level="DEBUG",
+                message=f"Cache hit for {url} - {'WORTHY' if cached['is_worthy'] else 'NOT_WORTHY'}",
+                metadata={
+                    "url": url,
+                    "classification": "WORTHY" if cached['is_worthy'] else "NOT_WORTHY",
+                    "confidence": cached['confidence'],
+                    "method": "cache",
+                    "domain": self.domain
+                }
+            )
+
             return ClassificationResult(
                 is_worthy=cached['is_worthy'],
                 confidence=cached['confidence'],
@@ -801,7 +818,27 @@ class AIContentClassifier:
                     total_tokens=total_tokens,
                     estimated_cost=estimated_cost
                 )
-                
+
+                # Log AI classification to OpenSearch
+                log_to_opensearch(
+                    service="smart-mirror-agent",
+                    component="ai_content_classifier",
+                    level="INFO",
+                    message=f"AI classified {url} as {'WORTHY' if is_worthy else 'NOT_WORTHY'} with confidence {confidence:.2f}",
+                    metadata={
+                        "url": url,
+                        "ai_classification": "WORTHY" if is_worthy else "NOT_WORTHY",
+                        "ai_confidence": confidence,
+                        "cost_usd": estimated_cost,
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                        "total_tokens": total_tokens,
+                        "reasoning": reasoning,
+                        "domain": self.domain,
+                        "site_type": self.domain_site_type.value if self.domain_site_type else "unknown"
+                    }
+                )
+
                 # Cache the result
                 self.cache[cache_key] = {
                     'is_worthy': is_worthy,
@@ -809,11 +846,26 @@ class AIContentClassifier:
                     'reasoning': reasoning
                 }
                 self._save_cache()
-                
+
                 return result
                 
             except Exception as e:
                 self.logger.warning(f"AI classification failed for {url}: {e}")
+
+                # Log AI failure to OpenSearch
+                log_to_opensearch(
+                    service="smart-mirror-agent",
+                    component="ai_content_classifier",
+                    level="WARN",
+                    message=f"AI classification failed for {url}, falling back to heuristic",
+                    metadata={
+                        "url": url,
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "fallback_method": "heuristic",
+                        "domain": self.domain
+                    }
+                )
                 # Fall through to heuristic
         
         # Fallback to enhanced heuristic
