@@ -64,12 +64,13 @@ class IndexConfig:
 
 class Crawl4AIOpenSearchIntegration:
     """
-    OpenSearch integration for Crawl4AI crawled content
+    OpenSearch integration for Crawl4AI crawled content and system logs
 
     Provides functionality to:
     - Index crawled content from Crawl4AI output directories
+    - Index system logs for real-time monitoring and debugging
     - Search across indexed content with semantic capabilities
-    - Manage indices for different demo sites
+    - Manage indices for different demo sites and log streams
     """
 
     def __init__(self, config: OpenSearchConfig = None):
@@ -471,6 +472,234 @@ class Crawl4AIOpenSearchIntegration:
         except Exception as e:
             logger.error(f"Failed to get stats for {index_name}: {e}")
             return {"error": str(e)}
+
+    def create_log_index(self, index_name: str, recreate: bool = False) -> bool:
+        """
+        Create OpenSearch index optimized for system logs
+
+        Args:
+            index_name: Name for the log index (e.g., "ai-agent-logs-2024.01")
+            recreate: If True, delete existing index first
+
+        Returns:
+            True if index created successfully
+        """
+        if recreate and self.client.indices.exists(index=index_name):
+            logger.info(f"Deleting existing log index: {index_name}")
+            self.client.indices.delete(index=index_name)
+
+        if self.client.indices.exists(index=index_name):
+            logger.info(f"Log index {index_name} already exists")
+            return True
+
+        # Log mapping optimized for real-time monitoring
+        log_mapping = {
+            "settings": {
+                "number_of_shards": 1,
+                "number_of_replicas": 0,
+                "max_result_window": 10000,
+                "index.refresh_interval": "1s",  # Fast refresh for real-time logs
+                "analysis": {
+                    "analyzer": {
+                        "log_analyzer": {
+                            "type": "standard",
+                            "stopwords": "_none_"  # Keep all words in logs
+                        }
+                    }
+                }
+            },
+            "mappings": {
+                "properties": {
+                    "@timestamp": {"type": "date"},
+                    "level": {"type": "keyword", "index": True},
+                    "service": {"type": "keyword", "index": True},
+                    "component": {"type": "keyword", "index": True},
+                    "domain": {"type": "keyword", "index": True},
+                    "message": {
+                        "type": "text",
+                        "analyzer": "log_analyzer",
+                        "fields": {"raw": {"type": "keyword"}}
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": "keyword"},
+                            "ai_confidence": {"type": "float"},
+                            "cost_usd": {"type": "float"},
+                            "execution_time_ms": {"type": "integer"},
+                            "error_code": {"type": "keyword"},
+                            "user_agent": {"type": "keyword"}
+                        }
+                    },
+                    "thread_id": {"type": "keyword"},
+                    "process_id": {"type": "keyword"},
+                    "hostname": {"type": "keyword"}
+                }
+            }
+        }
+
+        try:
+            self.client.indices.create(index=index_name, body=log_mapping)
+            logger.info(f"Successfully created log index: {index_name}")
+            return True
+        except OpenSearchException as e:
+            logger.error(f"Failed to create log index {index_name}: {e}")
+            return False
+
+    def index_log_entry(self, log_entry: Dict[str, Any], index_name: str) -> bool:
+        """
+        Index a single log entry to OpenSearch
+
+        Args:
+            log_entry: Log entry dictionary with timestamp, level, message, etc.
+            index_name: Target log index name
+
+        Returns:
+            True if indexed successfully
+        """
+        # Ensure log index exists
+        self.create_log_index(index_name)
+
+        # Add indexed timestamp if not present
+        if "@timestamp" not in log_entry:
+            log_entry["@timestamp"] = datetime.now().isoformat()
+
+        try:
+            result = self.client.index(
+                index=index_name,
+                body=log_entry,
+                refresh=True  # Make immediately searchable
+            )
+            return result["result"] in ["created", "updated"]
+        except Exception as e:
+            logger.error(f"Failed to index log entry: {e}")
+            return False
+
+    def bulk_index_logs(self, log_entries: List[Dict[str, Any]], index_name: str) -> int:
+        """
+        Bulk index multiple log entries to OpenSearch
+
+        Args:
+            log_entries: List of log entry dictionaries
+            index_name: Target log index name
+
+        Returns:
+            Number of successfully indexed entries
+        """
+        if not log_entries:
+            return 0
+
+        # Ensure log index exists
+        self.create_log_index(index_name)
+
+        # Format for bulk API
+        actions = []
+        for entry in log_entries:
+            if "@timestamp" not in entry:
+                entry["@timestamp"] = datetime.now().isoformat()
+
+            actions.append({
+                "_index": index_name,
+                "_source": entry
+            })
+
+        try:
+            success, failed = helpers.bulk(
+                self.client,
+                actions,
+                index=index_name,
+                chunk_size=100,
+                request_timeout=30,
+                max_retries=3
+            )
+            return success
+        except Exception as e:
+            logger.error(f"Bulk log indexing failed: {e}")
+            return 0
+
+    def search_logs(self, query: str = "*", index_name: str = None,
+                   level: str = None, service: str = None, component: str = None,
+                   time_from: str = None, time_to: str = None, size: int = 100) -> Dict[str, Any]:
+        """
+        Search system logs with filtering
+
+        Args:
+            query: Search query for log messages
+            index_name: Log index to search (searches all log indices if None)
+            level: Filter by log level (INFO, WARN, ERROR, DEBUG)
+            service: Filter by service name
+            component: Filter by component name
+            time_from: Start time filter (ISO format)
+            time_to: End time filter (ISO format)
+            size: Number of results to return
+
+        Returns:
+            Search results with log entries
+        """
+        # Use pattern to search all log indices if none specified
+        search_index = index_name or "ai-agent-logs-*"
+
+        search_body = {
+            "query": {
+                "bool": {
+                    "must": [],
+                    "filter": []
+                }
+            },
+            "size": size,
+            "sort": [{"@timestamp": {"order": "desc"}}]
+        }
+
+        # Add text query
+        if query and query != "*":
+            search_body["query"]["bool"]["must"].append({
+                "multi_match": {
+                    "query": query,
+                    "fields": ["message^2", "component", "service"],
+                    "type": "best_fields"
+                }
+            })
+        else:
+            search_body["query"]["bool"]["must"].append({"match_all": {}})
+
+        # Add filters
+        if level:
+            search_body["query"]["bool"]["filter"].append({"term": {"level": level}})
+        if service:
+            search_body["query"]["bool"]["filter"].append({"term": {"service": service}})
+        if component:
+            search_body["query"]["bool"]["filter"].append({"term": {"component": component}})
+
+        # Add time range filter
+        if time_from or time_to:
+            time_filter = {"range": {"@timestamp": {}}}
+            if time_from:
+                time_filter["range"]["@timestamp"]["gte"] = time_from
+            if time_to:
+                time_filter["range"]["@timestamp"]["lte"] = time_to
+            search_body["query"]["bool"]["filter"].append(time_filter)
+
+        try:
+            results = self.client.search(index=search_index, body=search_body)
+            return {
+                "total_hits": results["hits"]["total"]["value"],
+                "logs": [
+                    {
+                        "timestamp": hit["_source"]["@timestamp"],
+                        "level": hit["_source"]["level"],
+                        "service": hit["_source"].get("service"),
+                        "component": hit["_source"].get("component"),
+                        "message": hit["_source"]["message"],
+                        "metadata": hit["_source"].get("metadata", {}),
+                        "source": hit["_source"]
+                    }
+                    for hit in results["hits"]["hits"]
+                ],
+                "took": results["took"]
+            }
+        except Exception as e:
+            logger.error(f"Log search failed: {e}")
+            return {"total_hits": 0, "logs": [], "error": str(e)}
 
     # Utility methods (similar to export_bulk_ndjson.py)
     def _sha1(self, s: str) -> str:
