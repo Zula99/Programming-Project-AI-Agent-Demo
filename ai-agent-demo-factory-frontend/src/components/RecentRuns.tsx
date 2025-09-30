@@ -87,27 +87,27 @@ export default function RecentRuns() {
 
     if (loading) {
         return (
-            <div className="bg-white text-gray-400 p-4 rounded-lg border">
-                <h2 className="font-medium mb-3">Recent runs</h2>
-                <div className="text-sm text-gray-500">Loading runs...</div>
+            <div className="bg-white text-gray-800 p-4 rounded-lg border">
+                <h2 className="font-medium mb-3 text-gray-900">Recent runs</h2>
+                <div className="text-sm text-gray-700">Loading runs...</div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="bg-white text-gray-400 p-4 rounded-lg border">
-                <h2 className="font-medium mb-3">Recent runs</h2>
-                <div className="text-sm text-red-500">Error: {error}</div>
+            <div className="bg-white text-gray-800 p-4 rounded-lg border">
+                <h2 className="font-medium mb-3 text-gray-900">Recent runs</h2>
+                <div className="text-sm text-red-600 font-medium">Error: {error}</div>
             </div>
         );
     }
 
     return (
-        <div className="bg-white text-gray-400 p-4 rounded-lg border">
-            <h2 className="font-medium mb-3">Recent runs ({runs.length})</h2>
+        <div className="bg-white text-gray-800 p-4 rounded-lg border">
+            <h2 className="font-medium mb-3 text-gray-900">Recent runs ({runs.length})</h2>
             {runs.length === 0 ? (
-                <div className="text-sm text-gray-500">No runs yet</div>
+                <div className="text-sm text-gray-700">No runs yet</div>
             ) : (
                 <ul className="space-y-3">
                     {runs.map((run) => {
@@ -135,7 +135,7 @@ export default function RecentRuns() {
                                     }`} title={run.url}>
                                         {run.url}
                                     </p>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-gray-700">
                                         {run.runId.substring(0, 8)} | {run.pages} pages | {run.template}
                                     </p>
                                 </div>
