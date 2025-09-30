@@ -299,10 +299,10 @@ export default function ActiveRun() {
 
 					{/*Count*/}
 					<div className="mb-2 flex items-center justify-between">
-						<div className="text-sm text-gray-500">
+						<div className="text-sm text-gray-700">
 							<span className="font-medium text-gray-900">Indexed Pages</span> ({filtered.length})
 						</div>
-						<div className="flex items-center gap-2 text-xs text-gray-500">
+						<div className="flex items-center gap-2 text-xs text-gray-700">
 							{loading ? (
 								<>
 									<HiArrowPath className="h-4 w-4 animate-spin" /> Loading...
@@ -315,7 +315,7 @@ export default function ActiveRun() {
 					<div className="overflow-hidden rounded-lg border">
 						<div className="max-h-[420px] overflow-auto">
 							<table className="min-w-full text-sm">
-								<thead className="sticky top-0 bg-gray-50 text-left text-gray-600">
+								<thead className="sticky top-0 bg-gray-50 text-left text-gray-800">
 									<tr className="[&>th]:py-2 [&>th]:px-3">
 										<SortableTH
 											label="Path"
@@ -566,7 +566,7 @@ export default function ActiveRun() {
 							</div>
 						</div>
 					) : (
-						<div className="text-center py-8 text-gray-500">
+						<div className="text-center py-8 text-gray-700">
 							{selectedRun ? 'No statistics available for this run' : 'Select a run to view statistics'}
 						</div>
 					)}
