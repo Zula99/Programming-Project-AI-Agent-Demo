@@ -14,108 +14,26 @@ from typing import Dict, List, Optional
 from io import StringIO
 from datetime import datetime
 
-# Import OpenSearch logging utilities
-sys.path.append("./crawl4ai-agent")
-from opensearch_logger import log_to_opensearch
+# Import WebSocket logging handler
+from websocket_log_handler import setup_websocket_logging, websocket_connections, current_run_id
 
 # Initialize FastAPI app
 app = FastAPI()
 
-# No middleware - manual CORS headers on each endpoint
+# Configure CORS to allow frontend requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
-# Dictionary stores Crawl4AI agent sessions and their WebSocket connections
+# Dictionary stores Crawl4AI agent sessions
 crawl4ai_sessions: Dict[str, Dict] = {}
-websocket_connections: Dict[str, List[WebSocket]] = {}
 
-# Enhanced logging handler: WebSocket + OpenSearch dual-stream
-class WebSocketLogHandler(logging.Handler):
-    def __init__(self, enable_opensearch=True):
-        super().__init__()
-        self.setLevel(logging.DEBUG)
-        self.enable_opensearch = enable_opensearch
-
-    def emit(self, record):
-        try:
-            # Format the log message for WebSocket
-            backend_log = {
-                "timestamp": time.strftime("%H:%M:%S", time.localtime(record.created)),
-                "level": record.levelname,
-                "source": record.name,
-                "message": record.getMessage()
-            }
-
-            # Broadcast to all WebSocket connections (existing functionality)
-            asyncio.create_task(broadcast_backend_log(backend_log))
-
-            # Also send to OpenSearch (new functionality)
-            if self.enable_opensearch:
-                asyncio.create_task(self._send_to_opensearch(record))
-
-        except Exception:
-            pass  # Don't let logging errors crash the app
-
-    async def _send_to_opensearch(self, record):
-        """Send log entry to OpenSearch asynchronously"""
-        try:
-            # Skip OpenSearch's own logs to prevent feedback loop
-            if any(skip_logger in record.name for skip_logger in [
-                'opensearch', 'urllib3', 'opensearch_integration'
-            ]):
-                return
-
-            # Extract metadata from record if available
-            metadata = {}
-            if hasattr(record, 'extra_data'):
-                metadata = record.extra_data
-
-            # Add contextual information
-            metadata.update({
-                "thread_id": str(record.thread),
-                "pathname": record.pathname,
-                "lineno": record.lineno,
-                "funcName": record.funcName
-            })
-
-            # Use the existing log_to_opensearch function
-            log_to_opensearch(
-                service="fastapi-backend",
-                component=record.name.split('.')[-1] if '.' in record.name else record.name,
-                level=record.levelname,
-                message=record.getMessage(),
-                metadata=metadata
-            )
-        except Exception:
-            # Fail silently to not disrupt main application
-            pass
-
-# Function to broadcast backend logs to all connected clients
-async def broadcast_backend_log(backend_log):
-    message = {
-        "type": "backend_log",
-        "log": backend_log
-    }
-
-    for run_id, connections in websocket_connections.items():
-        for websocket in connections[:]:  # Use slice to avoid modification during iteration
-            try:
-                await websocket.send_text(json.dumps(message))
-            except:
-                # Remove disconnected websockets
-                connections.remove(websocket)
-
-# Set up the custom logging handler
-websocket_handler = WebSocketLogHandler()
-websocket_handler.setFormatter(logging.Formatter('%(name)s - %(message)s'))
-
-# Configure root logger to capture all logs
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.DEBUG)
-root_logger.addHandler(websocket_handler)
-
-# Configure uvicorn logger specifically
-uvicorn_logger = logging.getLogger("uvicorn")
-uvicorn_logger.addHandler(websocket_handler)
+# Set up WebSocket logging handler (broadcasts to frontend + OpenSearch)
+setup_websocket_logging()
 
 # Removed legacy Norconex models - keeping only Crawl4AI models
 
@@ -222,6 +140,9 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
     """
     Run the real Crawl4AI SmartMirrorAgent process
     """
+    # Set run_id context for OpenSearch session-based logging
+    current_run_id.set(run_id)
+
     logger = logging.getLogger("crawl4ai")
     logger.info(f"Starting real SmartMirrorAgent for: {target_url}")
 
@@ -472,9 +393,10 @@ async def crawl4ai_websocket(websocket: WebSocket, run_id: str):
 # --- Server Startup ---
 if __name__ == "__main__":
     import uvicorn
-    print("Starting AI Agent Demo Factory Backend on port 8000...")
-    print("Crawl4AI endpoints available at:")
-    print("  POST /crawl4ai/start")
-    print("  GET /crawl4ai/status/{run_id}")
-    print("  WebSocket /crawl4ai/ws/{run_id}")
+    logger = logging.getLogger(__name__)
+    logger.info("Starting AI Agent Demo Factory Backend on port 8000...")
+    logger.info("Crawl4AI endpoints available at:")
+    logger.info("  POST /crawl4ai/start")
+    logger.info("  GET /crawl4ai/status/{run_id}")
+    logger.info("  WebSocket /crawl4ai/ws/{run_id}")
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

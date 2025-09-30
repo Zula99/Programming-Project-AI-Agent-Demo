@@ -1,4 +1,29 @@
-# AI Agent Demo Factory - Docker Setup
+# AI Agent Demo Factory - Combined Docker Setup
+# Stage 1: Build Frontend
+FROM node:20-slim AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy frontend package files
+COPY ai-agent-demo-factory-frontend/package.json ./
+
+# Install dependencies fresh (no lockfile to force platform-specific binaries)
+RUN npm install
+
+# Copy frontend source
+COPY ai-agent-demo-factory-frontend/ ./
+
+# Build frontend
+RUN npm run build
+
+# Stage 2: Backend with Frontend
 FROM python:3.11-slim
 
 # Set environment variables for UTF-8 support
@@ -9,25 +34,25 @@ ENV LC_ALL=C.UTF-8
 # Set working directory
 WORKDIR /app
 
-# Install basic system dependencies including build tools
+# Install system dependencies (Python backend + Node.js for frontend)
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     unzip \
     xvfb \
-    # Build tools for compiling packages like madoka
     build-essential \
     gcc \
     g++ \
-    # For crawling and processing
     libxml2-dev \
     libxslt1-dev \
     libffi-dev \
     libssl-dev \
-    # Cleanup
+    # Add Node.js
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
+# Copy backend requirements and install Python dependencies
 COPY ai-agent-demo-factory-backend/crawl4ai-agent/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -39,11 +64,14 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 RUN playwright install chromium
 RUN playwright install-deps chromium || echo "Some deps failed but continuing..."
 
-# Copy the application code
+# Copy backend application code
 COPY ai-agent-demo-factory-backend/ /app/backend/
 COPY crawl4ai/ /app/crawl4ai/
-# Copy application files
-# Note: README.md is optional, build will continue if not found
+
+# Copy built frontend standalone output from frontend-builder stage
+COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend
+COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
+COPY --from=frontend-builder /app/frontend/public /app/frontend/public
 
 # Create output directory with proper permissions
 RUN mkdir -p /app/output && chmod 777 /app/output
@@ -60,8 +88,8 @@ RUN chown -R aiagent:aiagent /app
 RUN mkdir -p /home/aiagent && chown -R aiagent:aiagent /home/aiagent
 USER aiagent
 
-# Expose proxy port
-EXPOSE 8000
+# Expose backend and frontend ports
+EXPOSE 8000 3000
 
 # Default working directory for crawl operations
 WORKDIR /app/backend/crawl4ai-agent
@@ -70,5 +98,5 @@ WORKDIR /app/backend/crawl4ai-agent
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; print('AI Agent System Ready'); sys.exit(0)"
 
-# Default command - start FastAPI backend with crawl4ai endpoints
-CMD ["python", "/app/backend/main.py"]
+# Start script to run both backend and frontend
+CMD bash -c "cd /app/frontend && node server.js & cd /app/backend && python main.py"

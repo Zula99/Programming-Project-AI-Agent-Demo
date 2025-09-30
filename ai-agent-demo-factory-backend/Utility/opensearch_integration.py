@@ -29,7 +29,7 @@ try:
     OPENSEARCH_AVAILABLE = True
 except ImportError:
     OPENSEARCH_AVAILABLE = False
-    print("Warning: opensearch-py not installed. Install with: pip install opensearch-py")
+    logger.warning("opensearch-py not installed. Install with: pip install opensearch-py")
 
 try:
     from bs4 import BeautifulSoup
@@ -44,8 +44,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OpenSearchConfig:
     """Configuration for OpenSearch connection"""
-    host: str = "localhost"
-    port: int = 9200
+    host: str = os.getenv("OPENSEARCH_HOST", "opensearch-demo")
+    port: int = int(os.getenv("OPENSEARCH_PORT", "9200"))
     scheme: str = "http"
     username: Optional[str] = None
     password: Optional[str] = None
@@ -770,18 +770,18 @@ def main():
     logger.info(f"Indexing {args.crawl_dir} to {args.index_name}")
     stats = integration.index_crawl4ai_data(args.crawl_dir, args.index_name)
 
-    print(f"\nIndexing Results:")
-    print(f"  Documents indexed: {stats['documents_indexed']}")
-    print(f"  Processing time: {stats['duration']:.2f}s")
-    print(f"  Errors: {stats['errors']}")
+    logger.info(f"Indexing Results:")
+    logger.info(f"  Documents indexed: {stats['documents_indexed']}")
+    logger.info(f"  Processing time: {stats['duration']:.2f}s")
+    logger.info(f"  Errors: {stats['errors']}")
 
     # Test search if query provided
     if args.search:
-        print(f"\nTesting search: '{args.search}'")
+        logger.info(f"Testing search: '{args.search}'")
         results = integration.search(args.search, args.index_name)
-        print(f"  Found {results['total_hits']} results")
+        logger.info(f"  Found {results['total_hits']} results")
         for i, hit in enumerate(results['hits'][:3]):
-            print(f"  {i+1}. {hit['title']} - {hit['url']} (score: {hit['score']:.2f})")
+            logger.info(f"  {i+1}. {hit['title']} - {hit['url']} (score: {hit['score']:.2f})")
 
 
 if __name__ == "__main__":

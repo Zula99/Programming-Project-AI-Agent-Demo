@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { HiOutlineCheckCircle, HiOutlineXCircle, HiClock } from "react-icons/hi";
 
 interface AgentOutputCardProps {
   runId?: string | null;
   isConnected?: boolean;
-  status?: "idle" | "running" | "waiting_for_input" | "completed" | "error";
+  status?: "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error";
   logs?: LogEntry[];
 }
 

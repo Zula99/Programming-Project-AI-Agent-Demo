@@ -8,7 +8,7 @@ import CrawlProgressPanel from "@/components/CrawlProgressPanel";
 import BackendLogsDropdown from "@/components/BackendLogsDropdown";
 import { startCrawl4AI, createWebSocketConnection, type AgentLog } from "@/lib/crawl4ai-api";
 
-type AgentStatus = "idle" | "running" | "waiting_for_input" | "completed" | "error";
+type AgentStatus = "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error";
 
 interface CrawlProgress {
   percentage: number;
@@ -19,12 +19,19 @@ interface CrawlProgress {
   crawl_speed: number;
 }
 
+interface BackendLogEntry {
+  timestamp: string;
+  level: "INFO" | "WARNING" | "ERROR" | "DEBUG";
+  message: string;
+  source: string;
+}
+
 export default function Crawl4AIPage() {
   const [runId, setRunId] = useState<string | null>(null);
   const [status, setStatus] = useState<AgentStatus>("idle");
   const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<AgentLog[]>([]);
-  const [backendLogs, setBackendLogs] = useState<any[]>([]);
+  const [backendLogs, setBackendLogs] = useState<BackendLogEntry[]>([]);
   const [progress, setProgress] = useState<CrawlProgress>({
     percentage: 0,
     pages_crawled: 0,

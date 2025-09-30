@@ -1,6 +1,6 @@
 // API client functions for Crawl4AI agent communication
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface Crawl4AISession {
   run_id: string;

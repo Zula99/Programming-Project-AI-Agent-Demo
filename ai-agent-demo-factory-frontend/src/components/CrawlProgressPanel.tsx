@@ -15,7 +15,7 @@ interface CrawlProgress {
 interface CrawlProgressPanelProps {
   runId?: string | null;
   progress?: CrawlProgress;
-  status?: "idle" | "running" | "waiting_for_input" | "completed" | "error";
+  status?: "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error";
 }
 
 export default function CrawlProgressPanel({
