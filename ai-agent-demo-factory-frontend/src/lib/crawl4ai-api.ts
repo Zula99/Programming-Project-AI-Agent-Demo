@@ -24,13 +24,16 @@ export interface Crawl4AIStatus {
 /**
  * Start a new Crawl4AI agent session
  */
-export async function startCrawl4AI(targetUrl: string): Promise<{ run_id: string }> {
+export async function startCrawl4AI(targetUrl: string, aiModel?: string): Promise<{ run_id: string }> {
   const response = await fetch(`${API_BASE}/crawl4ai/start`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ target_url: targetUrl }),
+    body: JSON.stringify({
+      target_url: targetUrl,
+      ...(aiModel && { ai_model: aiModel })
+    }),
   });
 
   if (!response.ok) {

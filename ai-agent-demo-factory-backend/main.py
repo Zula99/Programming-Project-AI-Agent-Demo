@@ -122,6 +122,7 @@ uvicorn_logger.addHandler(websocket_handler)
 # Crawl4AI specific models
 class Crawl4AIRequest(BaseModel):
     target_url: str
+    ai_model: Optional[str] = "gpt-4o-mini"
 
 class AgentResponseRequest(BaseModel):
     run_id: str
@@ -218,7 +219,7 @@ async def update_progress(run_id: str, pages_crawled: int, total_pages: int, cra
             "progress": progress
         })
 
-async def run_crawl4ai_agent_real(run_id: str, target_url: str):
+async def run_crawl4ai_agent_real(run_id: str, target_url: str, ai_model: str = "gpt-4o-mini"):
     """
     Run the real Crawl4AI SmartMirrorAgent process
     """
@@ -237,6 +238,14 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         sys.path.append(os.path.join(os.path.dirname(__file__), "crawl4ai-agent"))
 
         from smart_mirror_agent import SmartMirrorAgent
+
+        # Set AI model for this session (temporarily via environment)
+        import os
+        original_ai_model = os.environ.get('AI_MODEL')
+        os.environ['AI_MODEL'] = ai_model
+
+        # Log which AI model is being used
+        await add_agent_log(run_id, f" Using AI model: {ai_model}", "info")
 
         # Create the agent instance
         agent = SmartMirrorAgent(memory_path="backend_agent_memory.json")
@@ -330,6 +339,13 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         await add_agent_log(run_id, f" {error_msg}", "error")
         await update_agent_status(run_id, "error")
         logger.error(error_msg)
+    finally:
+        # Restore original AI model environment variable
+        if 'original_ai_model' in locals():
+            if original_ai_model is not None:
+                os.environ['AI_MODEL'] = original_ai_model
+            elif 'AI_MODEL' in os.environ:
+                del os.environ['AI_MODEL']
 
 @app.options("/crawl4ai/start")
 async def options_crawl4ai_start(response: Response):
@@ -344,6 +360,7 @@ async def options_crawl4ai_start(response: Response):
 async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundTasks, response: Response):
     """Start a new Crawl4AI agent session"""
     target_url = request.target_url
+    ai_model = request.ai_model
     run_id = str(uuid.uuid4())
 
     # Initialize session
@@ -369,7 +386,7 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
     websocket_connections[run_id] = []
 
     # Start the real agent
-    background_tasks.add_task(run_crawl4ai_agent_real, run_id, target_url)
+    background_tasks.add_task(run_crawl4ai_agent_real, run_id, target_url, ai_model)
 
     # Add CORS headers directly to response
     response.headers["Access-Control-Allow-Origin"] = "*"
