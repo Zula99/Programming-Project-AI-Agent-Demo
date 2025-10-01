@@ -13,8 +13,11 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import re
 from dataclasses import dataclass
+import logging
 
 from smart_mirror_agent import SiteType, CrawlStrategy, ReconResults
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -115,7 +118,7 @@ class SiteRecon:
                 }
                 return content, response_info
         except Exception as e:
-            print(f"Failed to fetch {url}: {e}")
+            logger.error(f"Failed to fetch {url}: {e}")
             return "", {}
     
     def _detect_frameworks(self, html_content: str, soup: BeautifulSoup) -> List[str]:
@@ -230,13 +233,13 @@ class SiteRecon:
 async def test_recon():
     recon = SiteRecon()
     result = await recon.analyze_site("https://www.nab.com.au")
-    
-    print(f"Site Type: {result.site_type}")
-    print(f"Frameworks: {result.frameworks}")
-    print(f"JS Complexity: {result.js_complexity}")
-    print(f"Page Load Time: {result.page_load_time:.2f}s")
-    print(f"Asset Count: {result.asset_count}")
-    print(f"Recommended Strategy: {result.recommended_strategy}")
+
+    logger.info(f"Site Type: {result.site_type}")
+    logger.info(f"Frameworks: {result.frameworks}")
+    logger.info(f"JS Complexity: {result.js_complexity}")
+    logger.info(f"Page Load Time: {result.page_load_time:.2f}s")
+    logger.info(f"Asset Count: {result.asset_count}")
+    logger.info(f"Recommended Strategy: {result.recommended_strategy}")
 
 
 if __name__ == "__main__":

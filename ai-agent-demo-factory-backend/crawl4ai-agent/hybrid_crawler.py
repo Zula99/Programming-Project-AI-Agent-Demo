@@ -594,23 +594,24 @@ async def test_hybrid_crawler():
     ]
     
     for url in test_urls:
-        print(f"\n{'='*60}")
-        print(f"Testing US-54 hybrid crawler with: {url}")
-        print(f"{'='*60}")
-        
+        logging.info("")
+        logging.info("="*60)
+        logging.info(f"Testing US-54 hybrid crawler with: {url}")
+        logging.info("="*60)
+
         crawler = HybridCrawler()
         success, results = await crawler.execute_hybrid_crawl(url)
-        
-        print(f"Success: {success}")
+
+        logging.info(f"Success: {success}")
         if success:
             scenario = results['us54_implementation']['scenario']
             strategy = results['strategy_used']
             pages = results['crawl_results']['pages_crawled']
-            
-            print(f"US-54 Scenario: {scenario}")
-            print(f"Strategy used: {strategy}")
-            print(f"Pages crawled: {pages}")
-            print(f"Output: {results['output_location']}")
+
+            logging.info(f"US-54 Scenario: {scenario}")
+            logging.info(f"Strategy used: {strategy}")
+            logging.info(f"Pages crawled: {pages}")
+            logging.info(f"Output: {results['output_location']}")
 
 
 if __name__ == "__main__":

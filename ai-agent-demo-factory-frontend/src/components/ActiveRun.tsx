@@ -5,11 +5,10 @@ import StatusBadge from "./StatusBadge";
 import TabList from "./TabList";
 import SortableTH from "./SortableTH";
 import { useMemo, useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { 
+import {
 	HiDownload,
     HiOutlineCheckCircle,
     HiClipboard,
-    HiFilter,
 } from "react-icons/hi";
 import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
 
@@ -94,7 +93,7 @@ export default function ActiveRun() {
 	const [rows, setRows] = useState<PageRow[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [searchTime, setSearchTime] = useState<number | null>(null);
-	const [error, setError] = useState<string>("");
+	const [, setError] = useState<string>("");
 
 	// Initial load, getting some docs from index
 	useEffect(() => {

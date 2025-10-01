@@ -11,6 +11,9 @@ import json
 import time
 from pathlib import Path
 from enum import Enum
+import sys
+sys.path.append(str(Path(__file__).parent.parent))
+from websocket_log_handler import current_run_id
 from opensearch_logger import log_to_opensearch
 
 class BusinessSiteType(Enum):
@@ -783,7 +786,8 @@ class AIContentClassifier:
                     "confidence": cached['confidence'],
                     "method": "cache",
                     "domain": self.domain
-                }
+                },
+                run_id=current_run_id.get()
             )
 
             return ClassificationResult(
@@ -836,7 +840,8 @@ class AIContentClassifier:
                         "reasoning": reasoning,
                         "domain": self.domain,
                         "site_type": self.domain_site_type.value if self.domain_site_type else "unknown"
-                    }
+                    },
+                    run_id=current_run_id.get()
                 )
 
                 # Cache the result
@@ -864,7 +869,8 @@ class AIContentClassifier:
                         "error_type": type(e).__name__,
                         "fallback_method": "heuristic",
                         "domain": self.domain
-                    }
+                    },
+                    run_id=current_run_id.get()
                 )
                 # Fall through to heuristic
         

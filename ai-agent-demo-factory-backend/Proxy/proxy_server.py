@@ -20,11 +20,15 @@ import os
 from dotenv import load_dotenv
 from search_templates import create_native_search_template, create_result_item_html, create_no_results_html
 
+# Configure logging first
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(env_path)
-print(f"Loading .env from: {env_path}")
-print(f"API Key loaded: {bool(os.getenv('OPENAI_API_KEY'))}")
+logger.info(f"Loading .env from: {env_path}")
+logger.info(f"API Key loaded: {bool(os.getenv('OPENAI_API_KEY'))}")
 
 # Try to import cssutils, but it's not essential
 try:
@@ -41,14 +45,10 @@ try:
     OPENSEARCH_AVAILABLE = True
 except ImportError:
     OPENSEARCH_AVAILABLE = False
-    print("Warning: OpenSearch integration not available")
+    logger.warning("OpenSearch integration not available")
 
 # Initialize FastAPI app for proxy
 app = FastAPI(title="Auto-Proxy Server")
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Configure CORS
 app.add_middleware(
@@ -2181,13 +2181,13 @@ def rewrite_urls_in_html(html_content: str, target_url: str, proxy_base: str = "
                     proxy_url += f"?{parsed_abs.query}"
                 if parsed_abs.fragment:
                     proxy_url += f"#{parsed_abs.fragment}"
-                
+
                 # Debug logging for URL rewriting
-                print(f"REWRITE: {original_url} -> {proxy_url}")
+                logger.debug(f"REWRITE: {original_url} -> {proxy_url}")
                 tag[attr] = proxy_url
             else:
                 # Debug: log URLs we're NOT rewriting
-                print(f"NOT REWRITING (external domain): {original_url} -> {parsed_abs.netloc}")
+                logger.debug(f"NOT REWRITING (external domain): {original_url} -> {parsed_abs.netloc}")
     
     return str(soup)
 
@@ -2478,17 +2478,17 @@ async def catch_all_proxy(request: Request, path: str):
     """Catch-all handler for requests that don't match /proxy/ prefix"""
 
     # Exclude our API endpoints and non-proxy routes
-    print(f"[DEBUG CATCH-ALL] Processing path: '{path}'")
+    logger.debug(f"[CATCH-ALL] Processing path: '{path}'")
     excluded_paths = ["vision", "config", "auto-configure", "clear-template-cache"]
 
     # Check if path starts with any excluded path
     for excluded in excluded_paths:
         if path.startswith(excluded):
-            print(f"[DEBUG CATCH-ALL] Path '{path}' starts with '{excluded}', excluding")
+            logger.debug(f"[CATCH-ALL] Path '{path}' starts with '{excluded}', excluding")
             return Response("Route not found", status_code=404)
 
     if path == "":
-        print(f"[DEBUG CATCH-ALL] Empty path, excluding")
+        logger.debug(f"[CATCH-ALL] Empty path, excluding")
         return Response("Route not found", status_code=404)
 
     if not proxy_config["enabled"] or not proxy_config["target_url"]:

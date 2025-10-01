@@ -7,6 +7,9 @@ for real-time monitoring and searchability while keeping file-based logging.
 
 import logging
 import sys
+
+# Set up logger
+logger = logging.getLogger(__name__)
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -128,7 +131,7 @@ class OpenSearchCrawlLogger(CrawlLogger):
                     "smart-mirror-agent"
                 )
             except Exception as e:
-                print(f"Warning: OpenSearch logging disabled - {e}")
+                logger.warning(f"OpenSearch logging disabled - {e}")
                 self.enable_opensearch = False
 
     def start_logging(self):
@@ -153,7 +156,7 @@ class OpenSearchCrawlLogger(CrawlLogger):
                 'domain': self.domain,
                 'log_type': 'phase'
             }})
-            print(f"📊 {phase_name}: {details}")
+            logger.info(f"{phase_name}: {details}")
 
     def log_error(self, error: Exception, context: str = ""):
         """Log error with OpenSearch metadata"""
@@ -225,11 +228,17 @@ def create_opensearch_logger(base_url: str, enable_opensearch: bool = True) -> O
 
 
 def log_to_opensearch(service: str, component: str, level: str, message: str,
-                     metadata: Dict[str, Any] = None):
-    """Simple function to send a single log entry to OpenSearch"""
+                     metadata: Dict[str, Any] = None, run_id: str = None):
+    """Simple function to send a single log entry to OpenSearch with session-based indexing"""
     try:
         opensearch = Crawl4AIOpenSearchIntegration()
-        index_name = f"ai-agent-logs-{datetime.now().strftime('%Y.%m')}"
+
+        # Use run_id-based index naming for session isolation
+        if run_id:
+            index_name = f"ai-agent-logs-{run_id}"
+        else:
+            # Fallback to monthly index for logs without run_id context
+            index_name = f"ai-agent-logs-{datetime.now().strftime('%Y.%m')}"
 
         log_entry = {
             "@timestamp": datetime.now().isoformat(),

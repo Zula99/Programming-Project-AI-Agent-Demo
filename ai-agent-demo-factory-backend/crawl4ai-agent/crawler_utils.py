@@ -19,7 +19,7 @@ try:
     AI_AVAILABLE = True
 except ImportError as e:
     AI_AVAILABLE = False
-    print(f"AI classification not available: {e}")
+    logging.warning(f"AI classification not available: {e}")
 
 # Quality Plateau Detection
 try:
@@ -27,7 +27,7 @@ try:
     PLATEAU_AVAILABLE = True
 except ImportError as e:
     PLATEAU_AVAILABLE = False
-    print(f"Quality plateau detection not available: {e}")
+    logging.warning(f"Quality plateau detection not available: {e}")
 
 # Content Deduplication System
 try:
@@ -35,7 +35,7 @@ try:
     DEDUPLICATION_AVAILABLE = True
 except ImportError as e:
     DEDUPLICATION_AVAILABLE = False
-    print(f"Content deduplication not available: {e}")
+    logging.warning(f"Content deduplication not available: {e}")
 
 # Coverage tracking integration
 try:
@@ -44,7 +44,7 @@ try:
     COVERAGE_TRACKING_AVAILABLE = True
 except ImportError as e:
     COVERAGE_TRACKING_AVAILABLE = False
-    print(f"Coverage tracking not available: {e}")
+    logging.warning(f"Coverage tracking not available: {e}")
 
 # Enable long paths on Windows
 if os.name == 'nt':
@@ -780,7 +780,7 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, co
         
         # Additional wait for heavy JS apps (after networkidle)
         if config.additional_wait > 0:
-            print(f"⏱️ Additional wait: {config.additional_wait}s for JS completion")
+            _logger.info(f"Additional wait: {config.additional_wait}s for JS completion")
             await asyncio.sleep(config.additional_wait)
         
         # Extract content - prioritize rendered HTML over raw HTML for JS-heavy sites
@@ -796,9 +796,9 @@ async def crawl_page(crawler: AsyncWebCrawler, url: str, config: CrawlConfig, co
         
         # Log which HTML we're using for debugging
         if rendered_html and rendered_html != raw_html:
-            print(f" Using rendered HTML (post-JS) for {url}")
+            _logger.info(f" Using rendered HTML (post-JS) for {url}")
         else:
-            print(f"  Using raw HTML (pre-JS) for {url}")
+            _logger.info(f"  Using raw HTML (pre-JS) for {url}")
         
         # AI Content Classification - analyze actual page content
         ai_worthy = True  # default to worthy
@@ -897,9 +897,9 @@ def save_crawl_result(result: CrawlResult, config: CrawlConfig) -> Optional[Path
             json.dump(meta, f, ensure_ascii=False, indent=2)
         
         return md_path
-        
+
     except Exception as e:
-        print(f"  Error saving {result.url}: {e} - skipping")
+        _logger.error(f"  Error saving {result.url}: {e} - skipping")
         return None
 
 def setup_robots_parser(start_url: str) -> robotparser.RobotFileParser:
@@ -1048,7 +1048,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             is_worthy, filter_reason = is_demo_worthy_url_sync(url)
             if not is_worthy:
                 filtered_urls[filter_reason] += 1
-                print(f"  Skipped {url} ({filter_reason})")
+                _logger.info(f"  Skipped {url} ({filter_reason})")
                 continue
             
             # Check robots.txt if enabled
@@ -1077,7 +1077,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     )
 
                     if is_duplicate:
-                        print(f"  Skipped duplicate content: {url} ({duplicate_reason})")
+                        _logger.info(f"  Skipped duplicate content: {url} ({duplicate_reason})")
                         # Still add to results for statistics but mark as filtered
                         result.error = f"duplicate_content: {duplicate_reason}"
                         result.success = False
@@ -1104,9 +1104,9 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 # Save result
                 saved_path = save_crawl_result(result, config)
                 if saved_path:
-                    print(f"\n [{pages_crawled}/{config.max_pages}] {url} -> {saved_path.name}")
+                    _logger.info(f"[{pages_crawled}/{config.max_pages}] {url} -> {saved_path.name}")
                 else:
-                    print(f"\n [{pages_crawled}/{config.max_pages}] {url} -> [save failed]")
+                    _logger.warning(f"[{pages_crawled}/{config.max_pages}] {url} -> [save failed]")
                 
                 # Queue new links with filtering
                 all_links = list(result.links)
@@ -1136,9 +1136,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         q.append(u)
                         new_urls.append(u)
                         new_queued += 1
-                        
-                print(f"  found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
-                print()  # Add blank line after each crawl link processing
+
+                _logger.info(f"  found {len(all_links)} links, queued {new_queued} worthy ones (queue: {len(q)})")
                 
                 # Coverage tracking: Notify new URLs discovered
                 if COVERAGE_TRACKING_AVAILABLE and config.run_id and new_urls:
@@ -1180,9 +1179,9 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         should_stop, stop_reason = plateau_monitor.should_stop_crawling()
                         
                         if should_stop:
-                            _logger.info(f"🛑 Quality plateau detected: {stop_reason}")
-                            print(f"\n🛑 Intelligent stopping: {stop_reason}")
-                            print(f"   Crawled {pages_crawled} pages with sufficient quality coverage")
+                            _logger.info(f"Quality plateau detected: {stop_reason}")
+                            _logger.info(f"Intelligent stopping: {stop_reason}")
+                            _logger.info(f"   Crawled {pages_crawled} pages with sufficient quality coverage")
                             break  # Exit the crawling loop
                         else:
                             # Log quality status every 10 pages
@@ -1193,9 +1192,9 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     except Exception as e:
                         _logger.warning(f"Quality plateau monitoring failed for {url}: {e}")
                         # Continue crawling even if plateau monitoring fails
-                        
+
             else:
-                print(f"  Error on {url}: {result.error}")
+                _logger.error(f"  Error on {url}: {result.error}")
     
     # Calculate filtering statistics
     total_filtered = sum(filtered_urls.values())
@@ -1206,7 +1205,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     if deduplicator:
         try:
             deduplication_stats = deduplicator.get_deduplication_summary()
-            print(f"Content deduplication summary: {deduplication_stats['duplicate_rate']} duplicates filtered")
+            _logger.info(f"Content deduplication summary: {deduplication_stats['duplicate_rate']} duplicates filtered")
 
             # Get available breakdown stats
             breakdown = deduplication_stats.get('breakdown', {})
@@ -1214,7 +1213,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             redirect_stubs = breakdown.get('redirect_stubs', 0)
 
             if exact_dups > 0 or redirect_stubs > 0:
-                print(f"  Breakdown: {exact_dups} exact duplicates, {redirect_stubs} redirect stubs")
+                _logger.info(f"  Breakdown: {exact_dups} exact duplicates, {redirect_stubs} redirect stubs")
         except Exception as e:
             _logger.warning(f"Could not get deduplication statistics: {e}")
 
@@ -1223,7 +1222,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     if plateau_monitor:
         try:
             plateau_stats = plateau_monitor.get_comprehensive_stats()
-            print(f"Quality plateau summary: {plateau_stats['recent_worthy_ratio']:.1%} recent quality, {plateau_stats['overall_worthy_ratio']:.1%} overall")
+            _logger.info(f"Quality plateau summary: {plateau_stats['recent_worthy_ratio']:.1%} recent quality, {plateau_stats['overall_worthy_ratio']:.1%} overall")
         except Exception as e:
             _logger.warning(f"Could not get plateau statistics: {e}")
             plateau_stats = {}  # Reset to empty on error
@@ -1252,8 +1251,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         except Exception as e:
             _logger.warning(f"Failed to save link classifications to persistent cache: {e}")
 
-    print(f"Done. Crawled {pages_crawled} quality page(s), filtered {total_filtered} junk URLs")
-    print(f"URL Quality Ratio: {quality_ratio:.1%} (higher is better)")
-    print(f"Output in: {config.output_root.resolve()}")
+    _logger.info(f"Done. Crawled {pages_crawled} quality page(s), filtered {total_filtered} junk URLs")
+    _logger.info(f"URL Quality Ratio: {quality_ratio:.1%} (higher is better)")
+    _logger.info(f"Output in: {config.output_root.resolve()}")
 
     return results, stats

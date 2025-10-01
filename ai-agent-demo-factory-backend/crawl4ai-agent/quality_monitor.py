@@ -23,8 +23,11 @@ import json
 import asyncio
 import aiofiles
 from dataclasses import dataclass
+import logging
 
 from smart_mirror_agent import QualityMetrics
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -314,16 +317,16 @@ async def test_quality_assessment():
     }
     
     metrics = await monitor.assess_crawl_quality(test_data, ai_stats)
-    
-    print(f"Content Discovery: {metrics.content_completeness:.1%}")
-    print(f"Asset Coverage: {metrics.asset_coverage:.1%} (Always 100% with proxy)")  
-    print(f"Navigation Integrity: {metrics.navigation_integrity:.1%} (Always 100% with proxy)")
-    print(f"Visual Fidelity: {metrics.visual_fidelity:.1%} (Always 100% with proxy)")
-    print(f"Overall Score: {metrics.overall_score:.1%}")
-    print(f"Site Coverage: {getattr(metrics, 'site_coverage_score', 0):.1%}")
-    print(f"AI Classification: {getattr(metrics, 'ai_classification_score', 0):.1%}")
-    print(f"Processing Efficiency: {getattr(metrics, 'processing_score', 0):.1%}")
-    print(f"Recommendation: {monitor.get_quality_recommendation(metrics)}")
+
+    logger.info(f"Content Discovery: {metrics.content_completeness:.1%}")
+    logger.info(f"Asset Coverage: {metrics.asset_coverage:.1%} (Always 100% with proxy)")
+    logger.info(f"Navigation Integrity: {metrics.navigation_integrity:.1%} (Always 100% with proxy)")
+    logger.info(f"Visual Fidelity: {metrics.visual_fidelity:.1%} (Always 100% with proxy)")
+    logger.info(f"Overall Score: {metrics.overall_score:.1%}")
+    logger.info(f"Site Coverage: {getattr(metrics, 'site_coverage_score', 0):.1%}")
+    logger.info(f"AI Classification: {getattr(metrics, 'ai_classification_score', 0):.1%}")
+    logger.info(f"Processing Efficiency: {getattr(metrics, 'processing_score', 0):.1%}")
+    logger.info(f"Recommendation: {monitor.get_quality_recommendation(metrics)}")
 
 
 if __name__ == "__main__":

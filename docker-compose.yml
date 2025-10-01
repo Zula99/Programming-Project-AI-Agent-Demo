@@ -1,13 +1,14 @@
 # Remove version as it's obsolete in newer Docker Compose
 
 services:
-  ai-agent-demo:
+  app:
     build: .
-    container_name: smart-mirror-agent
+    container_name: ai-agent-app
     environment:
       - PYTHONIOENCODING=utf-8
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
       # Add API keys when needed
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
@@ -19,11 +20,9 @@ services:
       # Mount source code for development (optional)
       - ./ai-agent-demo-factory-backend:/app/backend
       - ./crawl4ai:/app/crawl4ai
-
-
     ports:
-      # Expose port for proxy server (replaces static mirrors)
       - "8000:8000"
+      - "3000:3000"
     depends_on:
       - opensearch-demo
     stdin_open: true

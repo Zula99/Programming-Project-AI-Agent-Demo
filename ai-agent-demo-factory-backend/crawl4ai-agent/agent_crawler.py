@@ -4,9 +4,12 @@ import urllib.parse
 from typing import Dict, List, Optional, Any, Tuple
 from pathlib import Path
 import sys
+import logging
 
 # Import crawler utilities (now in same directory)
 from crawler_utils import CrawlConfig, CrawlResult, generic_crawl
+
+logger = logging.getLogger(__name__)
 
 class AgentCrawler:
     """
@@ -114,8 +117,8 @@ class AgentCrawler:
                 dedup_min_content_length=dedup_min_content_length
             )
             
-            print(f"Starting crawl of {url} (max {max_pages} pages)")
-            print(f"Output: {output_root.resolve()}")
+            logger.info(f"Starting crawl of {url} (max {max_pages} pages)")
+            logger.info(f"Output: {output_root.resolve()}")
             
             # Execute crawl
             results, stats = await generic_crawl(config)
@@ -141,12 +144,12 @@ class AgentCrawler:
             }
             
             success = stats["successful_crawls"] > 0
-            
-            print(f"Crawl completed: {stats['successful_crawls']}/{stats['pages_crawled']} successful")
+
+            logger.info(f"Crawl completed: {stats['successful_crawls']}/{stats['pages_crawled']} successful")
             return success, crawl_data
-            
+
         except Exception as e:
-            print(f"Crawl failed: {e}")
+            logger.error(f"Crawl failed: {e}")
             return False, {
                 "url": url,
                 "error": str(e),
@@ -208,13 +211,13 @@ async def test_crawler():
         request_gap=0.5
     )
     
-    print(f"Crawl success: {success}")
+    logger.info(f"Crawl success: {success}")
     if success:
         summary = crawler.get_crawl_summary()
-        print(f"Summary: {summary}")
-        
+        logger.info(f"Summary: {summary}")
+
         content = crawler.get_content_for_indexing()
-        print(f"Indexable documents: {len(content)}")
+        logger.info(f"Indexable documents: {len(content)}")
 
 if __name__ == "__main__":
     asyncio.run(test_crawler())

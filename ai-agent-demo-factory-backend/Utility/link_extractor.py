@@ -2,6 +2,7 @@ import argparse
 from http.client import responses
 import sys
 from typing import List, Dict, Tuple, Optional, Any
+import logging
 
 # import pandas as pd
 # from usp.tree import sitemap_tree_for_homepage
@@ -14,17 +15,20 @@ from fake_useragent import UserAgent
 from urllib.parse import urljoin, urlparse
 import urllib.robotparser
 
+# Set up logger
+logger = logging.getLogger(__name__)
+
 # Try to import AI classifier - graceful fallback if not available
 try:
     # Add the crawl4ai-agent directory to path for imports
     crawl4ai_path = Path(__file__).parent.parent / "crawl4ai-agent"
     if crawl4ai_path.exists() and str(crawl4ai_path) not in sys.path:
         sys.path.insert(0, str(crawl4ai_path))
-    
+
     from ai_content_classifier import BusinessSiteDetector, AIContentClassifier
     AI_AVAILABLE = True
 except ImportError as e:
-    print(f"AI classification not available: {e}")
+    logger.warning(f"AI classification not available: {e}")
     AI_AVAILABLE = False
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -62,18 +66,18 @@ class LinkExtractor:
                     model=ai_config.preferred_model,
                     domain=self.domain
                 )
-                print("AI classification enabled for intelligent URL filtering")
+                logger.info("AI classification enabled for intelligent URL filtering")
 
                 # Trigger domain site type detection early using homepage
                 try:
                     homepage_url = f"https://{self.domain}/"
                     self.ai_classifier.detect_and_cache_domain_site_type(homepage_url, "", "")
-                    print(f"Domain site type cached for {self.domain}: {self.ai_classifier.get_domain_site_type().value}")
+                    logger.info(f"Domain site type cached for {self.domain}: {self.ai_classifier.get_domain_site_type().value}")
                 except Exception as e:
-                    print(f"Could not pre-detect domain site type: {e}")
+                    logger.warning(f"Could not pre-detect domain site type: {e}")
                     # Not critical - will be detected on first URL
             except Exception as e:
-                print(f"Failed to initialize AI classifier: {e}")
+                logger.error(f"Failed to initialize AI classifier: {e}")
                 self.use_ai = False
         
         # Domain extraction for boundary enforcement
@@ -100,10 +104,10 @@ class LinkExtractor:
 
     def check_directory_exists(self, directory_path):
         try:
-            print(self.file_path)
+            logger.debug(f"Checking directory path: {self.file_path}")
             directory_path.mkdir(parents=True, exist_ok=True)
         except Exception as e:
-            print(f"Error creating directory {directory_path}: {e}")
+            logger.error(f"Error creating directory {directory_path}: {e}")
             raise
 
 
@@ -130,8 +134,8 @@ class LinkExtractor:
 
             full_input_file_path = self.directory_path / self.file_name
             full_output_file_path = self.directory_path / self.output_file
-            print(f"Reading from: {full_input_file_path}")
-            print(f"Writing English URLs to: {full_output_file_path}")
+            logger.info(f"Reading from: {full_input_file_path}")
+            logger.info(f"Writing English URLs to: {full_output_file_path}")
 
             # Open both files at once to read and write efficiently
             with open(full_input_file_path, 'r', encoding='utf-8') as f_in, \
@@ -145,19 +149,19 @@ class LinkExtractor:
                         f_out.write(line)
                         english_urls_found += 1
 
-            print(f"\nFiltering complete.")
-            print(f"Found and saved {english_urls_found} English URLs.")
+            logger.info(f"Filtering complete.")
+            logger.info(f"Found and saved {english_urls_found} English URLs.")
 
         except FileNotFoundError:
-            print(f"Error: The input file was not found at '{full_input_file_path}'")
+            logger.error(f"Error: The input file was not found at '{full_input_file_path}'")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.error(f"An unexpected error occurred: {e}")
 
     def process_sitemap(self):
         self.check_directory_exists(self.directory_path)
         full_file_path = self.directory_path / self.file_name
-        print(f"Processing sitemap index from: {self.sitemap_url}")
-        print(f"Using headers: {self.session.headers}")
+        logger.info(f"Processing sitemap index from: {self.sitemap_url}")
+        logger.debug(f"Using headers: {self.session.headers}")
         try:
             # Stage 1: Fetch the main sitemap (which might be an index)
             response = self.session.get(self.sitemap_url, verify=False)
@@ -170,16 +174,16 @@ class LinkExtractor:
 
             # If no <loc> tags are found, it might be a direct sitemap, not an index.
             if not sitemap_urls:
-                print("No sitemap index found, treating as a direct sitemap.")
+                logger.info("No sitemap index found, treating as a direct sitemap.")
                 sitemap_urls = [self.sitemap_url]
 
-            print(f"Found {len(sitemap_urls)} sitemaps to process.")
+            logger.info(f"Found {len(sitemap_urls)} sitemaps to process.")
 
             # Open the output file once to write all links.
             with open(full_file_path, "w") as file:
                 # Stage 2: Process each individual sitemap URL found.
                 for url in sitemap_urls:
-                    print(f"  -> Processing sitemap: {url}")
+                    logger.info(f"  -> Processing sitemap: {url}")
                     try:
                         sitemap_response = self.session.get(url, verify=False)
                         sitemap_response.raise_for_status()
@@ -189,14 +193,14 @@ class LinkExtractor:
 
                         for loc in page_locs:
                             file.write(loc.text + "\n")
-                        print(f"     ...found and wrote {len(page_locs)} links.")
+                        logger.info(f"     ...found and wrote {len(page_locs)} links.")
                     except requests.exceptions.RequestException as e:
-                        print(f"     ...failed to process sitemap {url}: {e}")
+                        logger.warning(f"     ...failed to process sitemap {url}: {e}")
 
         except requests.exceptions.RequestException as e:
-            print(f"Failed to fetch the main sitemap index: {e}")
+            logger.error(f"Failed to fetch the main sitemap index: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred: {e}")
+            logger.error(f"An unexpected error occurred: {e}")
 
     def _extract_domain(self, url: str) -> str:
         """Extract base domain for boundary enforcement"""
@@ -266,13 +270,13 @@ class LinkExtractor:
                 intelligence['complexity_estimate'] = 'medium'
             else:
                 intelligence['complexity_estimate'] = 'simple'
-                
-            print(f"Robots.txt intelligence gathered: {len(intelligence['sitemaps'])} sitemaps, "
+
+            logger.info(f"Robots.txt intelligence gathered: {len(intelligence['sitemaps'])} sitemaps, "
                   f"{len(intelligence['hidden_sections'])} interesting sections, "
                   f"complexity: {intelligence['complexity_estimate']}")
-                  
+
         except Exception as e:
-            print(f"Could not analyze robots.txt for {domain}: {e}")
+            logger.warning(f"Could not analyze robots.txt for {domain}: {e}")
         
         self.robots_intel[domain] = intelligence
         return intelligence
@@ -293,10 +297,10 @@ class LinkExtractor:
             return [(url, 0.5, "AI not available - using all URLs") for url in urls]
         
         prioritized_urls = []
-        print(f"\n{'='*60}")
-        print(f" STARTING AI CLASSIFICATION OF SITEMAP URLS")
-        print(f"{'='*60}")
-        print(f"Applying AI classification to {len(urls)} URLs...")
+        logger.info(f"{'='*60}")
+        logger.info(f" STARTING AI CLASSIFICATION OF SITEMAP URLS")
+        logger.info(f"{'='*60}")
+        logger.info(f"Applying AI classification to {len(urls)} URLs...")
         
         # Initialize cost tracking for this sitemap analysis
         from pathlib import Path
@@ -309,12 +313,12 @@ class LinkExtractor:
         
         for i, url in enumerate(urls):
             if i % 50 == 0 and i > 0:
-                print(f"  Processed {i}/{len(urls)} URLs...")
+                logger.info(f"  Processed {i}/{len(urls)} URLs...")
 
             # Clear header for each URL
-            print(f"\n{'='*80}")
-            print(f"[{i+1:4d}/{len(urls)}] PROCESSING: {url}")
-            print(f"{'='*80}")
+            logger.info(f"{'='*80}")
+            logger.info(f"[{i+1:4d}/{len(urls)}] PROCESSING: {url}")
+            logger.info(f"{'='*80}")
 
             try:
                 # Extract basic information from URL
@@ -363,33 +367,33 @@ class LinkExtractor:
                     status = "WORTHY" if result.is_worthy else "FILTERED"
                     method_indicator = "AI" if result.method_used == "ai" else result.method_used.upper()
 
-                    print(f"\n🏁 FINAL RESULT: {status} ({confidence:.2f})")
-                    print(f"   Method: {method_indicator}")
-                    print(f"   Reasoning: {reasoning[:100]}...")
-                        
+                    logger.info(f"FINAL RESULT: {status} ({confidence:.2f})")
+                    logger.info(f"   Method: {method_indicator}")
+                    logger.info(f"   Reasoning: {reasoning[:100]}...")
+
                 except Exception as ai_error:
-                    print(f"\n  [{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
-                    print(f"        Error: {ai_error}")
+                    logger.warning(f"[{i+1:4d}/{len(urls)}] AI FAILED - {url[:70]}...")
+                    logger.warning(f"        Error: {ai_error}")
                     # Fallback to simple URL pattern analysis
                     confidence = self._simple_url_scoring(url)
                     reasoning = "Simple URL pattern analysis (AI failed)"
-                    print(f"        Fallback: Heuristic score {confidence:.2f}")
+                    logger.info(f"        Fallback: Heuristic score {confidence:.2f}")
                 
                 prioritized_urls.append((url, confidence, reasoning))
-                
+
             except Exception as e:
-                print(f"Error classifying URL {url}: {e}")
+                logger.error(f"Error classifying URL {url}: {e}")
                 prioritized_urls.append((url, 0.3, f"Classification error: {str(e)[:50]}"))
         
         # Sort by confidence score (highest first)
         prioritized_urls.sort(key=lambda x: x[1], reverse=True)
-        
-        print(f"\n{'='*50}")
-        print(f" URL CLASSIFICATION RESULTS")
-        print(f"{'='*50}")
-        print(f"URL classification complete. Top 10 URLs by confidence:")
+
+        logger.info(f"{'='*50}")
+        logger.info(f" URL CLASSIFICATION RESULTS")
+        logger.info(f"{'='*50}")
+        logger.info(f"URL classification complete. Top 10 URLs by confidence:")
         for i, (url, confidence, reasoning) in enumerate(prioritized_urls[:10]):
-            print(f"  {i+1}. {confidence:.2f} - {url[:60]}... ({reasoning[:50]}...)")
+            logger.info(f"  {i+1}. {confidence:.2f} - {url[:60]}... ({reasoning[:50]}...)")
         
         # Show detailed cost summary
         cost_tracker.print_session_summary(compact=False)
@@ -458,13 +462,13 @@ class LinkExtractor:
         
         import time
         start_time = time.time()
-        
-        print(f"Processing {len(sitemap_urls_to_process)} sitemaps with AI enhancement...")
+
+        logger.info(f"Processing {len(sitemap_urls_to_process)} sitemaps with AI enhancement...")
         
         # Extract all URLs from sitemaps
         for sitemap_url in sitemap_urls_to_process:
             try:
-                print(f"  -> Processing sitemap: {sitemap_url}")
+                logger.info(f"  -> Processing sitemap: {sitemap_url}")
                 response = self.session.get(sitemap_url, verify=False)
                 response.raise_for_status()
 
@@ -482,9 +486,9 @@ class LinkExtractor:
                             sub_soup = BeautifulSoup(sub_sitemap_response.content, "lxml-xml")
                             sub_urls = [sub_loc.text for sub_loc in sub_soup.find_all("loc")]
                             all_urls.extend(sub_urls)
-                            print(f"     ...extracted {len(sub_urls)} URLs from {loc.text}")
+                            logger.info(f"     ...extracted {len(sub_urls)} URLs from {loc.text}")
                         except Exception as e:
-                            print(f"     ...failed to process sub-sitemap {loc.text}: {e}")
+                            logger.warning(f"     ...failed to process sub-sitemap {loc.text}: {e}")
                 else:
                     # Direct sitemap with URLs
                     urls = [loc.text for loc in sitemap_refs]
@@ -493,16 +497,16 @@ class LinkExtractor:
                     if max_urls and len(all_urls) + len(urls) > max_urls:
                         remaining_quota = max_urls - len(all_urls)
                         urls = urls[:remaining_quota] if remaining_quota > 0 else []
-                        print(f"     ...extracted {len(urls)} URLs (LIMITED by max_urls={max_urls})")
+                        logger.info(f"     ...extracted {len(urls)} URLs (LIMITED by max_urls={max_urls})")
                     else:
-                        print(f"     ...extracted {len(urls)} URLs")
+                        logger.info(f"     ...extracted {len(urls)} URLs")
                     
                     all_urls.extend(urls)
                 
                 processing_stats['total_sitemaps_processed'] += 1
-                
+
             except Exception as e:
-                print(f"  -> Failed to process sitemap {sitemap_url}: {e}")
+                logger.error(f"  -> Failed to process sitemap {sitemap_url}: {e}")
         
         processing_stats['total_urls_discovered'] = len(all_urls)
         
@@ -510,7 +514,7 @@ class LinkExtractor:
         filtered_urls = [url for url in all_urls if self._is_same_domain(url, self.base_domain)]
         removed_external = len(all_urls) - len(filtered_urls)
         if removed_external > 0:
-            print(f"Removed {removed_external} external domain URLs (domain boundary enforcement)")
+            logger.info(f"Removed {removed_external} external domain URLs (domain boundary enforcement)")
         
         # Apply AI classification for prioritization
         if filtered_urls:
@@ -520,7 +524,7 @@ class LinkExtractor:
             final_urls = [url for url, confidence, reasoning in prioritized_results]
             if max_urls:
                 final_urls = final_urls[:max_urls]
-                print(f"Limited output to top {len(final_urls)} URLs by AI confidence")
+                logger.info(f"Limited output to top {len(final_urls)} URLs by AI confidence")
             
             processing_stats['ai_classified_urls'] = len(prioritized_results)
             processing_stats['final_url_count'] = len(final_urls)
@@ -529,12 +533,12 @@ class LinkExtractor:
             final_urls = []
             
         processing_stats['processing_time'] = time.time() - start_time
-        
-        print(f"\nSitemap processing complete:")
-        print(f"  - Total URLs discovered: {processing_stats['total_urls_discovered']}")
-        print(f"  - URLs after domain filtering: {len(filtered_urls)}")
-        print(f"  - Final URLs returned: {len(final_urls)}")
-        print(f"  - Processing time: {processing_stats['processing_time']:.2f}s")
+
+        logger.info(f"Sitemap processing complete:")
+        logger.info(f"  - Total URLs discovered: {processing_stats['total_urls_discovered']}")
+        logger.info(f"  - URLs after domain filtering: {len(filtered_urls)}")
+        logger.info(f"  - Final URLs returned: {len(final_urls)}")
+        logger.info(f"  - Processing time: {processing_stats['processing_time']:.2f}s")
         
         return final_urls, processing_stats
 

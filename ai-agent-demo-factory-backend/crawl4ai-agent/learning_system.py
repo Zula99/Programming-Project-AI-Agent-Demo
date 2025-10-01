@@ -472,22 +472,22 @@ async def test_learning_system():
         mock_quality,
         {'timeout': 30, 'delay': 1.0}
     )
-    
-    print(f"Stored pattern: {pattern_id}")
-    
+
+    logger.info(f"Stored pattern: {pattern_id}")
+
     # Test pattern retrieval
     similar_patterns = await learning.find_similar_patterns("https://www.nab.com.au", mock_recon)
-    print(f"Found {len(similar_patterns)} similar patterns")
-    
+    logger.info(f"Found {len(similar_patterns)} similar patterns")
+
     # Test strategy recommendation
     recommendation = await learning.recommend_strategy("https://www.anz.com.au", mock_recon)
     if recommendation:
         strategy, config, confidence = recommendation
-        print(f"Recommended: {strategy} with confidence {confidence:.2f}")
-    
+        logger.info(f"Recommended: {strategy} with confidence {confidence:.2f}")
+
     # Get statistics
     stats = learning.get_learning_statistics()
-    print(f"Learning Statistics: {stats}")
+    logger.info(f"Learning Statistics: {stats}")
 
 
 if __name__ == "__main__":

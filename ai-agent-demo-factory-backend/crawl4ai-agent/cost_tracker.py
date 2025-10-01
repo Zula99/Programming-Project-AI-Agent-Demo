@@ -13,6 +13,9 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 import threading
 from urllib.parse import urlparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -96,8 +99,8 @@ class CostTracker:
             }
         }
         
-        print(f"💰 Cost tracking initialized for {domain}")
-        print(f"📊 Session log: {self.session_file}")
+        logger.info(f"Cost tracking initialized for {domain}")
+        logger.info(f"Session log: {self.session_file}")
     
     def _generate_session_filename(self) -> Path:
         """Generate unique session cost log filename"""
@@ -139,15 +142,15 @@ class CostTracker:
                 self.ai_calls += 1
                 
                 # Real-time cost display
-                print(f"        💰 ${result.estimated_cost:.6f} | Total session: ${self.total_session_cost:.4f}")
-                
+                logger.info(f"        ${result.estimated_cost:.6f} | Total session: ${self.total_session_cost:.4f}")
+
             elif result.method_used == "cache":
                 self.cached_calls += 1
-                print(f"        📋 CACHED (${0:.6f}) | Total session: ${self.total_session_cost:.4f}")
-                
+                logger.info(f"        CACHED (${0:.6f}) | Total session: ${self.total_session_cost:.4f}")
+
             else:  # heuristic
                 self.heuristic_calls += 1
-                print(f"        🔧 HEURISTIC (${0:.6f}) | Total session: ${self.total_session_cost:.4f}")
+                logger.info(f"        HEURISTIC (${0:.6f}) | Total session: ${self.total_session_cost:.4f}")
             
             if result.is_worthy:
                 self.worthy_urls += 1
@@ -179,7 +182,7 @@ class CostTracker:
                 json.dump(session_data, f, indent=2)
                 
         except Exception as e:
-            print(f"⚠️  Failed to save incremental cost update: {e}")
+            logger.warning(f"Failed to save incremental cost update: {e}")
     
     def get_session_stats(self) -> Dict:
         """Get current session statistics"""
@@ -207,10 +210,10 @@ class CostTracker:
         
         if compact:
             # Compact one-liner
-            print(f"💰 ${stats['total_cost']:.4f} | {stats['ai_calls']} calls, {stats['cached_calls']} cached | {stats['worthy_percentage']:.1f}% worthy")
+            logger.info(f"${stats['total_cost']:.4f} | {stats['ai_calls']} calls, {stats['cached_calls']} cached | {stats['worthy_percentage']:.1f}% worthy")
         else:
             # Full summary (only when needed)
-            print(f"\n💰 AI Cost: ${stats['total_cost']:.4f} ({stats['ai_calls']} calls, {stats['cached_calls']} cached) | {stats['worthy_percentage']:.1f}% worthy")
+            logger.info(f"\nAI Cost: ${stats['total_cost']:.4f} ({stats['ai_calls']} calls, {stats['cached_calls']} cached) | {stats['worthy_percentage']:.1f}% worthy")
     
     def save_final_session(self) -> SessionSummary:
         """Save complete session data and return summary"""
@@ -247,9 +250,9 @@ class CostTracker:
         try:
             with open(self.session_file, 'w') as f:
                 json.dump(session_data, f, indent=2)
-            print(f"💾 Detailed cost log saved: {self.session_file}")
+            logger.info(f"Detailed cost log saved: {self.session_file}")
         except Exception as e:
-            print(f"⚠️  Failed to save session log: {e}")
+            logger.error(f"Failed to save session log: {e}")
         
         # Update daily summary
         self._update_daily_summary(summary)
@@ -284,11 +287,11 @@ class CostTracker:
             # Save updated daily summary
             with open(self.daily_summary_file, 'w') as f:
                 json.dump(daily_totals, f, indent=2)
-                
-            print(f"📅 Daily summary updated: ${daily_totals['total_cost']:.4f} total today")
-            
+
+            logger.info(f"Daily summary updated: ${daily_totals['total_cost']:.4f} total today")
+
         except Exception as e:
-            print(f"⚠️  Failed to update daily summary: {e}")
+            logger.warning(f"Failed to update daily summary: {e}")
     
     @classmethod
     def load_session(cls, session_file: Path) -> Dict:
@@ -297,7 +300,7 @@ class CostTracker:
             with open(session_file, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Failed to load session {session_file}: {e}")
+            logger.error(f"Failed to load session {session_file}: {e}")
             return {}
     
     @classmethod
@@ -326,7 +329,7 @@ class CostTracker:
             }
             
         except Exception as e:
-            print(f"Failed to analyze daily costs: {e}")
+            logger.error(f"Failed to analyze daily costs: {e}")
             return {}
 
 
@@ -343,12 +346,12 @@ class CostTrackingSession:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.tracker.print_session_summary(compact=True)  # Use compact summary by default
         summary = self.tracker.save_final_session()
-        
+
         if exc_type is None:
-            print("✅ Cost tracking completed successfully")
+            logger.info("Cost tracking completed successfully")
         else:
-            print(f"⚠️  Cost tracking ended with error: {exc_val}")
-        
+            logger.error(f"Cost tracking ended with error: {exc_val}")
+
         return False  # Don't suppress exceptions
 
 
@@ -391,11 +394,11 @@ async def test_cost_tracking():
                     tracker.track_classification(url, result, 100)
                     
                 except Exception as e:
-                    print(f"Test classification failed: {e}")
-        
+                    logger.error(f"Test classification failed: {e}")
+
         # Print intermediate stats
         stats = tracker.get_session_stats()
-        print(f"Intermediate stats: {stats['total_cost']:.4f} for {stats['urls_processed']} URLs")
+        logger.info(f"Intermediate stats: {stats['total_cost']:.4f} for {stats['urls_processed']} URLs")
 
 
 if __name__ == "__main__":

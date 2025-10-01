@@ -181,9 +181,10 @@ class SmartMirrorAgent:
         crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results)
         
         # Step 5: Quality assessment
-        print("\n" + "="*70)
-        print(" STARTING QUALITY ASSESSMENT & ANALYSIS")
-        print("="*70)
+        self.logger.info("")
+        self.logger.info("="*70)
+        self.logger.info(" STARTING QUALITY ASSESSMENT & ANALYSIS")
+        self.logger.info("="*70)
         quality_metrics = await self.assess_quality(crawl_data)
         
         # Step 6: Get output path for OpenSearch indexing
@@ -291,10 +292,11 @@ class SmartMirrorAgent:
                 hybrid_crawler = HybridCrawler(
                     output_dir=f"./output/agent_crawls/{domain}"
                 )
-                
-                print("\n" + "="*70)
-                print(" STARTING SITE ANALYSIS & STRATEGY SELECTION")
-                print("="*70)
+
+                self.logger.info("")
+                self.logger.info("="*70)
+                self.logger.info(" STARTING SITE ANALYSIS & STRATEGY SELECTION")
+                self.logger.info("="*70)
                 self.logger.info(f" Using US-54 Hybrid Crawler System")
                 
                 # Step 1: Analyze site structure (sitemap-first vs progressive)
@@ -308,10 +310,11 @@ class SmartMirrorAgent:
                 self.logger.info(f"   Max pages: {plan.max_pages_recommendation}")
                 self.logger.info(f"   Priority URLs: {len(plan.priority_urls)}")
                 self.logger.info(f"   Reasoning: {plan.reasoning}")
-                
-                print("\n" + "="*70)
-                print("🚀 STARTING HYBRID CRAWL EXECUTION")
-                print("="*70)
+
+                self.logger.info("")
+                self.logger.info("="*70)
+                self.logger.info(" STARTING HYBRID CRAWL EXECUTION")
+                self.logger.info("="*70)
                 
                 # Step 3: Execute hybrid crawl with cost tracking
                 try:
@@ -872,8 +875,8 @@ if __name__ == "__main__":
     # Test with a URL
     async def test():
         success, metrics, output_path = await agent.process_url("https://www.nab.com.au")
-        print(f"Success: {success}")
-        print(f"Quality Score: {metrics.overall_score}")
-        print(f"Output Path: {output_path}")
-        
+        logging.info(f"Success: {success}")
+        logging.info(f"Quality Score: {metrics.overall_score}")
+        logging.info(f"Output Path: {output_path}")
+
     # asyncio.run(test())

@@ -26,21 +26,21 @@ async def auto_configure_proxy(target_url: str, run_id: str = None):
             })
             
             if response.status_code == 200:
-                print(f"\n🚀 Auto-Proxy Configured!")
-                print(f"   Proxy URL: http://localhost:8000/proxy/")
-                print(f"   Target: {target_url}")
-                print(f"   Run ID: {run_id}")
+                logging.info(f"Auto-Proxy Configured!")
+                logging.info(f"   Proxy URL: http://localhost:8000/proxy/")
+                logging.info(f"   Target: {target_url}")
+                logging.info(f"   Run ID: {run_id}")
                 return True
             else:
-                print(f"\n⚠️  Proxy configuration failed: {response.status_code}")
+                logging.warning(f"Proxy configuration failed: {response.status_code}")
                 return False
-                
+
     except httpx.ConnectError:
-        print(f"\n⚠️  Proxy server not running (http://localhost:8000)")
-        print(f"   Start with: python ai-agent-demo-factory-backend/Proxy/proxy_server.py")
+        logging.warning(f"Proxy server not running (http://localhost:8000)")
+        logging.info(f"   Start with: python ai-agent-demo-factory-backend/Proxy/proxy_server.py")
         return False
     except Exception as e:
-        print(f"\n⚠️  Proxy configuration error: {e}")
+        logging.warning(f"Proxy configuration error: {e}")
         return False
 
 
@@ -61,16 +61,16 @@ def normalize_url(url):
 
 def get_user_input(preset_url=None):
     """Get target site from user - agent decides everything else"""
-    print("=" * 60)
-    print(" SmartMirrorAgent - Autonomous Demo Site Builder")
-    print("=" * 60)
-    print()
-    
+    logging.info("=" * 60)
+    logging.info(" SmartMirrorAgent - Autonomous Demo Site Builder")
+    logging.info("=" * 60)
+    logging.info("")
+
     if preset_url:
         # URL provided via command line - auto-fill but show what we're using
         site = normalize_url(preset_url)
-        print(f"Target URL provided: {site}")
-        print()
+        logging.info(f"Target URL provided: {site}")
+        logging.info("")
     else:
         # Interactive input
         while True:
@@ -78,15 +78,15 @@ def get_user_input(preset_url=None):
             if site:
                 site = normalize_url(site)
                 break
-            print(" Please enter a valid website")
-    
-    print(f" Target: {site}")
-    print(" Agent will automatically determine:")
-    print("   • Optimal crawling strategy")
-    print("   • Required coverage for quality demo")
-    print("   • When to stop for best results")
-    print()
-    
+            logging.info(" Please enter a valid website")
+
+    logging.info(f" Target: {site}")
+    logging.info(" Agent will automatically determine:")
+    logging.info("   - Optimal crawling strategy")
+    logging.info("   - Required coverage for quality demo")
+    logging.info("   - When to stop for best results")
+    logging.info("")
+
     return site
 
 def parse_arguments():
@@ -121,13 +121,14 @@ async def run_agent_interactive():
     try:
         # Get target site only
         target_url = get_user_input()
-        
-        print("\n" + "=" * 60)
-        print(" Starting SmartMirrorAgent")
-        print("=" * 60)
-        print(f" Target: {target_url}")
-        print(" Agent operating autonomously...")
-        print()
+
+        logging.info("")
+        logging.info("=" * 60)
+        logging.info(" Starting SmartMirrorAgent")
+        logging.info("=" * 60)
+        logging.info(f" Target: {target_url}")
+        logging.info(" Agent operating autonomously...")
+        logging.info("")
         
         # Start comprehensive logging
         with CrawlSession(target_url, "./output/logs") as logger:
@@ -137,7 +138,7 @@ async def run_agent_interactive():
             agent = SmartMirrorAgent(memory_path="interactive_agent_memory.json")
             
             try:
-                print(" Processing website...")
+                logging.info(" Processing website...")
                 logger.log_phase("CRAWLING", "Starting autonomous crawl process")
                 
                 # Run the agent - it decides everything
@@ -171,98 +172,109 @@ async def run_agent_interactive():
                     logger.log_phase("CLEANUP", "Agent resources cleaned up")
         
         # Display results (after logging context ends)
-        print("\n" + "=" * 60)
-        print(" RESULTS")
-        print("=" * 60)
-        
+        logging.info("")
+        logging.info("=" * 60)
+        logging.info(" RESULTS")
+        logging.info("=" * 60)
+
         # Debug auto-proxy trigger conditions
-        print(f"\n DEBUG: success={success}, output_path={output_path}")
-        
+        logging.info(f" DEBUG: success={success}, output_path={output_path}")
+
         if success:
-            print(" Crawl completed successfully!")
+            logging.info(" Crawl completed successfully!")
         else:
-            print(" Crawl failed or had issues")
+            logging.warning(" Crawl failed or had issues")
         
         if metrics:
-            print(f"\n Quality Metrics:")
-            print(f"   Overall Score:        {metrics.overall_score:.1%}")
-            print(f"   Content Completeness: {metrics.content_completeness:.1%}")
-            print(f"   Asset Coverage:       {metrics.asset_coverage:.1%}")
-            print(f"   Navigation Integrity: {metrics.navigation_integrity:.1%}")
-            print(f"   Visual Fidelity:      {metrics.visual_fidelity:.1%}")
-            print(f"   Site Coverage:        {metrics.site_coverage:.1%} (90% target)")
-            print(f"   URL Quality Ratio:    {metrics.url_quality_ratio:.1%} ({metrics.total_filtered_urls} filtered)")
+            logging.info("")
+            logging.info(" Quality Metrics:")
+            logging.info(f"   Overall Score:        {metrics.overall_score:.1%}")
+            logging.info(f"   Content Completeness: {metrics.content_completeness:.1%}")
+            logging.info(f"   Asset Coverage:       {metrics.asset_coverage:.1%}")
+            logging.info(f"   Navigation Integrity: {metrics.navigation_integrity:.1%}")
+            logging.info(f"   Visual Fidelity:      {metrics.visual_fidelity:.1%}")
+            logging.info(f"   Site Coverage:        {metrics.site_coverage:.1%} (90% target)")
+            logging.info(f"   URL Quality Ratio:    {metrics.url_quality_ratio:.1%} ({metrics.total_filtered_urls} filtered)")
         else:
-            print(f"\n Quality Metrics: Not available due to crawl failure")
+            logging.warning(" Quality Metrics: Not available due to crawl failure")
         
-        # Show filtering breakdown if significant  
+        # Show filtering breakdown if significant
         if metrics and hasattr(metrics, 'total_filtered_urls') and metrics.total_filtered_urls > 5:
-            print(f"\n Smart Filtering Results:")
+            logging.info("")
+            logging.info(" Smart Filtering Results:")
             if metrics.filtering_breakdown:
                 sorted_filters = sorted(metrics.filtering_breakdown.items(), key=lambda x: x[1], reverse=True)
                 for category, count in sorted_filters[:5]:
                     if count > 0:
                         category_name = category.replace('_', ' ').title()
-                        print(f"   {category_name}: {count} URLs")
+                        logging.info(f"   {category_name}: {count} URLs")
         
         # Quality interpretation
         if metrics and hasattr(metrics, 'overall_score'):
             score = metrics.overall_score
             if score >= 0.9:
-                print("\n EXCELLENT! Achieved 90%+ target success rate")
+                logging.info("")
+                logging.info(" EXCELLENT! Achieved 90%+ target success rate")
             elif score >= 0.8:
-                print("\n GOOD performance")
+                logging.info("")
+                logging.info(" GOOD performance")
             elif score >= 0.7:
-                print("\n  ACCEPTABLE - minor improvements needed")
+                logging.info("")
+                logging.info(" ACCEPTABLE - minor improvements needed")
             elif score >= 0.6:
-                print("\n NEEDS WORK - significant improvements needed")
+                logging.warning("")
+                logging.warning(" NEEDS WORK - significant improvements needed")
             else:
-                print("\n FAILED - major strategy revision required")
+                logging.error("")
+                logging.error(" FAILED - major strategy revision required")
         
         # Show crawl details
         if hasattr(agent.crawler, 'get_crawl_summary'):
             summary = agent.crawler.get_crawl_summary()
-            print(f"\n Crawl Summary:")
-            print(f"   Pages crawled:     {summary.get('pages_crawled', 0)}")
-            print(f"   Content chars:     {summary.get('total_content_chars', 0):,}")
-            print(f"   Avg per page:      {summary.get('average_content_per_page', 0):.0f} chars")
-            print(f"   Pages with content: {summary.get('pages_with_content', 0)}")
-            print(f"   Unique links:      {summary.get('unique_links_found', 0)}")
+            logging.info("")
+            logging.info(" Crawl Summary:")
+            logging.info(f"   Pages crawled:     {summary.get('pages_crawled', 0)}")
+            logging.info(f"   Content chars:     {summary.get('total_content_chars', 0):,}")
+            logging.info(f"   Avg per page:      {summary.get('average_content_per_page', 0):.0f} chars")
+            logging.info(f"   Pages with content: {summary.get('pages_with_content', 0)}")
+            logging.info(f"   Unique links:      {summary.get('unique_links_found', 0)}")
         
         # Show output path for OpenSearch indexing
         if success and output_path:
-            print(f"\n  Crawl Output:")
-            print(f"   Location: {output_path}")
-            print(f"   Ready for: OpenSearch indexing, Proxy system")
-            
+            logging.info("")
+            logging.info(" Crawl Output:")
+            logging.info(f"   Location: {output_path}")
+            logging.info(f"   Ready for: OpenSearch indexing, Proxy system")
+
             # Auto-configure proxy for successful crawls
             crawl_id = str(uuid.uuid4())
             await auto_configure_proxy(target_url, crawl_id)
-        
-        print("\n" + "=" * 60)
-        
+
+        logging.info("")
+        logging.info("=" * 60)
+
         # Ask if user wants to run another site
-        print()
+        logging.info("")
         run_another = input("Run another site? (y/n): ").strip().lower()
         if run_another in ('y', 'yes'):
             return True  # Signal to continue
         else:
-            print("\n Thanks for using SmartMirrorAgent!")
+            logging.info(" Thanks for using SmartMirrorAgent!")
             return False  # Signal to exit
-            
+
     except KeyboardInterrupt:
-        print("\n\n⏹  Cancelled by user")
+        logging.warning("Cancelled by user")
         return False
     except Exception as e:
-        print(f"\n Error: {e}")
+        logging.error(f" Error: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 async def main():
     """Main loop to handle multiple crawls without recursion"""
-    print("Starting SmartMirrorAgent Interactive Mode...")
-    
+    logging.info("Starting SmartMirrorAgent Interactive Mode...")
+
     while True:
         continue_crawling = await run_agent_interactive()
         if not continue_crawling:

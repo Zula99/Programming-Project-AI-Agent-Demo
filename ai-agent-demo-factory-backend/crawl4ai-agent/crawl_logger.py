@@ -100,14 +100,14 @@ class CrawlLogger:
         
         sys.stdout = TeeOutput(self.original_stdout, self.log_file)
         sys.stderr = TeeOutput(self.original_stderr, self.log_file)
-        
-        print(f"🔍 Crawl logging started - saving to: {self.log_path}")
+
+        self.logger.info(f"Crawl logging started - saving to: {self.log_path}")
         
     def log_phase(self, phase_name: str, details: str = ""):
         """Log a specific phase of the crawl process"""
         if self.logger:
             self.logger.info(f"PHASE: {phase_name} - {details}")
-            print(f"📊 {phase_name}: {details}")
+            self.logger.info(f"{phase_name}: {details}")
     
     def log_error(self, error: Exception, context: str = ""):
         """Log an error with context"""
@@ -154,10 +154,10 @@ class CrawlLogger:
                 
         if self.log_file:
             self.log_file.close()
-            
-        status_emoji = "✅" if success else "❌"
-        print(f"{status_emoji} Crawl log saved to: {self.log_path}")
-        print(f"📊 Session duration: {duration:.1f}s")
+
+        status_msg = "SUCCESS" if success else "FAILED"
+        self.logger.info(f"{status_msg} - Crawl log saved to: {self.log_path}")
+        self.logger.info(f"Session duration: {duration:.1f}s")
 
 
 class TeeOutput:

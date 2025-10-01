@@ -7,6 +7,10 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
 import json
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # Load .env file if available
 try:
@@ -64,7 +68,7 @@ class AIConfigManager:
                 with open(self.config_file, 'r') as f:
                     config_data = json.load(f)
             except Exception as e:
-                print(f"Warning: Could not load AI config file: {e}")
+                logger.warning(f"Could not load AI config file: {e}")
         
         # Override with environment variables
         env_config = {
@@ -96,7 +100,7 @@ class AIConfigManager:
             with open(self.config_file, 'w') as f:
                 json.dump(config_dict, f, indent=2)
         except Exception as e:
-            print(f"Warning: Could not save AI config: {e}")
+            logger.warning(f"Could not save AI config: {e}")
     
     def get_available_models(self) -> Dict[str, bool]:
         """Check which AI models are available based on API keys"""
