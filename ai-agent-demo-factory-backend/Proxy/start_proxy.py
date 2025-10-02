@@ -7,17 +7,17 @@ import uvicorn
 
 if __name__ == "__main__":
     print("   Starting Auto-Proxy Server...")
-    print("   URL: http://localhost:8000")
-    print("   Status: http://localhost:8000/")
-    print("   Configure: POST http://localhost:8000/auto-configure")
-    print("   Proxy: http://localhost:8000/proxy/[path]")
+    print("   URL: http://localhost:8001")
+    print("   Status: http://localhost:8001/")
+    print("   Configure: POST http://localhost:8001/auto-configure")
+    print("   Proxy: http://localhost:8001/proxy/[path]")
     print("   Press Ctrl+C to stop")
     print()
-    
+
     uvicorn.run(
         "proxy_server:app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         reload=True,
         log_level="info"
     )

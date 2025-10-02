@@ -74,6 +74,22 @@ export async function sendAgentResponse(runId: string, response: string): Promis
 }
 
 /**
+ * Stop a running Crawl4AI agent session
+ */
+export async function stopCrawl4AI(runId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/crawl4ai/stop/${runId}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to stop crawl: ${res.statusText}`);
+  }
+}
+
+/**
  * Create a WebSocket connection for live agent output
  */
 export function createWebSocketConnection(

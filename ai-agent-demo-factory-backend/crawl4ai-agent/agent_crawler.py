@@ -201,23 +201,3 @@ class AgentCrawler:
         
         return documents
 
-async def test_crawler():
-    """Test the agent crawler with NAB website"""
-    crawler = AgentCrawler()
-    
-    success, crawl_data = await crawler.crawl_website(
-        url="https://www.nab.com.au/",
-        max_pages=5,  # Small test
-        request_gap=0.5
-    )
-    
-    logger.info(f"Crawl success: {success}")
-    if success:
-        summary = crawler.get_crawl_summary()
-        logger.info(f"Summary: {summary}")
-
-        content = crawler.get_content_for_indexing()
-        logger.info(f"Indexable documents: {len(content)}")
-
-if __name__ == "__main__":
-    asyncio.run(test_crawler())

@@ -137,6 +137,8 @@ async def broadcast_backend_log(backend_log):
         for websocket in connections[:]:  # Use slice to avoid modification during iteration
             try:
                 await websocket.send_text(json.dumps(message))
+                # Small yield to allow other tasks to run and WebSocket to actually send
+                await asyncio.sleep(0)
             except:
                 # Remove disconnected websockets
                 connections.remove(websocket)
@@ -155,10 +157,14 @@ def setup_websocket_logging():
     websocket_handler = WebSocketLogHandler()
     websocket_handler.setFormatter(logging.Formatter('%(name)s - %(message)s'))
 
-    # Configure root logger to capture all logs
+    # Configure root logger to capture all logs (INFO and above)
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.INFO)
     root_logger.addHandler(websocket_handler)
+
+    # Silence noisy third-party DEBUG logs
+    logging.getLogger("opensearch").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     # Configure uvicorn logger specifically
     uvicorn_logger = logging.getLogger("uvicorn")

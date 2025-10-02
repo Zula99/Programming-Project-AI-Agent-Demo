@@ -6,9 +6,9 @@ import Crawl4AIUrlBar from "@/components/Crawl4AIUrlBar";
 import AgentOutputCard from "@/components/AgentOutputCard";
 import CrawlProgressPanel from "@/components/CrawlProgressPanel";
 import BackendLogsDropdown from "@/components/BackendLogsDropdown";
-import { startCrawl4AI, createWebSocketConnection, type AgentLog } from "@/lib/crawl4ai-api";
+import { startCrawl4AI, stopCrawl4AI, createWebSocketConnection, type AgentLog } from "@/lib/crawl4ai-api";
 
-type AgentStatus = "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error";
+type AgentStatus = "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error" | "stopped";
 
 interface CrawlProgress {
   percentage: number;
@@ -17,6 +17,8 @@ interface CrawlProgress {
   total_pages: number;
   estimated_time_remaining: number;
   crawl_speed: number;
+  ai_classifications: number;
+  cache_hits: number;
 }
 
 interface BackendLogEntry {
@@ -38,7 +40,9 @@ export default function Crawl4AIPage() {
     pages_remaining: 0,
     total_pages: 0,
     estimated_time_remaining: 0,
-    crawl_speed: 0
+    crawl_speed: 0,
+    ai_classifications: 0,
+    cache_hits: 0
   });
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -58,7 +62,9 @@ export default function Crawl4AIPage() {
         pages_remaining: 0,
         total_pages: 0,
         estimated_time_remaining: 0,
-        crawl_speed: 0
+        crawl_speed: 0,
+        ai_classifications: 0,
+        cache_hits: 0
       });
 
       // Establish WebSocket connection with a slight delay
@@ -68,6 +74,25 @@ export default function Crawl4AIPage() {
     } catch (error) {
       console.error("Failed to start Crawl4AI:", error);
       alert("Failed to start Crawl4AI agent. Please try again.");
+    }
+  };
+
+  // Handle stopping a crawl
+  const handleStopCrawl = async () => {
+    if (!runId) return;
+
+    try {
+      // Immediately update UI
+      setStatus("idle");
+
+      // Send stop request (don't wait for response)
+      stopCrawl4AI(runId).catch((error) => {
+        console.error("Stop request failed:", error);
+      });
+
+      console.log("Crawl force stopped");
+    } catch (error) {
+      console.error("Failed to stop crawl:", error);
     }
   };
 
@@ -119,7 +144,7 @@ export default function Crawl4AIPage() {
           } else if (data.type === 'progress') {
             setProgress(data.progress);
           } else if (data.type === 'backend_log') {
-            setBackendLogs(prev => [...prev.slice(-49), data.log]); // Keep last 50 logs
+            setBackendLogs(prev => [...prev, data.log]); // Keep all logs
           }
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
@@ -147,6 +172,7 @@ export default function Crawl4AIPage() {
       <Header />
       <Crawl4AIUrlBar
         onStartCrawl={handleStartCrawl}
+        onStopCrawl={handleStopCrawl}
         isRunning={status === "running"}
       />
 
@@ -169,15 +195,18 @@ export default function Crawl4AIPage() {
             isConnected={isConnected}
             status={status}
             logs={logs}
-          />
-
-          {/* Backend Logs Dropdown */}
-          <BackendLogsDropdown
-            runId={runId}
-            isConnected={isConnected}
             backendLogs={backendLogs}
           />
         </div>
+      </div>
+
+      {/* Backend Logs Dropdown - Full Width */}
+      <div className="mt-6">
+        <BackendLogsDropdown
+          runId={runId}
+          isConnected={isConnected}
+          backendLogs={backendLogs}
+        />
       </div>
     </main>
   );

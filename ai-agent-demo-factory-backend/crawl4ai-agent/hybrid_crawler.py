@@ -96,7 +96,10 @@ class HybridCrawler:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logger = logging.getLogger(__name__)
-        
+
+        # Progress callback for real-time updates (injected from FastAPI)
+        self.progress_callback = None
+
         # Initialize AI components if available
         self.ai_classifier = None
         self.site_detector = None
@@ -107,7 +110,7 @@ class HybridCrawler:
             except Exception as e:
                 self.logger.warning(f"Failed to initialize AI components: {e}")
     
-    async def analyze_site_structure(self, start_url: str) -> SitemapAnalysis:
+    async def analyze_site_structure(self, start_url: str, run_id: Optional[str] = None) -> SitemapAnalysis:
         """
         Comprehensive site analysis to determine optimal discovery strategy.
         
@@ -151,16 +154,27 @@ class HybridCrawler:
             for sitemap_url in sitemap_candidates:
                 try:
                     self.logger.info(f"   Trying sitemap: {sitemap_url}")
-                    
-                    # Initialize LinkExtractor for this sitemap
+
+                    # Create stop check callback
+                    def should_stop():
+                        if not run_id:
+                            return False
+                        try:
+                            from task_manager import task_manager
+                            return task_manager.should_stop(run_id)
+                        except:
+                            return False
+
+                    # Initialize LinkExtractor for this sitemap with stop callback
                     extractor = LinkExtractor(
                         sitemap_url=sitemap_url,
                         file_name="temp_analysis",
-                        output_file="temp_urls.txt", 
+                        output_file="temp_urls.txt",
                         file_path=str(temp_dir),
-                        use_ai=True  # Enable AI for intelligent analysis
+                        use_ai=True,  # Enable AI for intelligent analysis
+                        stop_check_callback=should_stop
                     )
-                    
+
                     # Test sitemap accessibility and extract URLs with AI analysis
                     urls, metadata = await extractor.process_sitemap_with_ai(
                         max_urls=None,  # No limit - process full sitemap
@@ -319,15 +333,31 @@ class HybridCrawler:
         try:
             self.logger.info(f" Starting US-54 hybrid crawl of {start_url}")
             start_time = time.time()
-            
+
             # Generate run_id if not provided
             if not run_id:
                 run_id = generate_run_id() if COVERAGE_TRACKING_AVAILABLE else f"crawl_{int(time.time())}"
-            
+
             # Phase 1: Site Structure Analysis & Sitemap Detection
             self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
-            analysis = await self.analyze_site_structure(start_url)
-            
+
+            # Send progress update - analysis starting
+            if self.progress_callback:
+                try:
+                    await self.progress_callback(0, 0, 0, 0, 0, 0)
+                except Exception:
+                    pass
+
+            analysis = await self.analyze_site_structure(start_url, run_id)
+
+            # Send progress update after sitemap analysis - show classified URLs
+            if self.progress_callback and analysis.ai_classified_urls:
+                try:
+                    classified_count = len(analysis.ai_classified_urls)
+                    await self.progress_callback(0, classified_count, 0, 0, classified_count, 0)
+                except Exception:
+                    pass
+
             # Phase 2: Site Type Detection for Quality Thresholds
             site_type = None
             if self.site_detector:
@@ -336,9 +366,9 @@ class HybridCrawler:
                     self.logger.info(f"  Site type detected: {site_type.value}")
                 except Exception as e:
                     self.logger.warning(f"Site type detection failed: {e}")
-            
+
             # Phase 3: Strategy Selection & Crawl Plan Creation
-            self.logger.info(" Phase 2: Strategy selection and crawl planning") 
+            self.logger.info(" Phase 2: Strategy selection and crawl planning")
             plan = self.create_crawl_plan(start_url, analysis, site_type)
             
             # Phase 3.5: Initialize Coverage Tracking
@@ -384,13 +414,14 @@ class HybridCrawler:
             # Phase 4.5: Initialize Session Classification Cache
             classification_cache = {}  # Session-scoped classification cache
             self.logger.info("Initialized session classification cache - will use sitemap worthy classifications during crawl")
-            
+
             # Phase 5: Execute Crawling with Classification Cache
             self.logger.info(f"Phase 5: Executing {plan.strategy.value} crawl with cached classifications")
-            
-            # Add classification cache and run_id to crawl config
+
+            # Add classification cache, run_id, and progress callback to crawl config
             crawl_config.classification_cache = classification_cache
             crawl_config.run_id = run_id  # Pass run_id for coverage tracking integration
+            crawl_config.progress_callback = self.progress_callback  # Pass progress callback for real-time updates
             results, stats = await generic_crawl(crawl_config)
             
             # Phase 6: Comprehensive Results Analysis
@@ -474,18 +505,29 @@ class HybridCrawler:
                 'strategy_attempted': plan.strategy.value if 'plan' in locals() else 'unknown'
             }
 
-    async def execute_crawl_plan(self, plan, cost_tracker=None) -> Tuple[List, Dict]:
+    async def execute_crawl_plan(self, plan, cost_tracker=None, run_id: Optional[str] = None) -> Tuple[List, Dict]:
         """
         Execute crawl plan with cost tracking - matches SmartMirrorAgent interface
-        
+
         Args:
             plan: CrawlPlan object with strategy and priority URLs
             cost_tracker: CostTracker instance for tracking AI costs
-            
+            run_id: Optional run ID for stop checking
+
         Returns:
             Tuple of (results: List, stats: Dict)
         """
         try:
+            # Check for stop before starting
+            if run_id:
+                try:
+                    from task_manager import task_manager
+                    if task_manager.should_stop(run_id):
+                        self.logger.info(f"FORCE STOP detected before crawl execution for run_id: {run_id}")
+                        return [], {'cancelled': True, 'pages_crawled': 0}
+                except Exception:
+                    pass
+
             # Create crawl config from plan
             domain = urllib.parse.urlparse(plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]).netloc
             crawl_config = CrawlConfig(
@@ -495,12 +537,26 @@ class HybridCrawler:
                 request_gap=0.8,
                 respect_robots=False,
                 start_url=plan.priority_urls[0] if plan.priority_urls else plan.start_url,
-                cost_tracker=cost_tracker  # Add cost tracking
+                cost_tracker=cost_tracker,  # Add cost tracking
+                run_id=run_id  # Pass run_id for stop checking in crawl loop
             )
-            
+
+            start_time = time.time()
+
             # Execute the crawl using generic_crawl directly to get actual results
             results, generic_stats = await generic_crawl(crawl_config)
-            
+
+            # Send progress update if callback is available
+            if self.progress_callback:
+                pages_crawled = len(results)
+                sitemap_count = len(plan.sitemap_analysis.sitemap_urls) if plan.sitemap_analysis and plan.sitemap_analysis.sitemap_urls else 0
+                discovered_count = generic_stats.get('total_urls_discovered', 0) - sitemap_count
+                crawl_time = time.time() - start_time
+                crawl_speed = (pages_crawled / (crawl_time / 60)) if crawl_time > 0 else 0  # pages per minute
+                ai_classifications = generic_stats.get('ai_classifications_made', 0)
+                cache_hits = generic_stats.get('cache_hits', 0)
+                await self.progress_callback(pages_crawled, sitemap_count, discovered_count, crawl_speed, ai_classifications, cache_hits)
+
             # Calculate success from actual results
             successful_results = [r for r in results if r.success]
             success = len(successful_results) > 0

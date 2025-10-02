@@ -14,9 +14,9 @@ services:
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Mount output directory to host for persistent storage
-      - ./ai-agent-demo-factory-backend/crawl4ai-agent/output:/app/backend/crawl4ai-agent/output
+      - ./ai-agent-demo-factory-backend/output:/app/backend/output
       # Mount logs directory to host for persistent log storage
-      - ./logs:/app/backend/crawl4ai-agent/output/logs
+      - ./logs:/app/backend/logs
       # Mount source code for development (optional)
       - ./ai-agent-demo-factory-backend:/app/backend
       - ./crawl4ai:/app/crawl4ai
@@ -43,6 +43,20 @@ services:
     ports:
       - "9200:9200"
       - "9600:9600"
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.0
+    container_name: opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=http://opensearch-demo:9200
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5601:5601"
+    depends_on:
+      - opensearch-demo
     networks:
       - ai-agent-network
     restart: unless-stopped

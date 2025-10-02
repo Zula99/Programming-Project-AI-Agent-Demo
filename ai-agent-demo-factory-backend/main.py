@@ -17,6 +17,9 @@ from datetime import datetime
 # Import WebSocket logging handler
 from websocket_log_handler import setup_websocket_logging, websocket_connections, current_run_id
 
+# Import task manager for background task cancellation
+from task_manager import task_manager
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -94,7 +97,12 @@ async def add_agent_log(run_id: str, message: str, log_type: str = "info"):
     }
 
     if run_id in crawl4ai_sessions:
-        crawl4ai_sessions[run_id]["logs"].append(log_entry)
+        logs = crawl4ai_sessions[run_id]["logs"]
+        logs.append(log_entry)
+
+        # Circular buffer: keep only last 2000 entries
+        if len(logs) > 2000:
+            crawl4ai_sessions[run_id]["logs"] = logs[-2000:]
 
         # Broadcast to WebSocket connections
         await broadcast_to_websockets(run_id, {
@@ -115,7 +123,8 @@ async def update_agent_status(run_id: str, status: str, question: Optional[str] 
             "question": question
         })
 
-async def update_progress(run_id: str, pages_crawled: int, total_pages: int, crawl_speed: float = 0):
+async def update_progress(run_id: str, pages_crawled: int, total_pages: int, crawl_speed: float = 0,
+                         ai_classifications: int = 0, cache_hits: int = 0):
     """Update crawl progress and broadcast to WebSocket connections"""
     if run_id in crawl4ai_sessions:
         progress = crawl4ai_sessions[run_id]["progress"]
@@ -124,6 +133,8 @@ async def update_progress(run_id: str, pages_crawled: int, total_pages: int, cra
         progress["pages_remaining"] = max(0, total_pages - pages_crawled)
         progress["percentage"] = (pages_crawled / total_pages * 100) if total_pages > 0 else 0
         progress["crawl_speed"] = crawl_speed
+        progress["ai_classifications"] = ai_classifications
+        progress["cache_hits"] = cache_hits
 
         # Calculate estimated time remaining (in seconds)
         if crawl_speed > 0 and progress["pages_remaining"] > 0:
@@ -164,57 +175,24 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         await add_agent_log(run_id, " Starting site reconnaissance...", "info")
         logger.info("SmartMirrorAgent created, starting reconnaissance")
 
-        # This class will wrap the agent to provide real-time progress updates
-        class ProgressTrackingAgent:
-            def __init__(self, agent, run_id):
-                self.agent = agent
-                self.run_id = run_id
-                self.pages_crawled = 0
-                self.total_pages_estimate = 100  # Initial estimate
+        # Create a progress callback to inject into the hybrid crawler
+        async def progress_callback(pages_crawled: int, total_known: int, discovered_urls: int = 0, crawl_speed: float = 0,
+                                   ai_classifications: int = 0, cache_hits: int = 0):
+            """Real-time progress updates from hybrid crawler"""
+            # Total pages = sitemap URLs + discovered URLs during crawling
+            total_pages = total_known + discovered_urls
+            await update_progress(run_id, pages_crawled, total_pages, crawl_speed, ai_classifications, cache_hits)
 
-            async def process_url_with_progress(self, url):
-                # Set up progress tracking hooks by intercepting crawler methods
-                original_crawler = self.agent.crawler
-
-                # Override the crawler's crawl_website method to track progress
-                original_crawl = original_crawler.crawl_website
-
-                async def tracked_crawl(*args, **kwargs):
-                    # Start with estimated progress
-                    self.total_pages_estimate = kwargs.get('max_pages', 100)
-                    await update_progress(self.run_id, 0, self.total_pages_estimate, 2.0)
-
-                    # Call original crawl method
-                    result = await original_crawl(*args, **kwargs)
-
-                    # Track progress during crawl by monitoring crawler results
-                    if hasattr(original_crawler, 'last_crawl_results') and original_crawler.last_crawl_results:
-                        crawled_count = len(original_crawler.last_crawl_results)
-                        await update_progress(self.run_id, crawled_count, self.total_pages_estimate, 2.0)
-                        await add_agent_log(self.run_id, f" Crawled {crawled_count} pages", "info")
-
-                    return result
-
-                # Replace the method temporarily
-                original_crawler.crawl_website = tracked_crawl
-
-                try:
-                    # Run the real agent process
-                    success, metrics, output_path = await self.agent.process_url(url)
-                    return success, metrics, output_path
-                finally:
-                    # Restore original method
-                    original_crawler.crawl_website = original_crawl
-
-        # Create progress tracking wrapper
-        tracking_agent = ProgressTrackingAgent(agent, run_id)
+        # Inject progress callback into the agent's crawler if it's HybridCrawler
+        if hasattr(agent, 'crawler'):
+            agent.crawler.progress_callback = progress_callback
 
         # Run the actual SmartMirrorAgent
         await add_agent_log(run_id, f" Analyzing {target_url}", "info")
         logger.info(f"Starting SmartMirrorAgent process for {target_url}")
 
-        # Execute the real agent process
-        success, metrics, output_path = await tracking_agent.process_url_with_progress(target_url)
+        # Execute the real agent process with run_id for stop checking
+        success, metrics, output_path = await agent.process_url(target_url, run_id)
 
         # Report results
         if success:
@@ -228,10 +206,10 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
                 await add_agent_log(run_id, f" Output saved to: {output_path}", "info")
                 logger.info(f"Crawl output saved to: {output_path}")
 
-            # Final progress update with actual results
-            if hasattr(agent.crawler, 'last_crawl_results') and agent.crawler.last_crawl_results:
-                final_count = len(agent.crawler.last_crawl_results)
-                await update_progress(run_id, final_count, final_count, 2.0)
+            # Final progress update with actual results from metrics
+            pages_crawled = getattr(metrics, 'pages_crawled', 0)
+            if pages_crawled > 0:
+                await update_progress(run_id, pages_crawled, pages_crawled, 0)
 
             await update_agent_status(run_id, "completed")
             logger.info(f"SmartMirrorAgent completed successfully with {overall_score:.1f}% quality score")
@@ -241,6 +219,12 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
             await update_agent_status(run_id, "error")
             logger.error("SmartMirrorAgent process failed")
 
+    except asyncio.CancelledError:
+        # Task was cancelled by user
+        await add_agent_log(run_id, " Crawl stopped by user", "warning")
+        await update_agent_status(run_id, "stopped")
+        logger.info(f"Crawl {run_id} cancelled by user request")
+        raise  # Re-raise to properly handle task cancellation
     except ImportError as e:
         error_msg = f"SmartMirrorAgent not available: {str(e)}"
         await add_agent_log(run_id, f" {error_msg}", "error")
@@ -251,6 +235,9 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         await add_agent_log(run_id, f" {error_msg}", "error")
         await update_agent_status(run_id, "error")
         logger.error(error_msg)
+    finally:
+        # Clean up task from task manager
+        task_manager.cleanup_task(run_id)
 
 @app.options("/crawl4ai/start")
 async def options_crawl4ai_start(response: Response):
@@ -282,15 +269,18 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
             "pages_remaining": 0,
             "total_pages": 0,
             "estimated_time_remaining": 0,
-            "crawl_speed": 0  # pages per minute
+            "crawl_speed": 0,  # pages per minute
+            "ai_classifications": 0,  # AI classifications made during crawl
+            "cache_hits": 0  # Cache hits during crawl
         }
     }
 
     # Initialize WebSocket connections list
     websocket_connections[run_id] = []
 
-    # Start the real agent
-    background_tasks.add_task(run_crawl4ai_agent_real, run_id, target_url)
+    # Create and register the background task
+    task = asyncio.create_task(run_crawl4ai_agent_real(run_id, target_url))
+    task_manager.register_task(run_id, task)
 
     # Add CORS headers directly to response
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -347,6 +337,34 @@ async def send_agent_response(request: AgentResponseRequest):
     session["current_question"] = None
 
     return JSONResponse(content={"message": "Response sent successfully"})
+
+@app.post("/crawl4ai/stop/{run_id}")
+async def stop_crawl4ai_agent(run_id: str):
+    """Force stop a running Crawl4AI agent session immediately"""
+    if run_id not in crawl4ai_sessions:
+        raise HTTPException(status_code=404, detail="Crawl4AI session not found")
+
+    session = crawl4ai_sessions[run_id]
+
+    # Cancel the task
+    logger = logging.getLogger(__name__)
+    logger.info(f"FORCE STOP requested for crawl session {run_id}")
+
+    # Immediately update status to stopped
+    session["status"] = "stopped"
+
+    # Send log to frontend
+    await add_agent_log(run_id, " FORCE STOP - Terminating crawl immediately", "warning")
+    await update_agent_status(run_id, "stopped")
+
+    # Cancel the background task (don't wait for response)
+    await task_manager.cancel_task(run_id)
+
+    return JSONResponse(content={
+        "message": "Crawl force stopped",
+        "run_id": run_id,
+        "status": "stopped"
+    })
 
 @app.websocket("/crawl4ai/ws/{run_id}")
 async def crawl4ai_websocket(websocket: WebSocket, run_id: str):

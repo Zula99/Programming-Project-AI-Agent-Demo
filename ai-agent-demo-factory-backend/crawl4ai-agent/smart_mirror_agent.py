@@ -157,45 +157,49 @@ class SmartMirrorAgent:
         except Exception as e:
             self.logger.error(f"Failed to save memory: {e}")
             
-    async def process_url(self, url: str) -> Tuple[bool, QualityMetrics, str]:
+    async def process_url(self, url: str, run_id: Optional[str] = None) -> Tuple[bool, QualityMetrics, str]:
         """
         Main processing flow for a URL
-        
+
+        Args:
+            url: URL to process
+            run_id: Optional run ID for stop checking
+
         Returns:
             success: bool - Whether crawling succeeded
             metrics: QualityMetrics - Quality assessment
             output_path: str - Path to crawled data (for OpenSearch indexing)
         """
         self.logger.info(f"Processing URL: {url}")
-        
+
         # Step 1: Check memory for similar sites
         similar_pattern = self.find_similar_pattern(url)
-        
-        # Step 2: Quick reconnaissance 
+
+        # Step 2: Quick reconnaissance
         recon_results = await self.reconnaissance(url)
-        
+
         # Step 3: Strategy selection
         strategy = self.select_strategy(recon_results, similar_pattern)
-        
+
         # Step 4: Adaptive crawling with quality monitoring
-        crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results)
-        
+        crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results, run_id)
+
         # Step 5: Quality assessment
         self.logger.info("")
         self.logger.info("="*70)
         self.logger.info(" STARTING QUALITY ASSESSMENT & ANALYSIS")
         self.logger.info("="*70)
         quality_metrics = await self.assess_quality(crawl_data)
-        
+
         # Step 6: Get output path for OpenSearch indexing
         output_path = ""
         if crawl_success:
             output_path = crawl_data.get("output_path", "")
-            
+
         # Step 7: Learning - store successful patterns
         if quality_metrics.overall_score >= 0.7:
             await self.store_learning(url, recon_results, strategy, quality_metrics, crawl_data)
-            
+
         return crawl_success, quality_metrics, output_path
         
     def find_similar_pattern(self, url: str) -> Optional[SitePattern]:
@@ -276,21 +280,21 @@ class SmartMirrorAgent:
             return similar_pattern.strategy
         return recon.recommended_strategy
         
-    async def adaptive_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults) -> Tuple[bool, Dict[str, Any]]:
+    async def adaptive_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults, run_id: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
         """Execute intelligent crawling with US-54 hybrid crawler integration"""
         try:
             # Import hybrid crawler system
             from hybrid_crawler import HybridCrawler
             from cost_tracker import CostTrackingSession
             from urllib.parse import urlparse
-            
+
             # Extract domain for cost tracking
             domain = urlparse(url).netloc.replace('www.', '')
-            
+
             # Initialize hybrid crawler with cost tracking
             with CostTrackingSession(domain, "./output/cost_logs") as cost_tracker:
                 hybrid_crawler = HybridCrawler(
-                    output_dir=f"./output/agent_crawls/{domain}"
+                    output_dir=f"./output/agent_crawls/{domain}/{run_id}" if run_id else f"./output/agent_crawls/{domain}"
                 )
 
                 self.logger.info("")
@@ -298,10 +302,10 @@ class SmartMirrorAgent:
                 self.logger.info(" STARTING SITE ANALYSIS & STRATEGY SELECTION")
                 self.logger.info("="*70)
                 self.logger.info(f" Using US-54 Hybrid Crawler System")
-                
-                # Step 1: Analyze site structure (sitemap-first vs progressive)
-                analysis = await hybrid_crawler.analyze_site_structure(url)
-                
+
+                # Step 1: Analyze site structure (sitemap-first vs progressive) with run_id for stop checking
+                analysis = await hybrid_crawler.analyze_site_structure(url, run_id)
+
                 # Step 2: Create intelligent crawl plan
                 plan = hybrid_crawler.create_crawl_plan(url, analysis)
                 
@@ -316,11 +320,12 @@ class SmartMirrorAgent:
                 self.logger.info(" STARTING HYBRID CRAWL EXECUTION")
                 self.logger.info("="*70)
                 
-                # Step 3: Execute hybrid crawl with cost tracking
+                # Step 3: Execute hybrid crawl with cost tracking and run_id
                 try:
                     results, stats = await hybrid_crawler.execute_crawl_plan(
                         plan=plan,
-                        cost_tracker=cost_tracker
+                        cost_tracker=cost_tracker,
+                        run_id=run_id
                     )
                     
                     # Calculate success metrics safely
@@ -330,7 +335,7 @@ class SmartMirrorAgent:
                     
                     # Build crawl_data compatible with existing system
                     crawl_data = {
-                        "output_path": f"./output/agent_crawls/{domain}",
+                        "output_path": f"./output/agent_crawls/{domain}/{run_id}" if run_id else f"./output/agent_crawls/{domain}",
                         "results": results,
                         "stats": stats,
                         "successful": success,  # Required by assess_quality method
@@ -363,30 +368,38 @@ class SmartMirrorAgent:
                 except Exception as hybrid_error:
                     self.logger.error(f"Hybrid crawler failed: {hybrid_error}")
                     # Fallback to original system
-                    return await self._fallback_to_original_crawl(url, strategy, recon)
-                    
+                    return await self._fallback_to_original_crawl(url, strategy, recon, run_id)
+
         except ImportError as import_error:
             self.logger.warning(f"Hybrid crawler not available: {import_error}")
             # Fallback to original system
-            return await self._fallback_to_original_crawl(url, strategy, recon)
+            return await self._fallback_to_original_crawl(url, strategy, recon, run_id)
         except Exception as e:
             self.logger.error(f"Adaptive crawl failed: {e}")
             return False, {"error": str(e)}
             
-    async def _fallback_to_original_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults) -> Tuple[bool, Dict[str, Any]]:
+    async def _fallback_to_original_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults, run_id: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
         """Fallback to original AgentCrawler system if hybrid crawler fails"""
         self.logger.info("🔄 Falling back to original crawler system")
-        
+
         try:
+            # Extract domain for output path
+            from urllib.parse import urlparse
+            domain = urlparse(url).netloc.replace('www.', '')
+
+            # Construct output path with run_id
+            output_path = f"./output/agent_crawls/{domain}/{run_id}" if run_id else f"./output/agent_crawls/{domain}"
+
             # Get strategy configuration with stealth mode preserved
             strategy_config = self.strategy_to_config(strategy)
-            
+
             # Initialize AgentCrawler with full configuration including deduplication
             success, crawl_data = await self.crawler.crawl_website(
                 url,
                 max_pages=strategy_config.get('max_pages', 80),
                 request_gap=strategy_config.get('request_gap', 0.6),
                 respect_robots=strategy_config.get('respect_robots', False),
+                output_path=output_path,
                 # Browser configuration
                 timeout=strategy_config.get('timeout', 30),
                 wait_for=strategy_config.get('wait_for', 'domcontentloaded'),

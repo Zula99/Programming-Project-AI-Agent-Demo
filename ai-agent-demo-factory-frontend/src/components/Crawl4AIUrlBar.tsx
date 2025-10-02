@@ -4,16 +4,23 @@ import { useState } from "react";
 
 interface Crawl4AIUrlBarProps {
   onStartCrawl?: (url: string) => void;
+  onStopCrawl?: () => void;
   isRunning?: boolean;
 }
 
-export default function Crawl4AIUrlBar({ onStartCrawl, isRunning = false }: Crawl4AIUrlBarProps) {
+export default function Crawl4AIUrlBar({ onStartCrawl, onStopCrawl, isRunning = false }: Crawl4AIUrlBarProps) {
     const [url, setUrl] = useState("https://example.com");
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (onStartCrawl && url.trim() && !isRunning) {
             onStartCrawl(url.trim());
+        }
+    };
+
+    const handleStop = () => {
+        if (onStopCrawl && isRunning) {
+            onStopCrawl();
         }
     };
 
@@ -43,6 +50,17 @@ export default function Crawl4AIUrlBar({ onStartCrawl, isRunning = false }: Craw
             >
                 {isRunning ? 'Running...' : 'Start Crawl4AI Agent'}
             </button>
+
+            {isRunning && (
+                <button
+                    type="button"
+                    onClick={handleStop}
+                    suppressHydrationWarning={true}
+                    className="px-4 py-2 rounded-lg flex items-center gap-1 font-medium transition-all bg-red-500 text-white hover:shadow-lg hover:bg-red-700"
+                >
+                    End Crawl
+                </button>
+            )}
         </form>
     );
 }

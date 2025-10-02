@@ -222,6 +222,8 @@ class CrawlConfig:
     cost_tracker: Optional[object] = None  # CostTracker instance for AI cost monitoring
     # Classification cache for avoiding duplicate AI calls
     classification_cache: Optional[dict] = None  # Session cache for AI classifications
+    # Progress callback for real-time updates
+    progress_callback: Optional[callable] = None  # Callback for live progress updates
 
 # URL helpers
 DROP_QUERY_KEYS = {"utm_source","utm_medium","utm_campaign","utm_term","utm_content","gclid","fbclid","_ga","_gl"}
@@ -933,7 +935,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     seen: Set[str] = set()
     results: List[CrawlResult] = []
     pages_crawled = 0
-    
+
     # Track filtering stats
     filtered_urls = {
         "path_too_long": 0,
@@ -947,8 +949,13 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "binary_files": 0,
         "external_domains": 0
     }
-    
+
     total_urls_discovered = 0
+
+    # Track AI classification stats
+    ai_classifications_made = 0
+    cache_hits = 0
+    cache_size_before = len(config.classification_cache) if hasattr(config, 'classification_cache') and config.classification_cache else 0
     
     # Configure crawler with browser settings for JS-heavy sites
     crawler_config = {
@@ -1029,6 +1036,16 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     
     async with AsyncWebCrawler(**crawler_config) as crawler:
         while q and pages_crawled < config.max_pages:
+            # Check stop flag at start of every iteration
+            if config.run_id:
+                try:
+                    from task_manager import task_manager
+                    if task_manager.should_stop(config.run_id):
+                        _logger.info(f"FORCE STOP detected - terminating crawl for run_id: {config.run_id}")
+                        break
+                except Exception:
+                    pass  # If task_manager not available, continue
+
             url = q.popleft()
             if url in seen:
                 continue
@@ -1063,7 +1080,21 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             # Crawl the page (pass cost tracker and classification cache if available)
             cost_tracker = getattr(config, 'cost_tracker', None)
             classification_cache = getattr(config, 'classification_cache', None)
+
+            # Track cache state before crawl_page
+            cache_size_before_crawl = len(classification_cache) if classification_cache else 0
+
             result = await crawl_page(crawler, url, config, cost_tracker, classification_cache)
+
+            # Track if this was a cache hit or new AI classification
+            if classification_cache:
+                cache_size_after_crawl = len(classification_cache)
+                if cache_size_after_crawl > cache_size_before_crawl:
+                    # New classification was added
+                    ai_classifications_made += 1
+                elif hasattr(result, 'ai_classification') and result.ai_classification:
+                    # Result has AI classification but cache didn't grow = cache hit
+                    cache_hits += 1
 
             # Check for content duplication before processing
             is_duplicate = False
@@ -1107,7 +1138,22 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     _logger.info(f"[{pages_crawled}/{config.max_pages}] {url} -> {saved_path.name}")
                 else:
                     _logger.warning(f"[{pages_crawled}/{config.max_pages}] {url} -> [save failed]")
-                
+
+                # Send real-time progress update
+                if config.progress_callback:
+                    try:
+                        total_cached = len(config.classification_cache) if config.classification_cache else 0
+                        await config.progress_callback(
+                            pages_crawled=pages_crawled,
+                            total_known=total_urls_discovered,
+                            discovered_urls=len(q),
+                            crawl_speed=0,  # Speed calculated by caller
+                            ai_classifications=ai_classifications_made,
+                            cache_hits=cache_hits
+                        )
+                    except Exception as e:
+                        _logger.debug(f"Progress callback error: {e}")
+
                 # Queue new links with filtering
                 all_links = list(result.links)
                 total_urls_discovered += len(all_links)
@@ -1239,7 +1285,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "url_quality_ratio": quality_ratio,
         "filtering_efficiency": total_filtered / total_urls_discovered if total_urls_discovered > 0 else 0,
         "quality_plateau_stats": plateau_stats,  # Include plateau monitoring results
-        "deduplication_stats": deduplication_stats  # Include content deduplication results
+        "deduplication_stats": deduplication_stats,  # Include content deduplication results
+        "ai_classifications_made": ai_classifications_made,  # New AI classifications during crawl
+        "cache_hits": cache_hits,  # Cache hits during crawl
+        "total_cached": len(config.classification_cache) if hasattr(config, 'classification_cache') and config.classification_cache else 0  # Total cache size
     }
     
     # Save discovered link classifications to persistent cache for future crawls

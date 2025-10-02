@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { HiClock, HiChartBar, HiDocumentText, HiFastForward } from "react-icons/hi";
+import { HiClock, HiChartBar, HiDocumentText, HiForward, HiBeaker, HiArchiveBox } from "react-icons/hi2";
 
 interface CrawlProgress {
   percentage: number;
@@ -10,12 +10,14 @@ interface CrawlProgress {
   total_pages: number;
   estimated_time_remaining: number; // in seconds
   crawl_speed: number; // pages per minute
+  ai_classifications: number; // AI classifications made
+  cache_hits: number; // Cache hits
 }
 
 interface CrawlProgressPanelProps {
   runId?: string | null;
   progress?: CrawlProgress;
-  status?: "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error";
+  status?: "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error" | "stopped";
 }
 
 export default function CrawlProgressPanel({
@@ -39,6 +41,7 @@ export default function CrawlProgressPanel({
   const getProgressColor = () => {
     if (status === "error") return "bg-red-500";
     if (status === "completed") return "bg-green-500";
+    if (status === "stopped") return "bg-orange-500";
     if (status === "waiting_for_input") return "bg-yellow-500";
     return "bg-blue-500";
   };
@@ -114,7 +117,7 @@ export default function CrawlProgressPanel({
             {/* Crawl Speed */}
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
-                <HiFastForward className="h-4 w-4 text-purple-500" />
+                <HiForward className="h-4 w-4 text-purple-500" />
                 <span className="text-xs font-medium text-gray-600">Speed</span>
               </div>
               <div className="text-lg font-bold text-gray-900">
@@ -139,6 +142,34 @@ export default function CrawlProgressPanel({
               </div>
               <div className="text-xs text-gray-500">
                 estimated
+              </div>
+            </div>
+
+            {/* AI Classifications */}
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <HiBeaker className="h-4 w-4 text-indigo-500" />
+                <span className="text-xs font-medium text-gray-600">AI Classified</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900">
+                {progress?.ai_classifications || 0}
+              </div>
+              <div className="text-xs text-gray-500">
+                links analyzed
+              </div>
+            </div>
+
+            {/* Cache Hits */}
+            <div className="bg-gray-50 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <HiArchiveBox className="h-4 w-4 text-teal-500" />
+                <span className="text-xs font-medium text-gray-600">Cache Hits</span>
+              </div>
+              <div className="text-lg font-bold text-gray-900">
+                {progress?.cache_hits || 0}
+              </div>
+              <div className="text-xs text-gray-500">
+                cached results
               </div>
             </div>
           </div>

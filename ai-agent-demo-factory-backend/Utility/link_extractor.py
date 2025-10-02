@@ -3,6 +3,7 @@ from http.client import responses
 import sys
 from typing import List, Dict, Tuple, Optional, Any
 import logging
+import asyncio
 
 # import pandas as pd
 # from usp.tree import sitemap_tree_for_homepage
@@ -34,7 +35,7 @@ except ImportError as e:
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class LinkExtractor:
-    def __init__(self, sitemap_url, file_name, output_file, file_path, use_ai: bool = True):
+    def __init__(self, sitemap_url, file_name, output_file, file_path, use_ai: bool = True, stop_check_callback=None):
         self.sitemap_url = sitemap_url
         self.file_name = file_name
         self.file_path = file_path
@@ -42,6 +43,7 @@ class LinkExtractor:
         self.directory_path = Path(file_path)
         self.ua = UserAgent()
         self.use_ai = use_ai and AI_AVAILABLE
+        self.stop_check_callback = stop_check_callback  # Callback to check if we should stop
         
         # Initialize AI classifier if available and requested
         if self.use_ai:
@@ -312,6 +314,11 @@ class LinkExtractor:
         cost_tracker = CostTracker(domain.replace('www.', ''), output_dir=str(Path(self.file_path) / 'cost_logs'))
         
         for i, url in enumerate(urls):
+            # CHECK FOR STOP at start of every iteration
+            if self.stop_check_callback and self.stop_check_callback():
+                logger.warning(f"FORCE STOP detected during sitemap classification at {i}/{len(urls)} URLs")
+                break
+
             if i % 50 == 0 and i > 0:
                 logger.info(f"  Processed {i}/{len(urls)} URLs...")
 
@@ -320,6 +327,9 @@ class LinkExtractor:
             logger.info(f"[{i+1:4d}/{len(urls)}] PROCESSING: {url}")
             logger.info(f"{'='*80}")
 
+            # Small delay to allow logs to actually send over WebSocket
+            await asyncio.sleep(0.01)  # 10ms delay - allows WebSocket to send
+
             try:
                 # Extract basic information from URL
                 url_path = urlparse(url).path
@@ -327,15 +337,20 @@ class LinkExtractor:
                 # Sample content if requested (for better classification)
                 title = ""
                 content_sample = ""
-                
+
                 if sample_content:  # Sample all URLs when AI classification is enabled
+                    # CHECK FOR STOP before fetching content
+                    if self.stop_check_callback and self.stop_check_callback():
+                        logger.warning(f"FORCE STOP detected during content sampling at {i}/{len(urls)}")
+                        break
+
                     try:
                         response = self.session.get(url, timeout=5)
                         if response.status_code == 200:
                             soup = BeautifulSoup(response.content, 'html.parser')
                             title_tag = soup.find('title')
                             title = title_tag.get_text().strip() if title_tag else ""
-                            
+
                             # Get first paragraph or content snippet
                             content_tags = soup.find_all(['p', 'div', 'article', 'main'])[:3]
                             content_sample = ' '.join([tag.get_text().strip()[:100] for tag in content_tags])
@@ -467,19 +482,29 @@ class LinkExtractor:
         
         # Extract all URLs from sitemaps
         for sitemap_url in sitemap_urls_to_process:
+            # CHECK FOR STOP before processing each sitemap
+            if self.stop_check_callback and self.stop_check_callback():
+                logger.warning(f"FORCE STOP detected during sitemap URL extraction")
+                return [], processing_stats
+
             try:
                 logger.info(f"  -> Processing sitemap: {sitemap_url}")
                 response = self.session.get(sitemap_url, verify=False)
                 response.raise_for_status()
 
                 soup = BeautifulSoup(response.content, "lxml-xml")
-                
+
                 # Handle sitemap index vs direct sitemap
                 sitemap_refs = soup.find_all("loc")
-                
+
                 if soup.find("sitemapindex"):
                     # This is a sitemap index - process each referenced sitemap
                     for loc in sitemap_refs:
+                        # CHECK FOR STOP before each sub-sitemap
+                        if self.stop_check_callback and self.stop_check_callback():
+                            logger.warning(f"FORCE STOP detected during sub-sitemap processing")
+                            return all_urls, processing_stats
+
                         try:
                             sub_sitemap_response = self.session.get(loc.text, verify=False)
                             sub_sitemap_response.raise_for_status()
@@ -509,13 +534,23 @@ class LinkExtractor:
                 logger.error(f"  -> Failed to process sitemap {sitemap_url}: {e}")
         
         processing_stats['total_urls_discovered'] = len(all_urls)
-        
+
+        # CHECK FOR STOP before filtering
+        if self.stop_check_callback and self.stop_check_callback():
+            logger.warning(f"FORCE STOP detected before domain filtering")
+            return [], processing_stats
+
         # Apply domain boundary filtering
         filtered_urls = [url for url in all_urls if self._is_same_domain(url, self.base_domain)]
         removed_external = len(all_urls) - len(filtered_urls)
         if removed_external > 0:
             logger.info(f"Removed {removed_external} external domain URLs (domain boundary enforcement)")
-        
+
+        # CHECK FOR STOP before AI classification
+        if self.stop_check_callback and self.stop_check_callback():
+            logger.warning(f"FORCE STOP detected before AI classification")
+            return [], processing_stats
+
         # Apply AI classification for prioritization
         if filtered_urls:
             prioritized_results = await self.intelligent_url_filtering(filtered_urls, sample_content)
