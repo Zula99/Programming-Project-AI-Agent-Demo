@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Norconex Web Crawler v3.x configuration - Search365 Schema Compatible (Basic) -->
+<httpcollector id="search365-collector">
+
+  <!-- Updated paths for Docker container -->
+  <workDir>/opt/norconex/data/workdir</workDir>
+
+  <crawlers>
+    <crawler id="search365-crawler">
+
+    <!-- Start URLs: will be dynamically replaced -->
+    <startURLs stayOnDomain="true" includeSubdomains="false" stayOnProtocol="true">
+        <url>https://example.com/</url>
+    </startURLs>
+
+    <!-- Crawl limits -->
+    <numThreads>4</numThreads>
+    <maxDocuments>500</maxDocuments>
+    <maxDepth>3</maxDepth>
+
+    <!-- Politeness -->
+    <delay class="com.norconex.collector.http.delay.impl.GenericDelayResolver"
+            default="2 seconds" />
+
+    <!-- Robots / sitemaps -->
+    <robotsTxt ignore="false" />
+    <sitemapResolver ignore="false" />
+
+    <!-- Reference filters - will be dynamically replaced -->
+    <referenceFilters>
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
+            <valueMatcher method="regex">^https?://([a-z0-9-]+\.)*example\.com(/.*)?$</valueMatcher>
+        </filter>
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
+            css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
+        </filter>
+    </referenceFilters>
+
+    <!-- Link extraction -->
+    <linkExtractors>
+        <extractor class="com.norconex.collector.http.link.impl.HtmlLinkExtractor"/>
+    </linkExtractors>
+
+    <!-- Basic importer with essential metadata extraction -->
+    <importer>
+        <preParseHandlers>
+            <!-- Core HTML metadata extraction using DOMTagger -->
+            <handler class="com.norconex.importer.handler.tagger.impl.DOMTagger">
+                <!-- Basic content elements -->
+                <dom selector="title" toField="title" />
+                <dom selector="h1" toField="htmlextractedh1" />
+                <dom selector="h2" toField="htmlextractedh2" />
+                <dom selector="h3" toField="htmlextractedh3" />
+                
+                <!-- Meta tags -->
+                <dom selector="meta[name='description']" toField="description" extract="attr(content)" />
+                <dom selector="meta[name='keywords']" toField="keywords" extract="attr(content)" />
+                <dom selector="meta[name='author']" toField="author" extract="attr(content)" />
+                
+                <!-- Open Graph tags -->
+                <dom selector="meta[property='og:title']" toField="ogtitle" extract="attr(content)" />
+                <dom selector="meta[property='og:description']" toField="ogdescription" extract="attr(content)" />
+                
+                <!-- Twitter Card tags -->
+                <dom selector="meta[name='twitter:title']" toField="twittertitle" extract="attr(content)" />
+                <dom selector="meta[name='twitter:description']" toField="twitterdescription" extract="attr(content)" />
+            </handler>
+        </preParseHandlers>
+    </importer>
+
+    <!-- ===== COMMITTERS ===== -->
+    <committers>
+        <!-- Local XML mirror (for debugging/visibility) -->
+        <committer class="com.norconex.committer.core3.fs.impl.XMLFileCommitter">
+            <directory>/opt/norconex/data/xml-output</directory>
+            <docsPerFile>200</docsPerFile>
+            <splitUpsertDelete>true</splitUpsertDelete>
+            <fileNamePrefix>search365-</fileNamePrefix>
+            <indent>2</indent>
+        </committer>
+
+        <!-- OpenSearch committer with Search365 field mappings -->
+        <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+            <nodes>http://opensearch:9200</nodes>
+            <indexName>demo_factory</indexName>
+
+            <ignoreResponseErrors>false</ignoreResponseErrors>
+            <connectionTimeout>30000</connectionTimeout>
+            <socketTimeout>30000</socketTimeout>
+
+            <sourceIdField>document.reference</sourceIdField>
+
+            <!-- Enhanced field mappings for Search365 schema -->
+            <fieldMappings>
+                <!-- Core fields -->
+                <mapping fromField="document.reference" toField="id" />
+                <mapping fromField="document.reference" toField="url" />
+                <mapping fromField="document.reference" toField="location" />
+                <mapping fromField="title" toField="title" />
+                <mapping fromField="content" toField="content" />
+                <mapping fromField="description" toField="description" />
+                <mapping fromField="keywords" toField="keywords" />
+                <mapping fromField="author" toField="author" />
+                
+                <!-- HTML extracted fields -->
+                <mapping fromField="htmlextractedh1" toField="htmlextractedh1" />
+                <mapping fromField="htmlextractedh2" toField="htmlextractedh2" />
+                <mapping fromField="htmlextractedh3" toField="htmlextractedh3" />
+                
+                <!-- Open Graph -->
+                <mapping fromField="ogtitle" toField="ogtitle" />
+                <mapping fromField="ogdescription" toField="ogdescription" />
+                
+                <!-- Twitter Card -->
+                <mapping fromField="twittertitle" toField="twittertitle" />
+                <mapping fromField="twitterdescription" toField="twitterdescription" />
+                
+                <!-- Standard document fields -->
+                <mapping fromField="document.contentType" toField="contenttype" />
+                <mapping fromField="document.contentEncoding" toField="encoding" />
+            </fieldMappings>
+
+            <!-- Queue configuration -->
+            <queue class="com.norconex.committer.core3.batch.queue.impl.FSQueue">
+                <batchSize>50</batchSize>
+                <maxPerFolder>500</maxPerFolder>
+                <commitLeftoversOnInit>true</commitLeftoversOnInit>
+                <onCommitFailure>
+                    <maxRetries>3</maxRetries>
+                    <retryDelay>5000</retryDelay>
+                    <ignoreErrors>false</ignoreErrors>
+                </onCommitFailure>
+            </queue>
+        </committer>
+    </committers>
+
+    </crawler>
+  </crawlers>
+
+</httpcollector>
