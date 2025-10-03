@@ -8,6 +8,7 @@ import requests
 #-----Core imports-----
 from services.indexer import index_crawl_results_to_opensearch
 from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_logs
+from services.cms_detector import CMSDetector
 from services.schema_processor import Search365SchemaProcessor
 
 
@@ -132,27 +133,49 @@ crawl_jobs = {}
 # Dictionary to track running processes for stop functionality
 running_processes = {}
 
-def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
-                                  index_name: str = "demo_factory", template: str = "search365-basic", run_id: str = None) -> str:
+def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
+                                  index_name: str = "demo_factory", template: Optional["TemplateConfig"] = None) -> str:
     """
-    Create a Norconex config using the Search365 template as a base.
-    This template includes comprehensive metadata extraction for Search365 schema compatibility.
+    Create a Norconex config using the NAB template as a base.
+    If template is provided, use template parameters; otherwise use defaults.
     """
     
-    # Template selection - choose which Search365 template to use
-    template_options = {
-        "working-example": "working-example.xml",
-        "search365-basic": "search365-basic-template.xml",
-        "search365-simple": "search365-simple-template.xml",
-        "search365-complete": "search365-template.xml",
-        "search365-complete-fixed": "search365-complete-fixed.xml",
-        "search365-complete-minimal": "search365-complete-minimal.xml",
-        "search365-enhanced": "search365-enhanced.xml",
-        "base-crawl": "base-crawl-template.xml",
-    }
+    # Use template parameters if provided, otherwise use function defaults
+    if template:
+        max_depth = template.maxDepth
+        max_documents = template.maxDocuments
+        num_threads = template.numThreads
+        delay_ms = template.delay
+        stay_on_domain = template.stayOnDomain
+        include_subdomains = template.includeSubdomains
+        file_exclusions = template.fileExclusions
+        url_patterns = template.urlPatterns
+        print(f"Using template '{template.name}' ({template.platform}) with parameters: depth={max_depth}, docs={max_documents}, threads={num_threads}")
+    else:
+        print(f"Using default parameters: depth={max_depth}, docs={max_documents}")
+    
+    # Copy working-example.xml and modify it to ONLY crawl the target URL
+# def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
+#                                   index_name: str = "demo_factory", template: str = "search365-basic", run_id: str = None) -> str:
+#     """
+#     Create a Norconex config using the Search365 template as a base.
+#     This template includes comprehensive metadata extraction for Search365 schema compatibility.
+#     """
+    
+#     # Template selection - choose which Search365 template to use
+#     template_options = {
+#         "working-example": "working-example.xml",
+#         "search365-basic": "search365-basic-template.xml",
+#         "search365-simple": "search365-simple-template.xml",
+#         "search365-complete": "search365-template.xml",
+#         "search365-complete-fixed": "search365-complete-fixed.xml",
+#         "search365-complete-minimal": "search365-complete-minimal.xml",
+#         "search365-enhanced": "search365-enhanced.xml",
+#         "base-crawl": "base-crawl-template.xml",
+#     }
 
-    template_file = template_options.get(template, "search365-basic-template.xml")
-    print(f"Using template: {template} -> {template_file}")
+#     template_file = template_options.get(template, "search365-basic-template.xml")
+#     print(f"Using template: {template} -> {template_file}")
 
     try:
         template_path = f"/opt/norconex/configs/{template_file}"
@@ -187,33 +210,81 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         # Replace collector and crawler IDs for domain-specific datastores
         config = config.replace('id="nab-banking-collector"', f'id="{collector_id}"')
         config = config.replace('id="nab-banking-crawler"', f'id="{crawler_id}"')
-        config = config.replace('id="search365-collector"', f'id="{collector_id}"')
-        config = config.replace('id="search365-crawler"', f'id="{crawler_id}"')
         
-        # Set crawl parameters
+        # Set crawl parameters (use template values if available)
         config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
-        config = config.replace('<maxDocuments>500</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
         config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
-        config = config.replace('<maxDepth>3</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
+        config = config.replace('<numThreads>4</numThreads>', f'<numThreads>{num_threads}</numThreads>')
+        
+        # Set delay (use template value if available)
+        if template:
+            config = config.replace('default="1500"', f'default="{delay_ms}"')
+        
+        # Set domain restrictions (use template values if available)
+        if template:
+            stay_domain_str = "true" if stay_on_domain else "false"
+            include_sub_str = "true" if include_subdomains else "false"
+            config = config.replace('stayOnDomain="true"', f'stayOnDomain="{stay_domain_str}"')
+            config = config.replace('includeSubdomains="false"', f'includeSubdomains="{include_sub_str}"')
+        else:
+            # Default behavior
+            config = config.replace('stayOnDomain="true"', 'stayOnDomain="true"')
+        
+        # Add a reference filter to ONLY allow the target domain
+        # Build file exclusions list
+        if template and template.fileExclusions:
+            # Use template-specific exclusions plus default media files
+            exclusions = ','.join(template.fileExclusions + ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'ico', 'zip', 'exe', 'svg', 'webp', 'mp4', 'mp3', 'woff', 'woff2'])
+        else:
+            # Default exclusions
+            exclusions = 'css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2'
+        
+        reference_filter = f'''
+    <!-- Reference filters - ONLY allow target domain -->
+    <referenceFilters>
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
+            <valueMatcher method="regex">^https?://([a-z0-9-]+\\.)*{re.escape(target_domain.replace('www.', ''))}(/.*)?$</valueMatcher>
+        </filter>
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
+            {exclusions}
+        </filter>
+    </referenceFilters>'''
+        
+        # Replace the existing referenceFilters section
+        config = re.sub(
+            r'<referenceFilters>.*?</referenceFilters>',
+            reference_filter,
+            config,
+            flags=re.DOTALL
+        )
+        
+#         config = config.replace('id="search365-collector"', f'id="{collector_id}"')
+#         config = config.replace('id="search365-crawler"', f'id="{crawler_id}"')
+        
+#         # Set crawl parameters
+#         config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+#         config = config.replace('<maxDocuments>500</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+#         config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
+#         config = config.replace('<maxDepth>3</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
 
-        # Special handling for base-crawl template
-        if template == "base-crawl":
-            # Use raw index for base crawl
-            config = config.replace('<indexName>demo_factory</indexName>', '<indexName>demo_factory_raw</indexName>')
-            config = config.replace(f'<indexName>{index_name}</indexName>', '<indexName>demo_factory_raw</indexName>')
+#         # Special handling for base-crawl template
+#         if template == "base-crawl":
+#             # Use raw index for base crawl
+#             config = config.replace('<indexName>demo_factory</indexName>', '<indexName>demo_factory_raw</indexName>')
+#             config = config.replace(f'<indexName>{index_name}</indexName>', '<indexName>demo_factory_raw</indexName>')
 
-            # Add run_id tracking if provided
-            if run_id:
-                # Replace the placeholder in the ConstantTagger (v3 uses 'name' not 'field')
-                config = config.replace('<constant name="run_id">PLACEHOLDER_RUN_ID</constant>',
-                                      f'<constant name="run_id">{run_id}</constant>')
+#             # Add run_id tracking if provided
+#             if run_id:
+#                 # Replace the placeholder in the ConstantTagger (v3 uses 'name' not 'field')
+#                 config = config.replace('<constant name="run_id">PLACEHOLDER_RUN_ID</constant>',
+#                                       f'<constant name="run_id">{run_id}</constant>')
 
-            # Update collector/crawler IDs for base crawl
-            config = config.replace('id="search365-collector"', 'id="base-crawl-collector"')
-            config = config.replace('id="search365-crawler"', 'id="base-crawl-extractor"')
+#             # Update collector/crawler IDs for base crawl
+#             config = config.replace('id="search365-collector"', 'id="base-crawl-collector"')
+#             config = config.replace('id="search365-crawler"', 'id="base-crawl-extractor"')
 
-        # The reference filter regex is not needed since we use stayOnDomain="true"
-        # which automatically restricts crawling to the target domain
+#         # The reference filter regex is not needed since we use stayOnDomain="true"
+#         # which automatically restricts crawling to the target domain
 
         return config
         
@@ -241,16 +312,30 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
     </crawlers>
 </httpcollector>'''
 
-# Pydantic model for validating the request body when starting a crawl.
 # FastAPI uses this to automatically validate incoming JSON data.
 class CrawlRequest(BaseModel):
     target_url: str
-    template: Optional[str] = "search365-basic"
+    template: Optional["TemplateConfig"] = None
+#     template: Optional[str] = "search365-basic"
 
 # Pydantic model for search requests
 class SearchRequest(BaseModel):
     query: str
     size: int = 50
+
+# Template configuration model
+class TemplateConfig(BaseModel):
+    id: str
+    name: str
+    platform: str
+    maxDepth: int
+    maxDocuments: int
+    numThreads: int
+    delay: int
+    stayOnDomain: bool
+    includeSubdomains: bool
+    fileExclusions: list[str]
+    urlPatterns: list[str]
 
 # Pydantic model for crawl log search requests
 class CrawlLogSearchRequest(BaseModel):
@@ -258,6 +343,11 @@ class CrawlLogSearchRequest(BaseModel):
     log_level: Optional[str] = None
     log_type: Optional[str] = None  # "trigger", "runner", "execution_summary"
     size: int = 100
+
+# Pydantic model for CMS detection requests
+class CMSDetectionRequest(BaseModel):
+    url: str
+    timeout: Optional[int] = 10
 
 # Pydantic model for the structure of a single page result.
 # Used for documenting and validating the 'results' array.
@@ -269,7 +359,7 @@ class PageRow(BaseModel):
     size: int # size in bytes
 
 # --- Helper Function: Runs the Norconex Crawler via Maven ---
-def run_norconex_crawler_maven(run_id: str, target_url: str):
+def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional["TemplateConfig"] = None):
     """
     This function runs the actual Norconex crawler via the Maven-based runner.
     It generates a configuration file, executes the crawler, and monitors progress.
@@ -284,16 +374,22 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
     running_processes[run_id] = None
 
     try:
-        # Use the selected config template and modify for the target URL
-        template_name = crawl_jobs[run_id].get('template', 'search365-basic')
-        print(f"[{run_id}] Using template: {template_name}")
+        # Use the NAB config as template and modify for the target URL
+        if template:
+            print(f"[{run_id}] Using template '{template.name}' ({template.platform})...")
+        else:
+            print(f"[{run_id}] Using NAB config template...")
+#         # Use the selected config template and modify for the target URL
+#         template_name = crawl_jobs[run_id].get('template', 'search365-basic')
+#         print(f"[{run_id}] Using template: {template_name}")
         xml_config = create_config_from_nab_template(
             url=target_url,
             max_depth=3,
             max_documents=500,
             index_name="demo_factory",
-            template=template_name,
-            run_id=run_id
+            template=template
+#             template=template_name,
+#             run_id=run_id
         )
         
         # Write config to temporary file
@@ -561,7 +657,7 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
 
     # Add the crawl function to FastAPI's background tasks.
     # This allows the HTTP response to be sent instantly while the crawl runs.
-    background_tasks.add_task(run_norconex_crawler_maven, run_id, target_url)
+    background_tasks.add_task(run_norconex_crawler_maven, run_id, target_url, request.template)
 
     # Return a 202 Accepted response, indicating the request has been taken for processing.
     return JSONResponse(content={
@@ -829,6 +925,51 @@ async def index_crawl_logs_endpoint(run_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Log indexing error: {str(e)}")
+
+@app.post("/cms/detect")
+async def detect_cms(request: CMSDetectionRequest):
+    """
+    Detect CMS/Platform of a given website URL.
+    """
+    try:
+        detector = CMSDetector()
+        result = detector.detect_cms(request.url)
+        
+        return {
+            "success": True,
+            "url": request.url,
+            "detected_cms": result.get("detected_cms", "Unknown"),
+            "confidence": result.get("confidence", 0),
+            "details": result.get("details", {}),
+            "detection_methods": result.get("detection_methods", []),
+            "timestamp": time.time()
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "url": request.url,
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+@app.get("/cms/supported")
+async def get_supported_cms():
+    """
+    Get list of supported CMS/Platforms for detection.
+    """
+    try:
+        detector = CMSDetector()
+        return {
+            "success": True,
+            "supported_cms": list(detector.cms_patterns.keys()),
+            "total_count": len(detector.cms_patterns)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @app.get("/crawl/list")
 async def list_all_crawl_runs():
