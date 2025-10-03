@@ -8,6 +8,7 @@ import requests
 #-----Core imports-----
 from services.indexer import index_crawl_results_to_opensearch
 from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_logs
+from services.schema_processor import Search365SchemaProcessor
 
 
 import uuid # For generating unique IDs
@@ -132,7 +133,7 @@ crawl_jobs = {}
 running_processes = {}
 
 def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
-                                  index_name: str = "demo_factory", template: str = "search365-basic") -> str:
+                                  index_name: str = "demo_factory", template: str = "search365-basic", run_id: str = None) -> str:
     """
     Create a Norconex config using the Search365 template as a base.
     This template includes comprehensive metadata extraction for Search365 schema compatibility.
@@ -147,6 +148,7 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         "search365-complete-fixed": "search365-complete-fixed.xml",
         "search365-complete-minimal": "search365-complete-minimal.xml",
         "search365-enhanced": "search365-enhanced.xml",
+        "base-crawl": "base-crawl-template.xml",
     }
 
     template_file = template_options.get(template, "search365-basic-template.xml")
@@ -190,11 +192,29 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         
         # Set crawl parameters
         config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+        config = config.replace('<maxDocuments>500</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
         config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
-        
+        config = config.replace('<maxDepth>3</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
+
+        # Special handling for base-crawl template
+        if template == "base-crawl":
+            # Use raw index for base crawl
+            config = config.replace('<indexName>demo_factory</indexName>', '<indexName>demo_factory_raw</indexName>')
+            config = config.replace(f'<indexName>{index_name}</indexName>', '<indexName>demo_factory_raw</indexName>')
+
+            # Add run_id tracking if provided
+            if run_id:
+                # Replace the placeholder in the ConstantTagger (v3 uses 'name' not 'field')
+                config = config.replace('<constant name="run_id">PLACEHOLDER_RUN_ID</constant>',
+                                      f'<constant name="run_id">{run_id}</constant>')
+
+            # Update collector/crawler IDs for base crawl
+            config = config.replace('id="search365-collector"', 'id="base-crawl-collector"')
+            config = config.replace('id="search365-crawler"', 'id="base-crawl-extractor"')
+
         # The reference filter regex is not needed since we use stayOnDomain="true"
         # which automatically restricts crawling to the target domain
-        
+
         return config
         
     except Exception as e:
@@ -272,7 +292,8 @@ def run_norconex_crawler_maven(run_id: str, target_url: str):
             max_depth=3,
             max_documents=500,
             index_name="demo_factory",
-            template=template_name
+            template=template_name,
+            run_id=run_id
         )
         
         # Write config to temporary file
@@ -851,5 +872,63 @@ async def list_all_crawl_runs():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list crawl runs: {str(e)}")
+
+
+@app.post("/crawl/process/{run_id}")
+async def process_crawl_to_schema(run_id: str):
+    """
+    Process raw crawl data into complete Search365 schema (229 fields)
+    """
+    try:
+        # Check if the run exists
+        if run_id not in crawl_jobs:
+            raise HTTPException(status_code=404, detail="Crawl run not found")
+
+        # Check if the crawl is completed
+        job = crawl_jobs[run_id]
+        if job.get("status") != "complete":
+            raise HTTPException(status_code=400, detail="Crawl must be completed before processing")
+
+        processor = Search365SchemaProcessor()
+        result = processor.process_crawl_to_main_index(run_id)
+
+        if result.get("errors"):
+            print(f"[{run_id}] Processing completed with errors: {result['errors']}")
+
+        # Update job status with processing results
+        crawl_jobs[run_id]["processing_result"] = result
+        crawl_jobs[run_id]["processing_completed"] = True
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Schema processing error: {str(e)}")
+
+
+@app.get("/crawl/{run_id}/raw")
+async def get_raw_crawl_data(run_id: str):
+    """
+    Get raw crawl data before schema processing
+    """
+    try:
+        processor = Search365SchemaProcessor()
+        raw_docs = processor._get_raw_crawl_documents(run_id)
+
+        if not raw_docs:
+            raise HTTPException(status_code=404, detail="Raw crawl data not found")
+
+        return {
+            "run_id": run_id,
+            "document_count": len(raw_docs),
+            "documents": raw_docs[:10],  # Return first 10 for preview
+            "total_available": len(raw_docs)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving raw data: {str(e)}")
 
 
