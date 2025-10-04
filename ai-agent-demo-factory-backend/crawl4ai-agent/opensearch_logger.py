@@ -227,11 +227,20 @@ def create_opensearch_logger(base_url: str, enable_opensearch: bool = True) -> O
     return OpenSearchCrawlLogger(base_url, enable_opensearch=enable_opensearch)
 
 
+# Global singleton OpenSearch client to avoid reconnecting on every log
+_opensearch_client = None
+
 def log_to_opensearch(service: str, component: str, level: str, message: str,
                      metadata: Dict[str, Any] = None, run_id: str = None):
     """Simple function to send a single log entry to OpenSearch with session-based indexing"""
+    global _opensearch_client
+
     try:
-        opensearch = Crawl4AIOpenSearchIntegration()
+        # Reuse existing client or create new one
+        if _opensearch_client is None:
+            _opensearch_client = Crawl4AIOpenSearchIntegration()
+
+        opensearch = _opensearch_client
 
         # Use run_id-based index naming for session isolation
         if run_id:

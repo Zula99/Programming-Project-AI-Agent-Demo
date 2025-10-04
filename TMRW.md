@@ -6,14 +6,16 @@
     - Let all logs show, uncap how far up you can scroll **DONE**
     - Add a search function into the box (OPTIONAL) **DONE**
 
-- Add Stop crawl button functionality.
+- Add Stop crawl button functionality. **DONE**
+
+# Add a description of what the phases do
 
 - Add a box that takes text of a target site they want to proxy and a button to launch the proxy, add a drop down of previously indexed files we want the proxy to use in the search API. 
 
 - Start Planning the AI PROMPT EDITOR page I
     - See if we can edit 'backend' from UI
     - if we can reliably, plan out how the backend will look for this feature, explore possible paths of execution
-    - Find out what's going to have to change architectually (if it doesn't, nice)
+    - Find out what's going to have to change architectually (if it doesn't, nice)WR
     - If it's not a hard thing to implement, Offload to someone else
 
 - Refactor code base to make it look cleaner:

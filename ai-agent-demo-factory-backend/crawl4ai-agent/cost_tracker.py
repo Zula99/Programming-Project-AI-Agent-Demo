@@ -85,8 +85,7 @@ class CostTracker:
         
         # File paths
         self.session_file = self._generate_session_filename()
-        self.daily_summary_file = self.output_dir / f"daily_costs_{date.today().strftime('%Y%m%d')}.json"
-        
+
         # GPT-4o-mini pricing (as of 2024)
         self.pricing = {
             'gpt-4o-mini': {
@@ -254,45 +253,8 @@ class CostTracker:
         except Exception as e:
             logger.error(f"Failed to save session log: {e}")
         
-        # Update daily summary
-        self._update_daily_summary(summary)
-        
         return summary
-    
-    def _update_daily_summary(self, summary: SessionSummary):
-        """Update daily cost summary"""
-        try:
-            # Load existing daily data
-            daily_data = []
-            if self.daily_summary_file.exists():
-                with open(self.daily_summary_file, 'r') as f:
-                    daily_data = json.load(f)
-            
-            # Add this session
-            daily_data.append({
-                'session_summary': asdict(summary),
-                'session_file': str(self.session_file)
-            })
-            
-            # Calculate daily totals
-            daily_totals = {
-                'date': date.today().isoformat(),
-                'total_sessions': len(daily_data),
-                'total_cost': sum(session['session_summary']['total_cost'] for session in daily_data),
-                'total_urls': sum(session['session_summary']['total_urls'] for session in daily_data),
-                'total_tokens': sum(session['session_summary']['total_tokens'] for session in daily_data),
-                'sessions': daily_data
-            }
-            
-            # Save updated daily summary
-            with open(self.daily_summary_file, 'w') as f:
-                json.dump(daily_totals, f, indent=2)
 
-            logger.info(f"Daily summary updated: ${daily_totals['total_cost']:.4f} total today")
-
-        except Exception as e:
-            logger.warning(f"Failed to update daily summary: {e}")
-    
     @classmethod
     def load_session(cls, session_file: Path) -> Dict:
         """Load a previous session for analysis"""

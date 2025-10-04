@@ -6,7 +6,7 @@ import Crawl4AIUrlBar from "@/components/Crawl4AIUrlBar";
 import AgentOutputCard from "@/components/AgentOutputCard";
 import CrawlProgressPanel from "@/components/CrawlProgressPanel";
 import BackendLogsDropdown from "@/components/BackendLogsDropdown";
-import { startCrawl4AI, stopCrawl4AI, createWebSocketConnection, type AgentLog } from "@/lib/crawl4ai-api";
+import { startCrawl4AI, stopCrawl4AI, createWebSocketConnection, type AgentLog, type StopSummary } from "@/lib/crawl4ai-api";
 
 type AgentStatus = "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error" | "stopped";
 
@@ -19,6 +19,7 @@ interface CrawlProgress {
   crawl_speed: number;
   ai_classifications: number;
   cache_hits: number;
+  loaded_caches: number;
 }
 
 interface BackendLogEntry {
@@ -34,6 +35,8 @@ export default function Crawl4AIPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [logs, setLogs] = useState<AgentLog[]>([]);
   const [backendLogs, setBackendLogs] = useState<BackendLogEntry[]>([]);
+  const [stopSummary, setStopSummary] = useState<StopSummary | null>(null);
+  const [showStopModal, setShowStopModal] = useState(false);
   const [progress, setProgress] = useState<CrawlProgress>({
     percentage: 0,
     pages_crawled: 0,
@@ -42,7 +45,8 @@ export default function Crawl4AIPage() {
     estimated_time_remaining: 0,
     crawl_speed: 0,
     ai_classifications: 0,
-    cache_hits: 0
+    cache_hits: 0,
+    loaded_caches: 0
   });
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -64,7 +68,8 @@ export default function Crawl4AIPage() {
         estimated_time_remaining: 0,
         crawl_speed: 0,
         ai_classifications: 0,
-        cache_hits: 0
+        cache_hits: 0,
+        loaded_caches: 0
       });
 
       // Establish WebSocket connection with a slight delay
@@ -82,17 +87,40 @@ export default function Crawl4AIPage() {
     if (!runId) return;
 
     try {
-      // Immediately update UI
-      setStatus("idle");
+      // Send stop request and get summary
+      const response = await stopCrawl4AI(runId);
 
-      // Send stop request (don't wait for response)
-      stopCrawl4AI(runId).catch((error) => {
-        console.error("Stop request failed:", error);
-      });
+      // Store summary
+      setStopSummary(response.summary);
 
-      console.log("Crawl force stopped");
+      // Add summary logs to the output
+      const summary = response.summary;
+      const summaryLogs: AgentLog[] = [
+        { timestamp: new Date().toLocaleTimeString(), message: "═══════════════════════════════════════", type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: "CRAWL STOPPED - SESSION SUMMARY", type: "warning" },
+        { timestamp: new Date().toLocaleTimeString(), message: "═══════════════════════════════════════", type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: "", type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `📊 Progress: ${summary.pages_crawled} of ${summary.total_pages} pages (${summary.percentage.toFixed(1)}%)`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `⏱️  Duration: ${summary.elapsed_time}`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `📦 Cache Hits: ${summary.cache_hits}`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `🤖 AI Classifications: ${summary.ai_classifications}`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: "", type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `🎯 Target URL: ${summary.target_url}`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: `📍 Last URL: ${summary.current_url}`, type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: "", type: "info" },
+        { timestamp: new Date().toLocaleTimeString(), message: "═══════════════════════════════════════", type: "info" },
+      ];
+
+      setLogs(prev => [...prev, ...summaryLogs]);
+
+      // Update UI
+      setStatus("stopped");
+
+      console.log("Crawl force stopped with summary:", response.summary);
     } catch (error) {
       console.error("Failed to stop crawl:", error);
+      // Fallback: still update UI even if stop request fails
+      setStatus("stopped");
     }
   };
 

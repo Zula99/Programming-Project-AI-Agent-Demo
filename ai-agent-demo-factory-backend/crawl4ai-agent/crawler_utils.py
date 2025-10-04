@@ -954,8 +954,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
 
     # Track AI classification stats
     ai_classifications_made = 0
-    cache_hits = 0
-    cache_size_before = len(config.classification_cache) if hasattr(config, 'classification_cache') and config.classification_cache else 0
+    # Start with pre-populated cache count (sitemap classifications)
+    initial_cache_size = len(config.classification_cache) if hasattr(config, 'classification_cache') and config.classification_cache else 0
+    cache_hits = initial_cache_size  # Initialize with pre-loaded classifications
+    cache_size_before = initial_cache_size
     
     # Configure crawler with browser settings for JS-heavy sites
     crawler_config = {
@@ -1034,6 +1036,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             _logger.warning(f"Could not initialize quality plateau detection: {e}")
             plateau_monitor = None
     
+    # Track crawl start time for speed calculation
+    import time
+    crawl_start_time = time.time()
+
     async with AsyncWebCrawler(**crawler_config) as crawler:
         while q and pages_crawled < config.max_pages:
             # Check stop flag at start of every iteration
@@ -1142,14 +1148,19 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 # Send real-time progress update
                 if config.progress_callback:
                     try:
+                        # Calculate crawl speed (pages per minute)
+                        elapsed_time = time.time() - crawl_start_time
+                        crawl_speed = (pages_crawled / (elapsed_time / 60)) if elapsed_time > 0 else 0
+
                         total_cached = len(config.classification_cache) if config.classification_cache else 0
                         await config.progress_callback(
                             pages_crawled=pages_crawled,
                             total_known=total_urls_discovered,
                             discovered_urls=len(q),
-                            crawl_speed=0,  # Speed calculated by caller
+                            crawl_speed=crawl_speed,
                             ai_classifications=ai_classifications_made,
-                            cache_hits=cache_hits
+                            cache_hits=cache_hits,
+                            current_url=url  # Pass current URL being crawled
                         )
                     except Exception as e:
                         _logger.debug(f"Progress callback error: {e}")

@@ -16,10 +16,11 @@ class AgentCrawler:
     Generic crawler that can be configured by the SmartMirrorAgent
     for any website with adaptive parameters
     """
-    
+
     def __init__(self):
         self.last_crawl_results: List[CrawlResult] = []
         self.last_crawl_stats: Dict[str, Any] = {}
+        self.progress_callback = None  # Injected from FastAPI for real-time updates
     
     async def crawl_website(self, 
                           url: str, 
@@ -114,7 +115,9 @@ class AgentCrawler:
                 # Content deduplication settings
                 enable_deduplication=enable_deduplication,
                 dedup_similarity_threshold=dedup_similarity_threshold,
-                dedup_min_content_length=dedup_min_content_length
+                dedup_min_content_length=dedup_min_content_length,
+                # Progress callback for real-time updates
+                progress_callback=self.progress_callback
             )
             
             logger.info(f"Starting crawl of {url} (max {max_pages} pages)")

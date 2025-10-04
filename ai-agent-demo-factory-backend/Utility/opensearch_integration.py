@@ -86,6 +86,8 @@ class Crawl4AIOpenSearchIntegration:
         self.config = config or OpenSearchConfig()
         self.client = self._create_client()
         self._verify_connection()
+        # Cache known indices to avoid repeated existence checks
+        self._known_indices = set()
 
     def _create_client(self) -> OpenSearch:
         """Create OpenSearch client with configuration"""
@@ -484,12 +486,20 @@ class Crawl4AIOpenSearchIntegration:
         Returns:
             True if index created successfully
         """
+        # Check cache first to avoid repeated API calls
+        if index_name in self._known_indices and not recreate:
+            return True
+
         if recreate and self.client.indices.exists(index=index_name):
             logger.info(f"Deleting existing log index: {index_name}")
             self.client.indices.delete(index=index_name)
+            self._known_indices.discard(index_name)
 
         if self.client.indices.exists(index=index_name):
-            logger.info(f"Log index {index_name} already exists")
+            # Only log once per index
+            if index_name not in self._known_indices:
+                logger.info(f"Log index {index_name} already exists")
+            self._known_indices.add(index_name)
             return True
 
         # Log mapping optimized for real-time monitoring
@@ -541,6 +551,7 @@ class Crawl4AIOpenSearchIntegration:
         try:
             self.client.indices.create(index=index_name, body=log_mapping)
             logger.info(f"Successfully created log index: {index_name}")
+            self._known_indices.add(index_name)
             return True
         except OpenSearchException as e:
             logger.error(f"Failed to create log index {index_name}: {e}")

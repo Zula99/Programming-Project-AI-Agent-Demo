@@ -135,6 +135,8 @@ async def update_progress(run_id: str, pages_crawled: int, total_pages: int, cra
         progress["crawl_speed"] = crawl_speed
         progress["ai_classifications"] = ai_classifications
         progress["cache_hits"] = cache_hits
+        # loaded_caches = initial sitemap caches + crawl cache hits
+        progress["loaded_caches"] = cache_hits
 
         # Calculate estimated time remaining (in seconds)
         if crawl_speed > 0 and progress["pages_remaining"] > 0:
@@ -177,10 +179,13 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
 
         # Create a progress callback to inject into the hybrid crawler
         async def progress_callback(pages_crawled: int, total_known: int, discovered_urls: int = 0, crawl_speed: float = 0,
-                                   ai_classifications: int = 0, cache_hits: int = 0):
+                                   ai_classifications: int = 0, cache_hits: int = 0, current_url: str = None):
             """Real-time progress updates from hybrid crawler"""
             # Total pages = sitemap URLs + discovered URLs during crawling
             total_pages = total_known + discovered_urls
+            # Update current URL in session
+            if current_url and run_id in crawl4ai_sessions:
+                crawl4ai_sessions[run_id]["current_url"] = current_url
             await update_progress(run_id, pages_crawled, total_pages, crawl_speed, ai_classifications, cache_hits)
 
         # Inject progress callback into the agent's crawler if it's HybridCrawler
@@ -263,6 +268,7 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
         "logs": [],
         "current_question": None,
         "last_response": None,
+        "current_url": None,  # Track current URL being crawled
         "progress": {
             "percentage": 0,
             "pages_crawled": 0,
@@ -271,7 +277,8 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
             "estimated_time_remaining": 0,
             "crawl_speed": 0,  # pages per minute
             "ai_classifications": 0,  # AI classifications made during crawl
-            "cache_hits": 0  # Cache hits during crawl
+            "cache_hits": 0,  # Cache hits during crawl
+            "loaded_caches": 0  # Total cached links (sitemap + crawl cache hits)
         }
     }
 
@@ -353,8 +360,32 @@ async def stop_crawl4ai_agent(run_id: str):
     # Immediately update status to stopped
     session["status"] = "stopped"
 
+    # Calculate elapsed time
+    elapsed_time = time.time() - session["started_at"]
+
+    # Format elapsed time as MM:SS
+    minutes = int(elapsed_time // 60)
+    seconds = int(elapsed_time % 60)
+    elapsed_time_formatted = f"{minutes}m {seconds}s"
+
+    # Collect metrics at stop time
+    progress = session["progress"]
+    stop_summary = {
+        "pages_crawled": progress["pages_crawled"],
+        "total_pages": progress["total_pages"],
+        "percentage": progress["percentage"],
+        "pages_remaining": progress["pages_remaining"],
+        "elapsed_time": elapsed_time_formatted,
+        "elapsed_seconds": int(elapsed_time),
+        "cache_hits": progress["cache_hits"],
+        "ai_classifications": progress["ai_classifications"],
+        "current_url": session.get("current_url", "N/A"),
+        "target_url": session["target_url"]
+    }
+
     # Send log to frontend
     await add_agent_log(run_id, " FORCE STOP - Terminating crawl immediately", "warning")
+    await add_agent_log(run_id, f" Stopped at: {stop_summary['pages_crawled']}/{stop_summary['total_pages']} pages ({stop_summary['percentage']:.1f}%)", "info")
     await update_agent_status(run_id, "stopped")
 
     # Cancel the background task (don't wait for response)
@@ -363,7 +394,8 @@ async def stop_crawl4ai_agent(run_id: str):
     return JSONResponse(content={
         "message": "Crawl force stopped",
         "run_id": run_id,
-        "status": "stopped"
+        "status": "stopped",
+        "summary": stop_summary
     })
 
 @app.websocket("/crawl4ai/ws/{run_id}")

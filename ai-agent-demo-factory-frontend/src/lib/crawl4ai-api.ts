@@ -73,10 +73,23 @@ export async function sendAgentResponse(runId: string, response: string): Promis
   }
 }
 
+export interface StopSummary {
+  pages_crawled: number;
+  total_pages: number;
+  percentage: number;
+  pages_remaining: number;
+  elapsed_time: string;
+  elapsed_seconds: number;
+  cache_hits: number;
+  ai_classifications: number;
+  current_url: string;
+  target_url: string;
+}
+
 /**
  * Stop a running Crawl4AI agent session
  */
-export async function stopCrawl4AI(runId: string): Promise<void> {
+export async function stopCrawl4AI(runId: string): Promise<{ summary: StopSummary }> {
   const res = await fetch(`${API_BASE}/crawl4ai/stop/${runId}`, {
     method: 'POST',
     headers: {
@@ -87,6 +100,8 @@ export async function stopCrawl4AI(runId: string): Promise<void> {
   if (!res.ok) {
     throw new Error(`Failed to stop crawl: ${res.statusText}`);
   }
+
+  return res.json();
 }
 
 /**

@@ -11,7 +11,8 @@ interface CrawlProgress {
   estimated_time_remaining: number; // in seconds
   crawl_speed: number; // pages per minute
   ai_classifications: number; // AI classifications made
-  cache_hits: number; // Cache hits
+  cache_hits: number; // Cache hits during crawl
+  loaded_caches: number; // Total cached links (sitemap + crawl cache hits)
 }
 
 interface CrawlProgressPanelProps {
@@ -95,9 +96,6 @@ export default function CrawlProgressPanel({
               <div className="text-lg font-bold text-gray-900">
                 {progress?.pages_crawled || 0}
               </div>
-              <div className="text-xs text-gray-500">
-                of {progress?.total_pages || 0} pages
-              </div>
             </div>
 
             {/* Pages Remaining */}
@@ -145,31 +143,17 @@ export default function CrawlProgressPanel({
               </div>
             </div>
 
-            {/* AI Classifications */}
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <HiBeaker className="h-4 w-4 text-indigo-500" />
-                <span className="text-xs font-medium text-gray-600">AI Classified</span>
-              </div>
-              <div className="text-lg font-bold text-gray-900">
-                {progress?.ai_classifications || 0}
-              </div>
-              <div className="text-xs text-gray-500">
-                links analyzed
-              </div>
-            </div>
-
-            {/* Cache Hits */}
+            {/* Loaded Caches */}
             <div className="bg-gray-50 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 <HiArchiveBox className="h-4 w-4 text-teal-500" />
-                <span className="text-xs font-medium text-gray-600">Cache Hits</span>
+                <span className="text-xs font-medium text-gray-600">Loaded Caches</span>
               </div>
               <div className="text-lg font-bold text-gray-900">
-                {progress?.cache_hits || 0}
+                {progress?.loaded_caches || 0}
               </div>
               <div className="text-xs text-gray-500">
-                cached results
+                cached links
               </div>
             </div>
           </div>

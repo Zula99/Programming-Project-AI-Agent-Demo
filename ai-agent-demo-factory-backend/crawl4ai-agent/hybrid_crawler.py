@@ -279,18 +279,18 @@ class HybridCrawler:
                 priority_urls = analysis.sitemap_urls[:50]  # Reasonable starting set
             
             estimated_coverage = len(analysis.sitemap_urls)
-            max_pages = len(analysis.sitemap_urls) * 3  # Allow for additional discovered URLs (no 500 limit)
-            
+            max_pages = 999999  # Effectively unlimited - crawl all discovered URLs
+
         else:  # PROGRESSIVE
             # Scenario B: Start with homepage and main navigation extraction
             # Build URL queue progressively as pages are crawled
             # Apply AI classification in real-time
             # Use quality plateau detection to prevent infinite crawling
             # Domain-bounded crawling (stays within single domain)
-            
+
             priority_urls = [start_url]
             estimated_coverage = 150  # Conservative estimate without sitemap
-            max_pages = 1000  # Higher limit for full testing (was 300)
+            max_pages = 999999  # Effectively unlimited - rely on quality plateau detection
         
         plan = CrawlPlan(
             strategy=strategy,
@@ -350,11 +350,19 @@ class HybridCrawler:
 
             analysis = await self.analyze_site_structure(start_url, run_id)
 
-            # Send progress update after sitemap analysis - show classified URLs
+            # Send progress update after sitemap analysis - show classified URLs as cache hits
             if self.progress_callback and analysis.ai_classified_urls:
                 try:
                     classified_count = len(analysis.ai_classified_urls)
-                    await self.progress_callback(0, classified_count, 0, 0, classified_count, 0)
+                    # These are pre-loaded classifications, so they count as cache hits
+                    await self.progress_callback(
+                        pages_crawled=0,
+                        total_known=classified_count,  # Total known URLs from sitemap
+                        discovered_urls=0,
+                        crawl_speed=0,
+                        ai_classifications=0,  # No new classifications yet
+                        cache_hits=classified_count  # All sitemap classifications are cache hits
+                    )
                 except Exception:
                     pass
 
