@@ -57,20 +57,20 @@ export default function AgentOutputCard({
             // 4. Output site type and strategy/prompt
             { pattern: /STARTING SITE ANALYSIS & STRATEGY SELECTION/, phase: "Determine Site Type & Strategy", order: 4 },
 
-            // 5. Strategy Selected - when crawl plan is shown
-            { pattern: /Crawl Plan:|Strategy:.*FULL_BROWSER|Strategy:.*JAVASCRIPT_RENDER|Strategy:.*BASIC_HTTP/, phase: "Strategy Selected", order: 5, completed: true },
+            // 5. Strategy Selected - when crawl plan is shown (extract strategy name only)
+            { pattern: /Strategy:\s*(sitemap_first|progressive|FULL_BROWSER|JAVASCRIPT_RENDER|BASIC_HTTP)/, phase: "Strategy", order: 5, completed: true },
 
             // 6. Start Sitemap Classification
             { pattern: /STARTING AI CLASSIFICATION OF SITEMAP URLS/, phase: "Start Sitemap Classification", order: 6 },
 
-            // 7. Finish Sitemap Classification - MUST have "URL CLASSIFICATION RESULTS" header
-            { pattern: /URL CLASSIFICATION RESULTS/, phase: "Finish Sitemap Classification", order: 7, completed: true },
+            // 7. Finish Sitemap Classification
+            { pattern: /URL CLASSIFICATION RESULTS/, phase: "Sitemap Classification Complete", order: 7, completed: true },
 
-            // 8. Initialize Hybrid Crawler - MUST have "STARTING HYBRID CRAWL EXECUTION"
-            { pattern: /STARTING HYBRID CRAWL EXECUTION/, phase: "Initialize Hybrid Crawler", order: 8 },
+            // 8. Initialize Crawler
+            { pattern: /STARTING HYBRID CRAWL EXECUTION/, phase: "Initialize Crawler", order: 8 },
 
-            // 9. Finish Crawl - with checkmark emoji
-            { pattern: /Hybrid crawl completed/, phase: "Finish Crawl", order: 9, completed: true },
+            // 9. Crawl Complete
+            { pattern: /Hybrid crawl completed/, phase: "Crawl Complete", order: 9, completed: true },
 
             // 10. Quality Assessment
             { pattern: /STARTING QUALITY ASSESSMENT & ANALYSIS/, phase: "Quality Assessment", order: 10 },
@@ -86,10 +86,28 @@ export default function AgentOutputCard({
             milestonePatterns.forEach(({ pattern, phase, order, completed = false }) => {
                 if (pattern.test(log.message) && !phasesSeen.has(phase)) {
                     phasesSeen.add(phase);
+
+                    // Special handling for milestones - clean up display messages
+                    let displayMessage = log.message.replace(/={70}/g, '').replace(/={60}/g, '').replace(/={80}/g, '').trim();
+
+                    if (phase === "Strategy" && log.message.includes("Strategy:")) {
+                        const strategyMatch = log.message.match(/Strategy:\s*(\w+)/);
+                        if (strategyMatch) {
+                            displayMessage = `${strategyMatch[1]}`;
+                        }
+                    }
+
+                    // Hide backend log messages for these milestones (show only phase name)
+                    if (phase === "Sitemap Classification Complete" ||
+                        phase === "Initialize Crawler" ||
+                        phase === "Crawl Complete") {
+                        displayMessage = "";
+                    }
+
                     newMilestones.push({
                         timestamp: log.timestamp,
                         phase: phase,
-                        message: log.message.replace(/={70}/g, '').replace(/={60}/g, '').replace(/={80}/g, '').trim(),
+                        message: displayMessage,
                         completed: completed,
                         order: order
                     });

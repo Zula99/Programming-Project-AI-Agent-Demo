@@ -51,9 +51,9 @@ export default function Crawl4AIPage() {
   const wsRef = useRef<WebSocket | null>(null);
 
   // Handle starting a new crawl
-  const handleStartCrawl = async (url: string) => {
+  const handleStartCrawl = async (url: string, maxPages?: number) => {
     try {
-      const response = await startCrawl4AI(url);
+      const response = await startCrawl4AI(url, maxPages);
       setRunId(response.run_id);
       setStatus("running");
       setLogs([]);

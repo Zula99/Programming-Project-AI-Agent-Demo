@@ -10,9 +10,6 @@ interface CrawlProgress {
   total_pages: number;
   estimated_time_remaining: number; // in seconds
   crawl_speed: number; // pages per minute
-  ai_classifications: number; // AI classifications made
-  cache_hits: number; // Cache hits during crawl
-  loaded_caches: number; // Total cached links (sitemap + crawl cache hits)
 }
 
 interface CrawlProgressPanelProps {
@@ -140,20 +137,6 @@ export default function CrawlProgressPanel({
               </div>
               <div className="text-xs text-gray-500">
                 estimated
-              </div>
-            </div>
-
-            {/* Loaded Caches */}
-            <div className="bg-gray-50 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <HiArchiveBox className="h-4 w-4 text-teal-500" />
-                <span className="text-xs font-medium text-gray-600">Loaded Caches</span>
-              </div>
-              <div className="text-lg font-bold text-gray-900">
-                {progress?.loaded_caches || 0}
-              </div>
-              <div className="text-xs text-gray-500">
-                cached links
               </div>
             </div>
           </div>

@@ -43,6 +43,7 @@ setup_websocket_logging()
 # Crawl4AI specific models
 class Crawl4AIRequest(BaseModel):
     target_url: str
+    max_pages: Optional[int] = None  # Optional limit for testing, defaults to intelligent stopping
 
 class AgentResponseRequest(BaseModel):
     run_id: str
@@ -181,8 +182,10 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         async def progress_callback(pages_crawled: int, total_known: int, discovered_urls: int = 0, crawl_speed: float = 0,
                                    ai_classifications: int = 0, cache_hits: int = 0, current_url: str = None):
             """Real-time progress updates from hybrid crawler"""
-            # Total pages = sitemap URLs + discovered URLs during crawling
-            total_pages = total_known + discovered_urls
+            # Use max_pages as fixed total (if specified), otherwise use total_known
+            max_pages = crawl4ai_sessions[run_id].get("max_pages")
+            total_pages = max_pages if max_pages else total_known
+            logger.info(f"Progress callback: crawled={pages_crawled}/{total_pages}, speed={crawl_speed:.1f} pages/min, cache_hits={cache_hits}")
             # Update current URL in session
             if current_url and run_id in crawl4ai_sessions:
                 crawl4ai_sessions[run_id]["current_url"] = current_url
@@ -197,7 +200,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         logger.info(f"Starting SmartMirrorAgent process for {target_url}")
 
         # Execute the real agent process with run_id for stop checking
-        success, metrics, output_path = await agent.process_url(target_url, run_id)
+        success, metrics, output_path = await agent.process_url(target_url, run_id, max_pages=crawl4ai_sessions[run_id].get("max_pages"))
 
         # Report results
         if success:
@@ -269,6 +272,7 @@ async def start_crawl4ai(request: Crawl4AIRequest, background_tasks: BackgroundT
         "current_question": None,
         "last_response": None,
         "current_url": None,  # Track current URL being crawled
+        "max_pages": request.max_pages,  # Store max_pages for agent
         "progress": {
             "percentage": 0,
             "pages_crawled": 0,

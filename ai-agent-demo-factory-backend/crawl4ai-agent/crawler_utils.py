@@ -7,7 +7,7 @@ import urllib.parse
 import urllib.robotparser as robotparser
 from collections import deque
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Any, Tuple
+from typing import Dict, List, Set, Optional, Any, Tuple, Callable
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -179,6 +179,8 @@ def _get_site_specific_thresholds(site_type):
             'diversity_threshold': 0.8,     # Standard similarity threshold
             'diversity_window_size': 15
         }
+
+# Progress tracking is now handled via direct callback invocation in generic_crawl
 
 @dataclass
 class CrawlConfig:
@@ -950,13 +952,14 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
         "external_domains": 0
     }
 
-    total_urls_discovered = 0
-
     # Track AI classification stats
     ai_classifications_made = 0
     # Start with pre-populated cache count (sitemap classifications)
     initial_cache_size = len(config.classification_cache) if hasattr(config, 'classification_cache') and config.classification_cache else 0
     cache_hits = initial_cache_size  # Initialize with pre-loaded classifications
+
+    # Initialize total_urls_discovered with sitemap count for accurate progress tracking
+    total_urls_discovered = initial_cache_size
     cache_size_before = initial_cache_size
     
     # Configure crawler with browser settings for JS-heavy sites
@@ -1039,6 +1042,24 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
     # Track crawl start time for speed calculation
     import time
     crawl_start_time = time.time()
+
+    # Track progress metrics for live updates
+    crawl_speed = 0.0
+
+    # Send initial progress update (0/max_pages)
+    if config.progress_callback:
+        try:
+            await config.progress_callback(
+                pages_crawled=0,
+                total_known=config.max_pages,
+                discovered_urls=0,
+                crawl_speed=0,
+                ai_classifications=0,
+                cache_hits=0,
+                current_url=start_url
+            )
+        except Exception as e:
+            _logger.debug(f"Initial progress callback error: {e}")
 
     async with AsyncWebCrawler(**crawler_config) as crawler:
         while q and pages_crawled < config.max_pages:
@@ -1130,7 +1151,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     quality_score = None
                     if hasattr(result, 'ai_classification') and result.ai_classification:
                         quality_score = result.ai_classification.get('confidence', None)
-                    
+
                     await notify_page_crawled(config.run_id, url, result.success and not is_duplicate, quality_score)
                 except Exception as e:
                     _logger.debug(f"Coverage tracking notification failed: {e}")
@@ -1153,6 +1174,7 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         crawl_speed = (pages_crawled / (elapsed_time / 60)) if elapsed_time > 0 else 0
 
                         total_cached = len(config.classification_cache) if config.classification_cache else 0
+                        _logger.info(f"PROGRESS CALLBACK: Sending update {pages_crawled}/{config.max_pages}")
                         await config.progress_callback(
                             pages_crawled=pages_crawled,
                             total_known=total_urls_discovered,
@@ -1160,10 +1182,10 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                             crawl_speed=crawl_speed,
                             ai_classifications=ai_classifications_made,
                             cache_hits=cache_hits,
-                            current_url=url  # Pass current URL being crawled
+                            current_url=url
                         )
                     except Exception as e:
-                        _logger.debug(f"Progress callback error: {e}")
+                        _logger.error(f"Progress callback error: {e}")
 
                 # Queue new links with filtering
                 all_links = list(result.links)

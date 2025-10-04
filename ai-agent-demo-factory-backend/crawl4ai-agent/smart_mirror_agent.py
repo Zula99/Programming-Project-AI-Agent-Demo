@@ -157,13 +157,14 @@ class SmartMirrorAgent:
         except Exception as e:
             self.logger.error(f"Failed to save memory: {e}")
             
-    async def process_url(self, url: str, run_id: Optional[str] = None) -> Tuple[bool, QualityMetrics, str]:
+    async def process_url(self, url: str, run_id: Optional[str] = None, max_pages: Optional[int] = None) -> Tuple[bool, QualityMetrics, str]:
         """
         Main processing flow for a URL
 
         Args:
             url: URL to process
             run_id: Optional run ID for stop checking
+            max_pages: Optional max pages limit (None = intelligent stopping)
 
         Returns:
             success: bool - Whether crawling succeeded
@@ -182,7 +183,7 @@ class SmartMirrorAgent:
         strategy = self.select_strategy(recon_results, similar_pattern)
 
         # Step 4: Adaptive crawling with quality monitoring
-        crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results, run_id)
+        crawl_success, crawl_data = await self.adaptive_crawl(url, strategy, recon_results, run_id, max_pages)
 
         # Step 5: Quality assessment
         self.logger.info("")
@@ -280,7 +281,7 @@ class SmartMirrorAgent:
             return similar_pattern.strategy
         return recon.recommended_strategy
         
-    async def adaptive_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults, run_id: Optional[str] = None) -> Tuple[bool, Dict[str, Any]]:
+    async def adaptive_crawl(self, url: str, strategy: CrawlStrategy, recon: ReconResults, run_id: Optional[str] = None, max_pages: Optional[int] = None) -> Tuple[bool, Dict[str, Any]]:
         """Execute intelligent crawling with US-54 hybrid crawler integration"""
         try:
             # Import hybrid crawler system
@@ -297,6 +298,10 @@ class SmartMirrorAgent:
                     output_dir=f"./output/agent_crawls/{domain}/{run_id}" if run_id else f"./output/agent_crawls/{domain}"
                 )
 
+                # Pass progress callback from AgentCrawler to HybridCrawler
+                if hasattr(self, 'crawler') and hasattr(self.crawler, 'progress_callback'):
+                    hybrid_crawler.progress_callback = self.crawler.progress_callback
+
                 self.logger.info("")
                 self.logger.info("="*70)
                 self.logger.info(" STARTING SITE ANALYSIS & STRATEGY SELECTION")
@@ -304,10 +309,10 @@ class SmartMirrorAgent:
                 self.logger.info(f" Using US-54 Hybrid Crawler System")
 
                 # Step 1: Analyze site structure (sitemap-first vs progressive) with run_id for stop checking
-                analysis = await hybrid_crawler.analyze_site_structure(url, run_id)
+                analysis = await hybrid_crawler.analyze_site_structure(url, run_id, max_pages)
 
                 # Step 2: Create intelligent crawl plan
-                plan = hybrid_crawler.create_crawl_plan(url, analysis)
+                plan = hybrid_crawler.create_crawl_plan(url, analysis, max_pages=max_pages)
                 
                 self.logger.info(f"📋 Crawl Plan:")
                 self.logger.info(f"   Strategy: {plan.strategy.value}")
@@ -325,7 +330,8 @@ class SmartMirrorAgent:
                     results, stats = await hybrid_crawler.execute_crawl_plan(
                         plan=plan,
                         cost_tracker=cost_tracker,
-                        run_id=run_id
+                        run_id=run_id,
+                        max_pages=max_pages
                     )
                     
                     # Calculate success metrics safely

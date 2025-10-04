@@ -110,7 +110,7 @@ class HybridCrawler:
             except Exception as e:
                 self.logger.warning(f"Failed to initialize AI components: {e}")
     
-    async def analyze_site_structure(self, start_url: str, run_id: Optional[str] = None) -> SitemapAnalysis:
+    async def analyze_site_structure(self, start_url: str, run_id: Optional[str] = None, max_pages: Optional[int] = None) -> SitemapAnalysis:
         """
         Comprehensive site analysis to determine optimal discovery strategy.
         
@@ -176,18 +176,20 @@ class HybridCrawler:
                     )
 
                     # Test sitemap accessibility and extract URLs with AI analysis
+                    # Limit to max_pages if specified for faster testing
                     urls, metadata = await extractor.process_sitemap_with_ai(
-                        max_urls=None,  # No limit - process full sitemap
+                        max_urls=max_pages,  # Limit to user-specified max_pages (None = all URLs)
                         sample_content=True  # Get content samples for AI classification
                     )
                     
                     if urls and len(urls) > 1:  # Test minimum for valid sitemap (normally > 5)
                         successful_sitemap = sitemap_url
                         analysis.has_sitemap = True
-                        # Use all sitemap URLs
+                        # Use all sitemap URLs (limited by max_pages if specified)
                         analysis.sitemap_urls = urls
                         analysis.estimated_total_urls = len(analysis.sitemap_urls)
-                        self.logger.info(f"SUCCESS: Using all {len(analysis.sitemap_urls)} URLs from sitemap (no limit applied)")
+                        limit_msg = f"(limited to {max_pages})" if max_pages else "(no limit)"
+                        self.logger.info(f"SUCCESS: Using {len(analysis.sitemap_urls)} URLs from sitemap {limit_msg}")
                         analysis.ai_classified_urls = metadata.get('ai_classifications', [])
                         analysis.discovery_metadata.update(metadata)
                         
@@ -220,8 +222,8 @@ class HybridCrawler:
         
         return analysis
     
-    def create_crawl_plan(self, start_url: str, analysis: SitemapAnalysis, 
-                         site_type: Optional[BusinessSiteType] = None) -> CrawlPlan:
+    def create_crawl_plan(self, start_url: str, analysis: SitemapAnalysis,
+                         site_type: Optional[BusinessSiteType] = None, max_pages: Optional[int] = None) -> CrawlPlan:
         """
         Create comprehensive crawling plan based on site analysis.
         
@@ -279,7 +281,7 @@ class HybridCrawler:
                 priority_urls = analysis.sitemap_urls[:50]  # Reasonable starting set
             
             estimated_coverage = len(analysis.sitemap_urls)
-            max_pages = 999999  # Effectively unlimited - crawl all discovered URLs
+            max_pages_limit = max_pages or 999999  # User limit or intelligent stopping
 
         else:  # PROGRESSIVE
             # Scenario B: Start with homepage and main navigation extraction
@@ -290,29 +292,29 @@ class HybridCrawler:
 
             priority_urls = [start_url]
             estimated_coverage = 150  # Conservative estimate without sitemap
-            max_pages = 999999  # Effectively unlimited - rely on quality plateau detection
+            max_pages_limit = max_pages or 999999  # User limit or intelligent stopping
         
         plan = CrawlPlan(
             strategy=strategy,
             priority_urls=priority_urls,
             estimated_coverage_target=estimated_coverage,
-            max_pages_recommendation=max_pages,
+            max_pages_recommendation=max_pages_limit,
             sitemap_analysis=analysis,
             quality_thresholds=quality_thresholds,
             reasoning=reasoning
         )
-        
+
         self.logger.info(f"📋 Crawl plan created:")
         self.logger.info(f"   Strategy: {strategy.value}")
         self.logger.info(f"   Priority URLs: {len(priority_urls)}")
         self.logger.info(f"   Est. coverage target: {estimated_coverage}")
-        self.logger.info(f"   Max pages: {max_pages}")
+        self.logger.info(f"   Max pages: {max_pages_limit}")
         self.logger.info(f"   Reasoning: {reasoning}")
         
         return plan
     
-    async def execute_hybrid_crawl(self, start_url: str, crawl_config: Optional[CrawlConfig] = None, 
-                                 run_id: Optional[str] = None, enable_coverage_tracking: bool = True) -> Tuple[bool, Dict[str, Any]]:
+    async def execute_hybrid_crawl(self, start_url: str, crawl_config: Optional[CrawlConfig] = None,
+                                 run_id: Optional[str] = None, enable_coverage_tracking: bool = True, max_pages: Optional[int] = None) -> Tuple[bool, Dict[str, Any]]:
         """
         Execute complete hybrid crawling workflow with intelligent strategy selection.
         
@@ -341,30 +343,8 @@ class HybridCrawler:
             # Phase 1: Site Structure Analysis & Sitemap Detection
             self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
 
-            # Send progress update - analysis starting
-            if self.progress_callback:
-                try:
-                    await self.progress_callback(0, 0, 0, 0, 0, 0)
-                except Exception:
-                    pass
-
+            # Perform site analysis (progress updates will come from actual crawling)
             analysis = await self.analyze_site_structure(start_url, run_id)
-
-            # Send progress update after sitemap analysis - show classified URLs as cache hits
-            if self.progress_callback and analysis.ai_classified_urls:
-                try:
-                    classified_count = len(analysis.ai_classified_urls)
-                    # These are pre-loaded classifications, so they count as cache hits
-                    await self.progress_callback(
-                        pages_crawled=0,
-                        total_known=classified_count,  # Total known URLs from sitemap
-                        discovered_urls=0,
-                        crawl_speed=0,
-                        ai_classifications=0,  # No new classifications yet
-                        cache_hits=classified_count  # All sitemap classifications are cache hits
-                    )
-                except Exception:
-                    pass
 
             # Phase 2: Site Type Detection for Quality Thresholds
             site_type = None
@@ -404,11 +384,12 @@ class HybridCrawler:
             self.logger.info("  Phase 3: Configuring adaptive crawler")
             if not crawl_config:
                 domain = urllib.parse.urlparse(start_url).netloc
+                # Use user-provided max_pages if specified, otherwise use plan recommendation
+                pages_limit = max_pages if max_pages is not None else plan.max_pages_recommendation
                 crawl_config = CrawlConfig(
                     domain=domain,
                     output_root=self.output_dir / domain.replace('.', '_'),
-                    max_pages=plan.max_pages_recommendation,  # Use full recommendation
-                    #max_pages=2,  # LIMIT DISABLED FOR FULL TESTING
+                    max_pages=pages_limit,
                     request_gap=0.8,  # Respectful crawling
                     respect_robots=False,  # Demo purposes - ignore robots.txt
                     start_url=start_url,
@@ -513,7 +494,7 @@ class HybridCrawler:
                 'strategy_attempted': plan.strategy.value if 'plan' in locals() else 'unknown'
             }
 
-    async def execute_crawl_plan(self, plan, cost_tracker=None, run_id: Optional[str] = None) -> Tuple[List, Dict]:
+    async def execute_crawl_plan(self, plan, cost_tracker=None, run_id: Optional[str] = None, max_pages: Optional[int] = None) -> Tuple[List, Dict]:
         """
         Execute crawl plan with cost tracking - matches SmartMirrorAgent interface
 
@@ -538,10 +519,12 @@ class HybridCrawler:
 
             # Create crawl config from plan
             domain = urllib.parse.urlparse(plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]).netloc
+            # Use user-provided max_pages if specified, otherwise use plan recommendation
+            pages_limit = max_pages if max_pages is not None else plan.max_pages_recommendation
             crawl_config = CrawlConfig(
                 domain=domain,
                 output_root=self.output_dir / domain.replace('.', '_'),
-                max_pages=plan.max_pages_recommendation,
+                max_pages=pages_limit,
                 request_gap=0.8,
                 respect_robots=False,
                 start_url=plan.priority_urls[0] if plan.priority_urls else plan.start_url,
@@ -554,16 +537,7 @@ class HybridCrawler:
             # Execute the crawl using generic_crawl directly to get actual results
             results, generic_stats = await generic_crawl(crawl_config)
 
-            # Send progress update if callback is available
-            if self.progress_callback:
-                pages_crawled = len(results)
-                sitemap_count = len(plan.sitemap_analysis.sitemap_urls) if plan.sitemap_analysis and plan.sitemap_analysis.sitemap_urls else 0
-                discovered_count = generic_stats.get('total_urls_discovered', 0) - sitemap_count
-                crawl_time = time.time() - start_time
-                crawl_speed = (pages_crawled / (crawl_time / 60)) if crawl_time > 0 else 0  # pages per minute
-                ai_classifications = generic_stats.get('ai_classifications_made', 0)
-                cache_hits = generic_stats.get('cache_hits', 0)
-                await self.progress_callback(pages_crawled, sitemap_count, discovered_count, crawl_speed, ai_classifications, cache_hits)
+            # Progress updates are sent live during crawling in generic_crawl()
 
             # Calculate success from actual results
             successful_results = [r for r in results if r.success]
