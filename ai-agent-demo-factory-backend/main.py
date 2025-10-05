@@ -13,12 +13,12 @@ from services.schema_processor import Search365SchemaProcessor
 
 
 import uuid # For generating unique IDs
-import time # For simulating time-based operations
-import threading # For running the simulation in a separate thread
-import subprocess # For running external commands
-import os # For environment variables
-import tempfile # For temporary files
-import re # For regex parsing
+import time # For time tracking and delays
+import threading # Unused - can be removed
+import subprocess # For running external commands (development mode)
+import os # For file operations and environment variables
+import tempfile # Unused - can be removed
+import re # For regex parsing in config generation and log parsing
 
 def extract_crawl_statistics(run_id: str) -> dict:
     """
@@ -127,19 +127,23 @@ app.add_middleware(
 )
 
 
-# Dictionary stores crawl statuses and simulated results in memory.
+# Dictionary stores crawl statuses and results in memory (not persistent across restarts)
 crawl_jobs = {}
 
 # Dictionary to track running processes for stop functionality
 running_processes = {}
 
-def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500, 
-                                  index_name: str = "demo_factory", template: Optional["TemplateConfig"] = None) -> str:
+def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
+                                  index_name: str = "demo_factory", template: Optional["TemplateConfig"] = None, run_id: str = None) -> str:
     """
-    Create a Norconex config using the NAB template as a base.
+    Create a Norconex config using base-crawl-template as the base.
+    Always uses demo_factory_raw index for raw data extraction.
     If template is provided, use template parameters; otherwise use defaults.
     """
-    
+
+    # Always use base-crawl-template for maximum data extraction
+    template_file = "base-crawl-template.xml"
+
     # Use template parameters if provided, otherwise use function defaults
     if template:
         max_depth = template.maxDepth
@@ -150,32 +154,16 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         include_subdomains = template.includeSubdomains
         file_exclusions = template.fileExclusions
         url_patterns = template.urlPatterns
-        print(f"Using template '{template.name}' ({template.platform}) with parameters: depth={max_depth}, docs={max_documents}, threads={num_threads}")
+        print(f"Using base-crawl-template with '{template.name}' ({template.platform}) parameters: depth={max_depth}, docs={max_documents}, threads={num_threads}")
     else:
-        print(f"Using default parameters: depth={max_depth}, docs={max_documents}")
-    
-    # Copy working-example.xml and modify it to ONLY crawl the target URL
-# def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents: int = 500,
-#                                   index_name: str = "demo_factory", template: str = "search365-basic", run_id: str = None) -> str:
-#     """
-#     Create a Norconex config using the Search365 template as a base.
-#     This template includes comprehensive metadata extraction for Search365 schema compatibility.
-#     """
-    
-#     # Template selection - choose which Search365 template to use
-#     template_options = {
-#         "working-example": "working-example.xml",
-#         "search365-basic": "search365-basic-template.xml",
-#         "search365-simple": "search365-simple-template.xml",
-#         "search365-complete": "search365-template.xml",
-#         "search365-complete-fixed": "search365-complete-fixed.xml",
-#         "search365-complete-minimal": "search365-complete-minimal.xml",
-#         "search365-enhanced": "search365-enhanced.xml",
-#         "base-crawl": "base-crawl-template.xml",
-#     }
-
-#     template_file = template_options.get(template, "search365-basic-template.xml")
-#     print(f"Using template: {template} -> {template_file}")
+        # Default values for base-crawl-template
+        num_threads = 4
+        delay_ms = 2000
+        stay_on_domain = True
+        include_subdomains = False
+        file_exclusions = []
+        url_patterns = []
+        print(f"Using base-crawl-template with default parameters: depth={max_depth}, docs={max_documents}")
 
     try:
         template_path = f"/opt/norconex/configs/{template_file}"
@@ -192,10 +180,17 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         parsed_url = urlparse(url)
         target_domain = parsed_url.netloc
 
-        # Replace the URL and index name - handle multiple possible template URLs
+        # Replace the URL - handle multiple possible template URLs
         config = config.replace('<url>https://example.com/</url>', f'<url>{url}</url>')
         config = config.replace('<url>https://example.com</url>', f'<url>{url}</url>')
-        config = config.replace('<indexName>demo_factory</indexName>', f'<indexName>{index_name}</indexName>')
+
+        # Always use demo_factory_raw for base-crawl template (raw data extraction)
+        config = config.replace('<indexName>demo_factory</indexName>', '<indexName>demo_factory_raw</indexName>')
+
+        # Inject run_id for tracking if provided
+        if run_id:
+            config = config.replace('<constant name="run_id">PLACEHOLDER_RUN_ID</constant>',
+                                  f'<constant name="run_id">{run_id}</constant>')
 
         # Also replace domain in regex patterns (handle both escaped and unescaped)
         escaped_domain = target_domain.replace('.', '\\.')
@@ -204,21 +199,20 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
         
         # Create unique collector and crawler IDs based on domain
         domain_safe = target_domain.replace('.', '-').replace('www-', '')
-        collector_id = f"search365-collector-{domain_safe}"
-        crawler_id = f"search365-crawler-{domain_safe}"
+        collector_id = f"base-crawl-collector-{domain_safe}"
+        crawler_id = f"base-crawl-extractor-{domain_safe}"
+
+        # Replace collector and crawler IDs for base-crawl template
+        config = config.replace('id="base-crawl-collector"', f'id="{collector_id}"')
+        config = config.replace('id="base-crawl-extractor"', f'id="{crawler_id}"')
         
-        # Replace collector and crawler IDs for domain-specific datastores
-        config = config.replace('id="nab-banking-collector"', f'id="{collector_id}"')
-        config = config.replace('id="nab-banking-crawler"', f'id="{crawler_id}"')
-        
-        # Set crawl parameters (use template values if available)
-        config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
-        config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
+        # Set crawl parameters for base-crawl-template
+        config = config.replace('<maxDocuments>500</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
+        config = config.replace('<maxDepth>3</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
         config = config.replace('<numThreads>4</numThreads>', f'<numThreads>{num_threads}</numThreads>')
-        
-        # Set delay (use template value if available)
-        if template:
-            config = config.replace('default="1500"', f'default="{delay_ms}"')
+
+        # Set delay - base-crawl uses "2 seconds" format
+        config = config.replace('default="2 seconds"', f'default="{delay_ms} milliseconds"')
         
         # Set domain restrictions (use template values if available)
         if template:
@@ -257,39 +251,11 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
             config,
             flags=re.DOTALL
         )
-        
-#         config = config.replace('id="search365-collector"', f'id="{collector_id}"')
-#         config = config.replace('id="search365-crawler"', f'id="{crawler_id}"')
-        
-#         # Set crawl parameters
-#         config = config.replace('<maxDocuments>5000</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
-#         config = config.replace('<maxDocuments>500</maxDocuments>', f'<maxDocuments>{max_documents}</maxDocuments>')
-#         config = config.replace('<maxDepth>8</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
-#         config = config.replace('<maxDepth>3</maxDepth>', f'<maxDepth>{max_depth}</maxDepth>')
-
-#         # Special handling for base-crawl template
-#         if template == "base-crawl":
-#             # Use raw index for base crawl
-#             config = config.replace('<indexName>demo_factory</indexName>', '<indexName>demo_factory_raw</indexName>')
-#             config = config.replace(f'<indexName>{index_name}</indexName>', '<indexName>demo_factory_raw</indexName>')
-
-#             # Add run_id tracking if provided
-#             if run_id:
-#                 # Replace the placeholder in the ConstantTagger (v3 uses 'name' not 'field')
-#                 config = config.replace('<constant name="run_id">PLACEHOLDER_RUN_ID</constant>',
-#                                       f'<constant name="run_id">{run_id}</constant>')
-
-#             # Update collector/crawler IDs for base crawl
-#             config = config.replace('id="search365-collector"', 'id="base-crawl-collector"')
-#             config = config.replace('id="search365-crawler"', 'id="base-crawl-extractor"')
-
-#         # The reference filter regex is not needed since we use stayOnDomain="true"
-#         # which automatically restricts crawling to the target domain
 
         return config
         
     except Exception as e:
-        print(f"Error reading Search365 basic template: {e}")
+        print(f"Error reading base-crawl-template: {e}")
         # Fallback to a basic config if template is not found
         return f'''<?xml version="1.0" encoding="UTF-8"?>
 <!-- Fallback config - Error: {e} -->
@@ -315,8 +281,7 @@ def create_config_from_nab_template(url: str, max_depth: int = 3, max_documents:
 # FastAPI uses this to automatically validate incoming JSON data.
 class CrawlRequest(BaseModel):
     target_url: str
-    template: Optional["TemplateConfig"] = None
-#     template: Optional[str] = "search365-basic"
+    template: Optional["TemplateConfig"] = None  # CMS template config from frontend
 
 # Pydantic model for search requests
 class SearchRequest(BaseModel):
@@ -374,25 +339,22 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
     running_processes[run_id] = None
 
     try:
-        # Use the NAB config as template and modify for the target URL
+        # Generate Norconex config from base-crawl-template with optional CMS parameters
         if template:
             print(f"[{run_id}] Using template '{template.name}' ({template.platform})...")
         else:
-            print(f"[{run_id}] Using NAB config template...")
-#         # Use the selected config template and modify for the target URL
-#         template_name = crawl_jobs[run_id].get('template', 'search365-basic')
-#         print(f"[{run_id}] Using template: {template_name}")
+            print(f"[{run_id}] Using base-crawl-template with defaults...")
+
         xml_config = create_config_from_nab_template(
             url=target_url,
             max_depth=3,
             max_documents=500,
             index_name="demo_factory",
-            template=template
-#             template=template_name,
-#             run_id=run_id
+            template=template,
+            run_id=run_id
         )
         
-        # Write config to temporary file
+        # Write config file for this crawl run
         config_dir = "/opt/norconex/configs"
         if not os.path.exists(config_dir):
             config_dir = "./norconex-runner/configs"  # Fallback for development
@@ -436,7 +398,19 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                         print(f"[{run_id}] Crawl logs indexed: {log_indexing_result}")
                     except Exception as e:
                         print(f"[{run_id}] Failed to index crawl logs: {e}")
-                    
+
+                    # Automatically process raw data to Search365 schema
+                    try:
+                        print(f"[{run_id}] Starting automatic schema processing...")
+                        processor = Search365SchemaProcessor()
+                        processing_result = processor.process_crawl_to_main_index(run_id)
+                        crawl_jobs[run_id]['processing_result'] = processing_result
+                        crawl_jobs[run_id]['processing_completed'] = True
+                        print(f"[{run_id}] Schema processing completed: {processing_result['processed_documents']} documents processed")
+                    except Exception as e:
+                        print(f"[{run_id}] Failed to process schema: {e}")
+                        crawl_jobs[run_id]['processing_error'] = str(e)
+
                     print(f"[{run_id}] Crawl completed successfully via HTTP API")
                 else:
                     raise Exception(f"HTTP API error: {norconex_response.status_code} - {norconex_response.text}")
@@ -494,11 +468,24 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                         print(f"[{run_id}] Crawl logs indexed: {log_indexing_result}")
                     except Exception as e:
                         print(f"[{run_id}] Failed to index crawl logs: {e}")
-                    
+
+                    # Automatically process raw data to Search365 schema
+                    try:
+                        print(f"[{run_id}] Starting automatic schema processing...")
+                        processor = Search365SchemaProcessor()
+                        processing_result = processor.process_crawl_to_main_index(run_id)
+                        crawl_jobs[run_id]['processing_result'] = processing_result
+                        crawl_jobs[run_id]['processing_completed'] = True
+                        print(f"[{run_id}] Schema processing completed: {processing_result['processed_documents']} documents processed")
+                    except Exception as e:
+                        print(f"[{run_id}] Failed to process schema: {e}")
+                        crawl_jobs[run_id]['processing_error'] = str(e)
+
                     print(f"[{run_id}] Crawl completed successfully via file trigger")
-                    
-                    # Documents are committed directly to OpenSearch by ElasticsearchCommitter
-                    print(f"[{run_id}] Documents committed directly to OpenSearch via ElasticsearchCommitter")
+
+                    # Raw data was committed to demo_factory_raw by ElasticsearchCommitter
+                    # Enriched data is now in demo_factory via schema_processor
+                    print(f"[{run_id}] Raw data in demo_factory_raw, enriched data in demo_factory")
                     crawl_jobs[run_id]['indexing_result'] = {"indexed": "direct", "note": "ElasticsearchCommitter handles indexing"}
                     crawl_jobs[run_id]['num_pages_indexed'] = "direct"
                         
@@ -588,10 +575,32 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
         if return_code == 0:
             crawl_jobs[run_id]['status'] = 'complete'
             crawl_jobs[run_id]['progress'] = 100
+            crawl_jobs[run_id]['completed_at'] = time.time()
+
+            # Calculate final stats
+            duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
+            crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
+
+            # Extract real crawl statistics from logs
+            crawl_jobs[run_id]['stats'].update(extract_crawl_statistics(run_id))
+
+            # Automatically process raw data to Search365 schema
+            try:
+                print(f"[{run_id}] Starting automatic schema processing...")
+                processor = Search365SchemaProcessor()
+                processing_result = processor.process_crawl_to_main_index(run_id)
+                crawl_jobs[run_id]['processing_result'] = processing_result
+                crawl_jobs[run_id]['processing_completed'] = True
+                print(f"[{run_id}] Schema processing completed: {processing_result['processed_documents']} documents processed")
+            except Exception as e:
+                print(f"[{run_id}] Failed to process schema: {e}")
+                crawl_jobs[run_id]['processing_error'] = str(e)
+
             print(f"[{run_id}] Crawl completed successfully")
-            
-            # Documents committed directly to OpenSearch by ElasticsearchCommitter
-            print(f"[{run_id}] Documents committed directly to OpenSearch via ElasticsearchCommitter")
+
+            # Raw data was committed to demo_factory_raw by ElasticsearchCommitter
+            # Enriched data is now in demo_factory via schema_processor
+            print(f"[{run_id}] Raw data in demo_factory_raw, enriched data in demo_factory")
             crawl_jobs[run_id]['indexing_result'] = {"indexed": "direct", "note": "ElasticsearchCommitter handles indexing"}
             crawl_jobs[run_id]['num_pages_indexed'] = "direct"
         else:
@@ -803,8 +812,9 @@ async def stop_crawl(run_id: str):
 @app.get("/results/{run_id}", response_model=list[PageRow])
 async def get_crawl_results(run_id: str):
     """
-    Endpoint to retrieve the simulated indexed pages (results) for a specific crawl run.
+    Endpoint to retrieve the indexed pages (results) for a specific crawl run.
     Results are returned if the crawl is complete or still running with partial data.
+    Note: This endpoint is legacy - data is now in OpenSearch indexes (demo_factory_raw and demo_factory).
     """
     job = crawl_jobs.get(run_id)
 
@@ -1018,7 +1028,10 @@ async def list_all_crawl_runs():
 @app.post("/crawl/process/{run_id}")
 async def process_crawl_to_schema(run_id: str):
     """
-    Process raw crawl data into complete Search365 schema (229 fields)
+    Manually trigger schema processing for a crawl run.
+    Note: Schema processing now runs automatically after each crawl.
+    This endpoint is for re-processing or troubleshooting.
+    Processes raw crawl data from demo_factory_raw into complete Search365 schema (229 fields) in demo_factory.
     """
     try:
         # Check if the run exists
@@ -1051,7 +1064,8 @@ async def process_crawl_to_schema(run_id: str):
 @app.get("/crawl/{run_id}/raw")
 async def get_raw_crawl_data(run_id: str):
     """
-    Get raw crawl data before schema processing
+    Get raw crawl data from demo_factory_raw index (before schema enrichment).
+    Returns first 10 documents as preview.
     """
     try:
         processor = Search365SchemaProcessor()
