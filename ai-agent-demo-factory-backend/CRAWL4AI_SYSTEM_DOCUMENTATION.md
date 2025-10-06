@@ -2,15 +2,15 @@
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
-2. [System Architecture](#system-architecture)
-3. [Module Reference](#module-reference)
-4. [Data Flow](#data-flow)
-5. [API Reference](#api-reference)
-6. [Developer Guide](#developer-guide)
-7. [Configuration](#configuration)
-8. [Integration Guide](#integration-guide)
-9. [Code Examples](#code-examples)
+1.  [Executive Summary](#executive-summary)
+2.  [System Architecture](#system-architecture)
+3.  [Module Reference](#module-reference)
+4.  [Data Flow](#data-flow)
+5.  [API Reference](#api-reference)
+6.  [Developer Guide](#developer-guide)
+7.  [Configuration](#configuration)
+8.  [Integration Guide](#integration-guide)
+9.  [Code Examples](#code-examples)
 10. [Performance & Optimization](#performance--optimization)
 11. [Error Handling](#error-handling)
 12. [Deployment](#deployment)
@@ -2285,4 +2285,4 @@ This documentation covers the complete Crawl4AI backend system, including:
 
 The system achieves **90% demo quality** through adaptive strategies, AI-powered filtering, and intelligent crawling patterns.
 
-For questions or issues, refer to the troubleshooting section or check the module-specific documentation above.
+For questions or issues, refer to the troubleshooting section or check the module-specific documentation

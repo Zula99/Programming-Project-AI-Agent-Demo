@@ -64,9 +64,8 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 RUN playwright install chromium
 RUN playwright install-deps chromium || echo "Some deps failed but continuing..."
 
-# Copy backend application code
+# Copy backend application code (includes .env now)
 COPY ai-agent-demo-factory-backend/ /app/backend/
-COPY crawl4ai/ /app/crawl4ai/
 
 # Copy built frontend standalone output from frontend-builder stage
 COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend
@@ -77,7 +76,7 @@ COPY --from=frontend-builder /app/frontend/public /app/frontend/public
 RUN mkdir -p /app/output && chmod 777 /app/output
 
 # Set Python path to include our modules
-ENV PYTHONPATH=/app/backend:/app/crawl4ai:/app
+ENV PYTHONPATH=/app/backend:/app
 # Set crawl4ai database path to writable location
 ENV CRAWL4AI_BASE_DIRECTORY=/app/output/.crawl4ai
 

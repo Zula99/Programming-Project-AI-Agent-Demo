@@ -18,7 +18,8 @@ import urllib.parse
 import time
 
 # Import existing components
-from crawler_utils import CrawlConfig, generic_crawl, is_same_site
+from crawler import CrawlConfig, generic_crawl
+from url_utils import is_same_site
 from quality_plateau import HybridQualityMonitor, QualityMetrics as PlateauQualityMetrics
 
 # Import coverage tracking components
@@ -250,7 +251,7 @@ class HybridCrawler:
             reasoning = "Scenario B: No sitemap available - progressive discovery from homepage with quality plateau detection"
         
         # Get site-specific quality thresholds
-        from crawler_utils import _get_site_specific_thresholds
+        from quality_monitoring import _get_site_specific_thresholds
         if site_type:
             quality_thresholds = _get_site_specific_thresholds(site_type)
         else:

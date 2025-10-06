@@ -6,8 +6,9 @@ from pathlib import Path
 import sys
 import logging
 
-# Import crawler utilities (now in same directory)
-from crawler_utils import CrawlConfig, CrawlResult, generic_crawl
+# Import crawler utilities (now in separate modules)
+from crawler import CrawlConfig, generic_crawl
+from page_crawler import CrawlResult
 
 logger = logging.getLogger(__name__)
 

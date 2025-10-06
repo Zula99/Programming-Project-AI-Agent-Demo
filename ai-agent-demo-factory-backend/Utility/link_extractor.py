@@ -580,8 +580,16 @@ class LinkExtractor:
     def _is_same_domain(self, url: str, base_domain: str) -> bool:
         """Check if URL belongs to the same domain (for boundary enforcement)"""
         try:
-            url_domain = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
-            return url_domain == base_domain
+            parsed_url = urlparse(url)
+            parsed_base = urlparse(base_domain)
+
+            # Normalize domains by removing 'www.' prefix for comparison
+            url_host = parsed_url.netloc.lower().removeprefix('www.')
+            base_host = parsed_base.netloc.lower().removeprefix('www.')
+
+            # Must match scheme and normalized domain
+            return (parsed_url.scheme == parsed_base.scheme and
+                    url_host == base_host)
         except Exception:
             return False
 
