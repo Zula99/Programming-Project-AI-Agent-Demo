@@ -93,7 +93,7 @@ export default function SearchResults() {
   return (
     <div className="bg-white p-6 rounded-lg border">
       <div className="mb-4">
-        <h2 className="text-xl font-medium mb-4">Crawled Data from OpenSearch</h2>
+        <h2 className="text-xl font-medium mb-4 text-gray-800">Crawled Data from OpenSearch</h2>
         
         <form onSubmit={handleSearch} className="mb-4">
           <div className="flex gap-2">
@@ -102,7 +102,7 @@ export default function SearchResults() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search crawled data..."
-              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-500"
             />
             <button
               type="submit"
@@ -126,7 +126,7 @@ export default function SearchResults() {
 
       {loading && (
         <div className="flex items-center justify-center py-8">
-          <div className="text-gray-500">Loading crawled data...</div>
+          <div className="text-gray-700">Loading crawled data...</div>
         </div>
       )}
 
@@ -140,12 +140,12 @@ export default function SearchResults() {
 
       {!loading && !error && (
         <div>
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-4 text-sm text-gray-800">
             Found {searchResults.length} documents
           </div>
           
           {searchResults.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-700">
               No data found. Try starting a new crawl or make sure crawl data is loaded into OpenSearch.
             </div>
           ) : (
@@ -166,7 +166,7 @@ export default function SearchResults() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <span className="text-xs text-gray-500">Score: {hit._score.toFixed(2)}</span>
+                      <span className="text-xs text-gray-700">Score: {hit._score.toFixed(2)}</span>
                       <StatusBadge status="complete" />
                     </div>
                   </div>
@@ -187,13 +187,13 @@ export default function SearchResults() {
                   {getHighlightedContent(hit, 'content') && (
                     <div className="mb-2">
                       <p 
-                        className="text-sm text-gray-600 italic"
+                        className="text-sm text-gray-800 italic"
                         dangerouslySetInnerHTML={getHighlightedContent(hit, 'content')!}
                       />
                     </div>
                   )}
                   
-                  <div className="flex justify-between items-center text-xs text-gray-500 mt-3">
+                  <div className="flex justify-between items-center text-xs text-gray-700 mt-3">
                     <div className="flex gap-4">
                       {hit._source.contentType && (
                         <span>Type: {hit._source.contentType}</span>
