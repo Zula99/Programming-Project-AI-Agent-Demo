@@ -1,5 +1,5 @@
 """
-WebSocket Log Handler for Norconex
+Norconex WebSocket Log Handler
 Broadcasts all logging statements to connected WebSocket clients
 
 Captures all backend logs (FastAPI, Norconex runner, etc.) and streams
