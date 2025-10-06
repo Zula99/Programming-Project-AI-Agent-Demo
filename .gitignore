@@ -9,6 +9,7 @@ norconex/progress/
 norconex-runner/configs/crawler-*.xml
 norconex-runner/configs/completed-*.json
 norconex-runner/configs/failed-*.json
+norconex-runner/configs/stop-*.json
 
 # Norconex Database Files
 *.mvstore
