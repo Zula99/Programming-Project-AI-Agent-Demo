@@ -120,26 +120,26 @@ export default function BackendLogsDropdown({
         <div className="border-t bg-gray-900 rounded-b-lg">
           <div className="p-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <HiCodeBracket className="h-4 w-4 text-gray-700" />
-              <span className="text-xs text-gray-700 font-mono">
+              <HiCodeBracket className="h-4 w-4 text-gray-400" />
+              <span className="text-xs text-gray-300 font-mono">
                 Real-time backend output • Auto-scroll {autoScroll ? 'enabled' : 'paused'}
               </span>
             </div>
 
             {/* Search Bar */}
             <div className="flex items-center gap-2 bg-gray-700 rounded px-3 py-1.5">
-              <HiMagnifyingGlass className="h-4 w-4 text-gray-700" />
+              <HiMagnifyingGlass className="h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search logs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-gray-700 text-xs font-mono outline-none w-64 placeholder-gray-500"
+                className="bg-transparent text-gray-200 text-xs font-mono outline-none w-64 placeholder-gray-400"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-gray-700 hover:text-gray-200 text-xs"
+                  className="text-gray-300 hover:text-gray-100 text-xs"
                 >
                   Clear
                 </button>
@@ -153,15 +153,15 @@ export default function BackendLogsDropdown({
             className="h-96 overflow-y-auto p-3 font-mono text-sm"
           >
             {!runId ? (
-              <div className="text-center py-8 text-gray-700">
-                <HiCommandLine className="h-8 w-8 mx-auto mb-2 text-gray-600" />
+              <div className="text-center py-8 text-gray-400">
+                <HiCommandLine className="h-8 w-8 mx-auto mb-2 text-gray-500" />
                 <p>Backend logs will appear when a crawl is started</p>
               </div>
             ) : (
               <div className="space-y-1">
                 {filteredLogs.map((log, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <span className="text-gray-700 text-xs whitespace-nowrap">
+                    <span className="text-gray-400 text-xs whitespace-nowrap">
                       {log.timestamp}
                     </span>
                     <span className={`text-xs font-bold whitespace-nowrap ${getLevelColor(log.level)}`}>
@@ -170,14 +170,14 @@ export default function BackendLogsDropdown({
                     <span className={`text-xs whitespace-nowrap ${getSourceColor(log.source)}`}>
                       [{log.source}]
                     </span>
-                    <span className="text-gray-700 text-xs flex-1">
+                    <span className="text-gray-300 text-xs flex-1">
                       {log.message}
                     </span>
                   </div>
                 ))}
                 {filteredLogs.length === 0 && backendLogs.length > 0 && (
-                  <div className="text-center py-8 text-gray-700">
-                    <HiMagnifyingGlass className="h-8 w-8 mx-auto mb-2 text-gray-600" />
+                  <div className="text-center py-8 text-gray-400">
+                    <HiMagnifyingGlass className="h-8 w-8 mx-auto mb-2 text-gray-500" />
                     <p>No logs match your search query</p>
                   </div>
                 )}
