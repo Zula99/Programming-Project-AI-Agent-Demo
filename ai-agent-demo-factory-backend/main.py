@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uuid # For generating unique IDs
 import time # For simulating time-based operations
-# Removed threading import (was for legacy simulation)
 import httpx # For auto-proxy integration
 import asyncio
 import json
@@ -38,7 +37,6 @@ crawl4ai_sessions: Dict[str, Dict] = {}
 # Set up WebSocket logging handler (broadcasts to frontend + OpenSearch)
 setup_websocket_logging()
 
-# Removed legacy Norconex models - keeping only Crawl4AI models
 
 # Crawl4AI specific models
 class Crawl4AIRequest(BaseModel):
@@ -54,9 +52,6 @@ class AgentLog(BaseModel):
     message: str
     type: str  # 'info', 'success', 'warning', 'error', 'question'
 
-# Removed legacy auto-configure proxy function
-
-# Removed legacy Norconex simulation function
 
 # --- API Endpoints ---
 
@@ -68,10 +63,6 @@ async def read_root():
     response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
-
-
-
-# Removed legacy Norconex endpoints - /crawl, /status, /results
 
 # --- Crawl4AI Agent Endpoints ---
 
