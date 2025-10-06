@@ -1,11 +1,14 @@
 import re
 import json
 import requests
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 import urllib.parse
 from html import unescape
 import hashlib
+
+logger = logging.getLogger(__name__)
 
 class Search365SchemaProcessor:
     """
@@ -16,6 +19,8 @@ class Search365SchemaProcessor:
         self.opensearch_host = opensearch_host
         self.raw_index = "demo_factory_raw"
         self.main_index = "demo_factory"
+        # OpenSearch authentication
+        self.auth = ("admin", "admin")
 
     def process_crawl_to_main_index(self, run_id: str) -> Dict[str, Any]:
         """
@@ -43,8 +48,13 @@ class Search365SchemaProcessor:
                     enriched_doc = self._enrich_document(raw_doc, run_id)
 
                     # Index to main schema
-                    self._index_to_main_schema(enriched_doc)
-                    result["processed_documents"] += 1
+                    print(f"[DEBUG] About to index document for URL: {enriched_doc.get('url', 'NO_URL')}")
+                    success = self._index_to_main_schema(enriched_doc)
+                    if success:
+                        result["processed_documents"] += 1
+                    else:
+                        result["failed_documents"] += 1
+                        result["errors"].append(f"Failed to index: {enriched_doc.get('url', 'unknown')}")
 
                 except Exception as e:
                     error_msg = f"Failed to process document {raw_doc.get('url', 'unknown')}: {e}"
@@ -63,12 +73,13 @@ class Search365SchemaProcessor:
         """
         try:
             # First try to get by run_id field if it exists
-            response = requests.get(
+            response = requests.post(
                 f"{self.opensearch_host}/{self.raw_index}/_search",
                 json={
                     "query": {"match": {"run_id": run_id}},
                     "size": 1000
                 },
+                auth=self.auth,
                 timeout=10
             )
 
@@ -80,13 +91,14 @@ class Search365SchemaProcessor:
                     return docs
 
             # Fallback: get recent documents from raw index
-            response = requests.get(
+            response = requests.post(
                 f"{self.opensearch_host}/{self.raw_index}/_search",
                 json={
                     "query": {"match_all": {}},
                     "sort": [{"crawl_timestamp": {"order": "desc"}}],
                     "size": 100
                 },
+                auth=self.auth,
                 timeout=10
             )
 
@@ -106,19 +118,31 @@ class Search365SchemaProcessor:
         Index enriched document to main schema index
         """
         try:
-            doc_id = enriched_doc.get('id', hashlib.md5(enriched_doc.get('url', '').encode()).hexdigest())
+            # Use hash of the URL as document ID to avoid special characters
+            url = enriched_doc.get('url', enriched_doc.get('id', ''))
+            doc_id = hashlib.md5(url.encode()).hexdigest()
 
             response = requests.put(
                 f"{self.opensearch_host}/{self.main_index}/_doc/{doc_id}",
                 json=enriched_doc,
                 headers={"Content-Type": "application/json"},
+                auth=self.auth,
                 timeout=10
             )
 
-            return response.status_code in [200, 201]
+            success = response.status_code in [200, 201]
+            if not success:
+                logger.error(f"Failed to index document {doc_id}: Status {response.status_code}, Response: {response.text[:200]}")
+                print(f"[INDEXING ERROR] Failed to index {doc_id}: {response.status_code}")
+            else:
+                logger.info(f"Successfully indexed document {doc_id} to {self.main_index}")
+                print(f"[INDEXING SUCCESS] Indexed {doc_id} to {self.main_index}")
+
+            return success
 
         except Exception as e:
-            print(f"Error indexing document: {e}")
+            logger.error(f"Error indexing document: {e}")
+            print(f"[INDEXING EXCEPTION] {e}")
             return False
 
     def _enrich_document(self, raw_doc: Dict[str, Any], run_id: str) -> Dict[str, Any]:
