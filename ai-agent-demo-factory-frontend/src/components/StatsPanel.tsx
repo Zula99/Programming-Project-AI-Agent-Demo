@@ -70,25 +70,25 @@ export default function StatsPanel() {
         <div className="text-center p-4 bg-blue-50 rounded-lg">
           <div className="text-2xl mb-2"></div>
           <p className="text-2xl font-bold text-blue-600">{stats.totalCrawls}</p>
-          <p className="text-sm text-gray-600">Total Crawls</p>
+          <p className="text-sm text-gray-800">Total Crawls</p>
         </div>
         
         <div className="text-center p-4 bg-green-50 rounded-lg">
           <div className="text-2xl mb-2"></div>
           <p className="text-2xl font-bold text-green-600">{stats.totalPages.toLocaleString()}</p>
-          <p className="text-sm text-gray-600">Total Pages</p>
+          <p className="text-sm text-gray-800">Total Pages</p>
         </div>
         
         <div className="text-center p-4 bg-purple-50 rounded-lg">
           <div className="text-2xl mb-2"></div>
           <p className="text-2xl font-bold text-purple-600">{stats.avgSpeed}</p>
-          <p className="text-sm text-gray-600">Avg Speed (pages/min)</p>
+          <p className="text-sm text-gray-800">Avg Speed (pages/min)</p>
         </div>
         
         <div className="text-center p-4 bg-orange-50 rounded-lg">
           <div className="text-2xl mb-2"></div>
           <p className="text-2xl font-bold text-orange-600">{stats.successRate}%</p>
-          <p className="text-sm text-gray-600">Success Rate</p>
+          <p className="text-sm text-gray-800">Success Rate</p>
         </div>
       </div>
     </div>
