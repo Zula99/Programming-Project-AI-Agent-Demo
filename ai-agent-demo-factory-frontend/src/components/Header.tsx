@@ -11,13 +11,13 @@ export default function Header() {
                 <div className="flex space-x-4">
                     <Link 
                         href="/" 
-                        className="hover:text-gray-300 transition-colors"
+                        className="hover:text-gray-700 transition-colors"
                     >
                         Dashboard
                     </Link>
                     <Link 
                         href="/logs" 
-                        className="hover:text-gray-300 transition-colors"
+                        className="hover:text-gray-700 transition-colors"
                     >
                         Crawl Logs
                     </Link>
