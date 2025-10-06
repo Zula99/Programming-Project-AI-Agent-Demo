@@ -1,7 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import StatusBadge from './StatusBadge';
+import BackendLogsDropdown from './BackendLogsDropdown';
+import { useRunContext } from '@/contexts/RunContext';
+
+interface BackendLogEntry {
+  timestamp: string;
+  level: "INFO" | "WARNING" | "ERROR" | "DEBUG";
+  message: string;
+  source: string;
+}
 
 interface CrawlStats {
   total_pages_crawled: number;
@@ -267,6 +276,7 @@ const CMS_TEMPLATES: CMSTemplate[] = [
 ];
 
 export default function CrawlController() {
+  const { selectedRun, setSelectedRun } = useRunContext();
   const [url, setUrl] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<CMSTemplate | null>(null);
   const [activeJob, setActiveJob] = useState<CrawlJob | null>(null);
@@ -274,11 +284,34 @@ export default function CrawlController() {
   const [error, setError] = useState<string | null>(null);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // CMS Detection states
   const [cmsLoading, setCmsLoading] = useState(false);
   const [cmsResult, setCmsResult] = useState<any>(null);
   const [cmsError, setCmsError] = useState<string | null>(null);
+
+  // WebSocket state for backend logs
+  const [isConnected, setIsConnected] = useState(false);
+  const [backendLogs, setBackendLogs] = useState<BackendLogEntry[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  // Sync selectedRun from context to activeJob
+  useEffect(() => {
+    if (selectedRun) {
+      // Convert selectedRun format to activeJob format
+      const job: CrawlJob = {
+        run_id: selectedRun.run_id,
+        target_url: selectedRun.url,
+        status: selectedRun.status as any,
+        progress: selectedRun.progress,
+        started_at: selectedRun.started_at,
+        completed_at: selectedRun.completed_at,
+        num_pages_indexed: selectedRun.pages_crawled,
+        stats: selectedRun.stats
+      };
+      setActiveJob(job);
+    }
+  }, [selectedRun]);
 
   const detectCMS = async () => {
     if (!url.trim()) {
@@ -382,11 +415,24 @@ export default function CrawlController() {
     const poll = async () => {
       try {
         const response = await fetch(`/api/crawl/status/${runId}`);
-        
+
         if (response.ok) {
           const job: CrawlJob = await response.json();
           setActiveJob(job);
-          
+
+          // Also update RunContext so sidebar stays in sync
+          setSelectedRun({
+            run_id: job.run_id,
+            url: job.target_url,
+            status: job.status,
+            progress: job.progress,
+            started_at: job.started_at,
+            completed_at: job.completed_at,
+            template: 'base-crawl-template',
+            pages_crawled: job.num_pages_indexed,
+            stats: job.stats
+          });
+
           // Stop polling if job is complete, failed, or stopped
           if (job.status === 'complete' || job.status === 'failed' || job.status === 'stopped') {
             polling = false;
@@ -418,6 +464,99 @@ export default function CrawlController() {
     setSelectedTemplate(null);
     setShowTemplatePreview(false);
   };
+
+  // WebSocket connection for backend logs
+  useEffect(() => {
+    console.log(`[WebSocket Effect] Triggered with run_id: ${activeJob?.run_id}`);
+
+    if (!activeJob?.run_id) {
+      // Clean up if no active job
+      console.log('[WebSocket Effect] No active job, cleaning up');
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setIsConnected(false);
+      return;
+    }
+
+    // Don't reconnect if already connected to the same run_id
+    if (wsRef.current) {
+      const currentUrl = wsRef.current.url || '';
+      const currentState = wsRef.current.readyState;
+      console.log(`[WebSocket Effect] Current WS state: ${currentState} (0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)`);
+      console.log(`[WebSocket Effect] Current WS URL: ${currentUrl}`);
+      console.log(`[WebSocket Effect] New run_id: ${activeJob.run_id}`);
+
+      if (currentUrl.includes(activeJob.run_id) && currentState === WebSocket.OPEN) {
+        console.log(`[WebSocket Effect] Already connected to ${activeJob.run_id}, skipping reconnect`);
+        return;
+      }
+    }
+
+    console.log(`[WebSocket Effect] Will connect to new run_id: ${activeJob.run_id}`);
+
+    // Close existing connection if connecting to different run
+    if (wsRef.current) {
+      console.log(`[WebSocket Effect] Closing old connection before reconnecting`);
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.hostname;
+    const wsPort = '5000'; // Backend port
+    const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}/norconex/ws/${activeJob.run_id}`;
+
+    console.log(`[WebSocket] Connecting to ${wsUrl}`);
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      setIsConnected(true);
+      console.log(`[WebSocket] Connected to ${wsUrl}`);
+    };
+
+    ws.onclose = (event) => {
+      setIsConnected(false);
+      console.log(`[WebSocket] Disconnected from ${wsUrl}. Code: ${event.code}, Reason: ${event.reason}`);
+      // Don't set wsRef.current to null here - let the effect handle it
+    };
+
+    ws.onerror = (error) => {
+      console.error('[WebSocket] Error:', error);
+      setIsConnected(false);
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[WebSocket] Received message:', data);
+
+        if (data.type === 'backend_log') {
+          setBackendLogs(prev => [...prev, data.log]);
+        } else if (data.type === 'connection_established') {
+          console.log(`[WebSocket] Connection established for run ${data.run_id}`);
+        }
+      } catch (error) {
+        console.error('Failed to parse WebSocket message:', error);
+      }
+    };
+
+    wsRef.current = ws;
+
+    // Clear logs only when switching to a different job
+    setBackendLogs([]);
+
+    // Cleanup function - only runs when component unmounts or run_id changes
+    return () => {
+      console.log(`[WebSocket Effect] Cleanup called for run_id: ${activeJob.run_id}`);
+      if (wsRef.current) {
+        console.log(`[WebSocket Effect] Closing connection in cleanup`);
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [activeJob?.run_id]);
 
   // Pagination logic
   const templatesPerPage = 6; // 3x2 grid
@@ -704,7 +843,7 @@ export default function CrawlController() {
 
   return (
     <div className="bg-white p-6 rounded-lg border">
-      <h2 className="text-xl font-medium mb-4">Start New Norconex Crawl</h2>
+      <h2 className="text-xl font-medium mb-4 text-gray-800">Start New Norconex Crawl</h2>
       
       <div className="mb-6">
         <div className="flex gap-2 mb-4">
@@ -713,7 +852,7 @@ export default function CrawlController() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Enter URL to crawl (e.g., https://example.com)"
-            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 placeholder:text-gray-500"
             disabled={loading || (activeJob?.status === 'running')}
           />
           <button
@@ -790,7 +929,7 @@ export default function CrawlController() {
 
       {/* CMS Template Selection */}
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-3">Select CMS Template (Optional)</h3>
+        <h3 className="text-lg font-medium mb-3 text-gray-800">Select CMS Template (Optional)</h3>
         <p className="text-sm text-gray-600 mb-4">
           Choose a template optimized for your target website's platform to improve crawl efficiency.
         </p>
@@ -917,7 +1056,7 @@ export default function CrawlController() {
 
       {activeJob && (
         <div className="border-t pt-6">
-          <h3 className="font-medium mb-4">Active Crawl</h3>
+          <h3 className="font-medium mb-4 text-gray-800">Active Crawl</h3>
           
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="flex justify-between items-start mb-3">
@@ -974,7 +1113,16 @@ export default function CrawlController() {
               </div>
             )}
           </div>
-          
+
+          {/* Backend Logs - Always visible */}
+          <div className="mt-6">
+            <BackendLogsDropdown
+              runId={activeJob?.run_id}
+              isConnected={isConnected}
+              backendLogs={backendLogs}
+            />
+          </div>
+
           {/* Render detailed completion stats */}
           {renderCompletionStats(activeJob)}
           
@@ -1001,7 +1149,7 @@ export default function CrawlController() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Template Preview: {selectedTemplate.name}</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Template Preview: {selectedTemplate.name}</h3>
               <button
                 onClick={() => setShowTemplatePreview(false)}
                 className="text-gray-400 hover:text-gray-600"
