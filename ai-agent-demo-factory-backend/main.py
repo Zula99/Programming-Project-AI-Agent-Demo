@@ -14,7 +14,7 @@ from services.cms_detector import CMSDetector
 from services.schema_processor import Search365SchemaProcessor
 
 # Import WebSocket log handler
-from websocket_log_handler import websocket_connections, setup_websocket_logging, log_buffer
+from norconex_websocket_log_handler import websocket_connections, setup_websocket_logging, log_buffer
 
 
 import uuid # For generating unique IDs
