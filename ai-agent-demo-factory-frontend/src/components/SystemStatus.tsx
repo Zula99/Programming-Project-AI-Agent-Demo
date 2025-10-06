@@ -62,11 +62,11 @@ export default function SystemStatus() {
       case 'running':
         return <FiCheckCircle className="w-5 h-5 text-green-500" />;
       case 'stopped':
-        return <FiXCircle className="w-5 h-5 text-gray-400" />;
+        return <FiXCircle className="w-5 h-5 text-gray-700" />;
       case 'error':
         return <FiXCircle className="w-5 h-5 text-red-500" />;
       default:
-        return <FiXCircle className="w-5 h-5 text-gray-400" />;
+        return <FiXCircle className="w-5 h-5 text-gray-700" />;
     }
   };
 
@@ -75,11 +75,11 @@ export default function SystemStatus() {
       case 'running':
         return 'text-green-600';
       case 'stopped':
-        return 'text-gray-500';
+        return 'text-gray-700';
       case 'error':
         return 'text-red-600';
       default:
-        return 'text-gray-500';
+        return 'text-gray-700';
     }
   };
 
@@ -111,13 +111,13 @@ export default function SystemStatus() {
               {getStatusIcon(service.status)}
               <div>
                 <p className="font-medium text-gray-900">{service.name}</p>
-                <p className="text-sm text-gray-500">{service.url}</p>
+                <p className="text-sm text-gray-700">{service.url}</p>
               </div>
             </div>
             
             <div className="flex items-center space-x-2">
               {service.responseTime && (
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-700">
                   {service.responseTime}ms
                 </span>
               )}
@@ -131,7 +131,7 @@ export default function SystemStatus() {
       </div>
       
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex items-center justify-between text-sm text-gray-800">
           <span>Last updated: {new Date().toLocaleTimeString()}</span>
           <button 
             onClick={() => window.location.reload()}
