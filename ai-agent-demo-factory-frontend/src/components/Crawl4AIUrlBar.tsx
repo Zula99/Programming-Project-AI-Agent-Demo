@@ -67,23 +67,34 @@ export default function Crawl4AIUrlBar({ onStartCrawl, onStopCrawl, isRunning = 
             </form>
 
             {/* Max Pages Control */}
-            <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-600">
-                    Max Pages (optional):
-                </label>
-                <input
-                    type="number"
-                    value={maxPages}
-                    onChange={(e) => setMaxPages(e.target.value)}
-                    placeholder="Auto (intelligent stopping)"
-                    className="w-48 px-3 py-1 bg-white text-gray-700 border rounded-lg outline-none focus:border-blue-500"
-                    disabled={isRunning}
-                    min="1"
-                    max="10000"
-                />
-                <span className="text-xs text-gray-500">
-                    Leave empty for automatic intelligent stopping
-                </span>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <div className="flex-shrink-0">
+                        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Max Pages
+                        </label>
+                    </div>
+                    <div className="flex-1 flex items-center gap-3">
+                        <input
+                            type="number"
+                            value={maxPages}
+                            onChange={(e) => setMaxPages(e.target.value)}
+                            placeholder="Auto"
+                            className="w-32 px-4 py-2 bg-white text-gray-700 border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed font-medium text-center"
+                            disabled={isRunning}
+                            min="1"
+                            max="10000"
+                        />
+                        <div className="flex-1">
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                                <span className="font-medium text-gray-700">Optional:</span> Leave empty for intelligent auto-stopping
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
