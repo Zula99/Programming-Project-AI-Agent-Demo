@@ -6,16 +6,15 @@ import TabList from "./TabList";
 import SortableTH from "./SortableTH";
 import { useRunContext } from "@/contexts/RunContext";
 import { useMemo, useState, useEffect, ChangeEvent, FormEvent } from "react";
-import { 
+import {
 	HiDownload,
     HiOutlineCheckCircle,
     HiClipboard,
-    HiFilter,
 } from "react-icons/hi";
 import { HiArrowPath, HiMagnifyingGlass } from "react-icons/hi2";
 
 type RunStatus = "running" | "complete";
-type Tab = "data" | "config" | "logs" | "stats";
+type Tab = "data" | "config" | "stats";
 
 interface OSResult {
 	_id: string;
@@ -265,12 +264,12 @@ export default function ActiveRun() {
 					<form onSubmit={handleSearchSubmit} className="mb-3 flex flex-wrap items-center gap-2">
                     	<div className="mb-3 flex flex-wrap items-center gap-2">
                     	    <div className="flex flex-1 items-center rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm hover:border-gray-300">
-                    	        <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-400" />
+                    	        <HiMagnifyingGlass className="mr-2 h-5 w-5 text-gray-700" />
                     	        <input
                     	            value={query}
                     	            onChange={(e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
                     	            placeholder="Filter by path, title, or type"
-                    	            className="w-full bg-transparent outline-none placeholder:text-gray-400"
+                    	            className="w-full bg-transparent outline-none placeholder:text-gray-700"
                     	        />
                     	    </div>
 							<button
@@ -388,29 +387,6 @@ export default function ActiveRun() {
                             pages_crawled: displayRun.pages_crawled,
                             stats: selectedRun.stats || {}
                         } : sampleConfig, null, 2)}
-					</pre>
-				</div>
-			)}
-
-			{activeTab === "logs" && (
-				<div className="mt-4">
-					<div className="mb-2 flex items-center justify-between">
-						<h3 className="text-sm font-medium text-gray-900">Run logs</h3>
-						<span className="inline-flex items-center gap-1 text-xs text-green-700">
-							<HiOutlineCheckCircle className="h-4 w-4" /> live
-						</span>
-					</div>
-					<pre className="max-h-[420px] overflow-auto rounded-lg border bg-black p-3 text-xs leading-relaxed text-green-300">
-						{`10:12:03  [INFO] seed=https://example.com depth=2 renderJS=true
-							10:12:05  [FETCH] 200  GET  /  (18322 bytes)
-							10:12:07  [PARSE] links found: 14
-							10:12:12  [FETCH] 200  GET  /pricing  (25101 bytes)
-							10:12:15  [FETCH] 200  GET  /about  (19552 bytes)
-							10:12:18  [FETCH] 200  GET  /case-studies  (39881 bytes)
-							10:12:23  [FETCH] 200  GET  /blog  (28430 bytes)
-							10:12:27  [FETCH] 200  GET  /blog/ai-for-search  (44012 bytes)
-							10:12:32  [FETCH] 200  GET  /whitepaper.pdf  (512330 bytes)
-							10:12:38  [DONE]  indexed=10  queued=0  errors=0`}
 					</pre>
 				</div>
 			)}
