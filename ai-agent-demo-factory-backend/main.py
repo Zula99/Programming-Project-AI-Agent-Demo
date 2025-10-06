@@ -8,7 +8,6 @@ import sys
 import os
 
 #-----Core imports-----
-from services.indexer import index_crawl_results_to_opensearch
 from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_logs
 from services.cms_detector import CMSDetector
 from services.schema_processor import Search365SchemaProcessor
