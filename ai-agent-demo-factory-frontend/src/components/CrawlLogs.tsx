@@ -228,10 +228,10 @@ export default function CrawlLogs() {
                   </p>
                   {run.status && <StatusBadge status={run.status as any} />}
                 </div>
-                <p className="text-xs text-gray-500 truncate">{run.target_url}</p>
+                <p className="text-xs text-gray-700 truncate">{run.target_url}</p>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">{run.log_count} logs</span>
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-700">{run.log_count} logs</span>
+                  <span className="text-xs text-gray-700">
                     {formatTimestamp(run.last_activity)}
                   </span>
                 </div>
@@ -306,7 +306,7 @@ export default function CrawlLogs() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-700">
                         {formatTimestamp(log.timestamp)}
                       </span>
                     </div>
@@ -329,10 +329,10 @@ export default function CrawlLogs() {
                     )}
                     
                     <details className="mt-2">
-                      <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                      <summary className="text-xs text-gray-700 cursor-pointer hover:text-gray-700">
                         Raw log line
                       </summary>
-                      <pre className="text-xs text-gray-600 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
+                      <pre className="text-xs text-gray-800 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
                         {log.raw_log_line}
                       </pre>
                     </details>
@@ -340,14 +340,14 @@ export default function CrawlLogs() {
                 ))}
                 
                 {logs.length === 0 && !loading && (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-700">
                     No logs found for this run
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-700">
               Select a crawl run to view its logs
             </div>
           )}
