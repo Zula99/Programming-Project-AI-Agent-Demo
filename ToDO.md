@@ -8,9 +8,9 @@
 
 - Add Stop crawl button functionality. **DONE**
 
-# Add a description of what the phases do
+# Add a description of what each milestone does.
 
-- Add a box that takes text of a target site they want to proxy and a button to launch the proxy, add a drop down of previously indexed files we want the proxy to use in the search API. 
+- @PLAN.md Add a box that takes text of a target site they want to proxy and a button to launch the proxy, add a drop down of previously indexed files we want the proxy to use in the search API. 
 
 - Start Planning the AI PROMPT EDITOR page I
     - See if we can edit 'backend' from UI
@@ -21,6 +21,5 @@
 - Refactor code base to make it look cleaner:
     - make a better codebase structure.
     - Crawler_utils.py is 1200+ lines of code, bad practice. 
-
 
 - Merge with Emilys branch she mentioned in teams
