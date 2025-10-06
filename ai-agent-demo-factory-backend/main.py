@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 import requests
+import sys
+import os
 
 #-----Core imports-----
 from services.indexer import index_crawl_results_to_opensearch
@@ -11,14 +13,22 @@ from services.log_indexer import index_crawl_logs_to_opensearch, search_crawl_lo
 from services.cms_detector import CMSDetector
 from services.schema_processor import Search365SchemaProcessor
 
+# Import WebSocket log handler
+from websocket_log_handler import websocket_connections, setup_websocket_logging, log_buffer
+
 
 import uuid # For generating unique IDs
 import time # For time tracking and delays
 import threading # Unused - can be removed
 import subprocess # For running external commands (development mode)
-import os # For file operations and environment variables
 import tempfile # Unused - can be removed
 import re # For regex parsing in config generation and log parsing
+import json # For JSON parsing in WebSocket messages
+import asyncio # For async operations
+import logging # For structured logging to WebSocket
+
+# Create logger for backend operations
+logger = logging.getLogger(__name__)
 
 def extract_crawl_statistics(run_id: str) -> dict:
     """
@@ -109,6 +119,9 @@ def extract_crawl_statistics(run_id: str) -> dict:
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Setup WebSocket logging
+setup_websocket_logging()
 
 # Configure CORS 
 # Adjust the 'origins' list to include the actual URL(s) where your frontend is hosted.
@@ -324,26 +337,85 @@ class PageRow(BaseModel):
     size: int # size in bytes
 
 # --- Helper Function: Runs the Norconex Crawler via Maven ---
-def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional["TemplateConfig"] = None):
+async def tail_norconex_logs(run_id: str):
+    """Tail Norconex logs and broadcast to WebSocket clients"""
+    log_file = "/opt/norconex/logs/trigger.log"
+
+    # Get the target URL for this crawl to filter logs
+    target_url = crawl_jobs[run_id].get('target_url', '')
+    # Extract domain from URL for filtering
+    try:
+        from urllib.parse import urlparse
+        domain = urlparse(target_url).netloc.replace('www.', '')
+    except:
+        domain = target_url
+
+    logger.info(f"[{run_id}] Starting Norconex log tail for domain: {domain}")
+
+    try:
+        # Start from the end of the file
+        with open(log_file, 'r') as f:
+            # Move to end
+            f.seek(0, 2)
+
+            while run_id in crawl_jobs and crawl_jobs[run_id]['status'] == 'running':
+                line = f.readline()
+                if line:
+                    # Parse Norconex log line and broadcast
+                    # Filter by run_id OR domain in URL
+                    if run_id in line or domain in line:
+                        # Extract timestamp and message
+                        parts = line.strip().split(maxsplit=3)
+                        if len(parts) >= 4:
+                            timestamp = parts[0]
+                            level = parts[2]
+                            message = parts[3] if len(parts) > 3 else line.strip()
+
+                            log_entry = {
+                                "timestamp": timestamp,
+                                "level": level,
+                                "source": "norconex",
+                                "message": message
+                            }
+
+                            # Broadcast to WebSocket
+                            if run_id in websocket_connections:
+                                for ws in websocket_connections[run_id]:
+                                    try:
+                                        await ws.send_text(json.dumps({
+                                            "type": "backend_log",
+                                            "log": log_entry
+                                        }))
+                                    except:
+                                        pass
+                else:
+                    await asyncio.sleep(0.1)  # Wait for new lines
+    except Exception as e:
+        logger.error(f"[{run_id}] Error tailing Norconex logs: {e}")
+
+async def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional["TemplateConfig"] = None):
     """
     This function runs the actual Norconex crawler via the Maven-based runner.
     It generates a configuration file, executes the crawler, and monitors progress.
     """
-    print(f"[{run_id}] Starting crawl for: {target_url}")
-    
+    logger.info(f"[{run_id}] Starting crawl for: {target_url}")
+
     # Update job status to 'running' and reset progress
     crawl_jobs[run_id]['status'] = 'running'
     crawl_jobs[run_id]['progress'] = 0
-    
+
     # Initialize process tracking
     running_processes[run_id] = None
+
+    # Start tailing Norconex logs in background
+    asyncio.create_task(tail_norconex_logs(run_id))
 
     try:
         # Generate Norconex config from base-crawl-template with optional CMS parameters
         if template:
-            print(f"[{run_id}] Using template '{template.name}' ({template.platform})...")
+            logger.info(f"[{run_id}] Using template '{template.name}' ({template.platform})...")
         else:
-            print(f"[{run_id}] Using base-crawl-template with defaults...")
+            logger.info(f"[{run_id}] Using base-crawl-template with defaults...")
 
         xml_config = create_config_from_nab_template(
             url=target_url,
@@ -363,7 +435,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
         config_file = os.path.join(config_dir, f"crawler-{run_id}.xml")
         with open(config_file, 'w', encoding='utf-8') as f:
             f.write(xml_config)
-        print(f"[{run_id}] Configuration saved to: {config_file}")
+        logger.info(f"[{run_id}] Configuration saved to: {config_file}")
         
         # Determine how to run the crawler based on environment
         norconex_mode = os.environ.get('NORCONEX_MODE', 'maven')
@@ -383,7 +455,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                     crawl_jobs[run_id]['status'] = 'complete'
                     crawl_jobs[run_id]['progress'] = 100
                     crawl_jobs[run_id]['completed_at'] = time.time()
-                    
+
                     # Calculate final stats
                     duration = crawl_jobs[run_id]['completed_at'] - crawl_jobs[run_id]['started_at']
                     crawl_jobs[run_id]['stats']['crawl_duration_seconds'] = round(duration, 2)
@@ -417,7 +489,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                     
             except Exception as e:
                 # Fallback: Use file-based trigger
-                print(f"[{run_id}] HTTP API failed, trying file-based approach: {e}")
+                logger.warning(f"[{run_id}] HTTP API failed, trying file-based approach: {e}")
                 
                 # Create a trigger file that the norconex container can monitor
                 trigger_file = f"/opt/norconex/configs/trigger-{run_id}.json"
@@ -431,7 +503,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                     import json
                     json.dump(trigger_data, f)
                 
-                print(f"[{run_id}] Created trigger file: {trigger_file}")
+                logger.info(f"[{run_id}] Created trigger file: {trigger_file}")
                 
                 # Wait for completion (simplified - check for completion file)
                 import time
@@ -443,9 +515,9 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                 
                 while total_waited < max_wait_time:
                     if os.path.exists(completion_file):
-                        print(f"[{run_id}] Found completion file")
+                        logger.info(f"[{run_id}] Found completion file")
                         break
-                    time.sleep(wait_interval)
+                    await asyncio.sleep(wait_interval)
                     total_waited += wait_interval
                     crawl_jobs[run_id]['progress'] = min(90, 10 + (total_waited * 80 // max_wait_time))
                 
@@ -481,7 +553,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                         print(f"[{run_id}] Failed to process schema: {e}")
                         crawl_jobs[run_id]['processing_error'] = str(e)
 
-                    print(f"[{run_id}] Crawl completed successfully via file trigger")
+                    logger.info(f"[{run_id}] Crawl completed successfully via file trigger")
 
                     # Raw data was committed to demo_factory_raw by ElasticsearchCommitter
                     # Enriched data is now in demo_factory via schema_processor
@@ -513,7 +585,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                         except Exception as e:
                             crawl_jobs[run_id]['error_message'] = f"Crawl failed but could not read failure details: {e}"
                         
-                        print(f"[{run_id}] Crawl failed - partial data may be available")
+                        logger.warning(f"[{run_id}] Crawl failed - partial data may be available")
                     else:
                         raise Exception("Crawl timed out - no completion or failure file found")
                     
@@ -596,7 +668,7 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
                 print(f"[{run_id}] Failed to process schema: {e}")
                 crawl_jobs[run_id]['processing_error'] = str(e)
 
-            print(f"[{run_id}] Crawl completed successfully")
+            logger.info(f"[{run_id}] Crawl completed successfully")
 
             # Raw data was committed to demo_factory_raw by ElasticsearchCommitter
             # Enriched data is now in demo_factory via schema_processor
@@ -608,13 +680,13 @@ def run_norconex_crawler_maven(run_id: str, target_url: str, template: Optional[
             crawl_jobs[run_id]['error_message'] = f"Crawler failed with return code {return_code}"
             if stderr_lines:
                 crawl_jobs[run_id]['error_message'] += f": {'; '.join(stderr_lines[-3:])}"
-            print(f"[{run_id}] Crawl failed with return code {return_code}")
+            logger.error(f"[{run_id}] Crawl failed with return code {return_code}")
             
     except Exception as e:
         crawl_jobs[run_id]['status'] = 'failed'
         crawl_jobs[run_id]['error_message'] = str(e)
-        print(f"[{run_id}] Crawl failed with exception: {e}")
-        
+        logger.error(f"[{run_id}] Crawl failed with exception: {e}")
+
     finally:
         # Clean up process tracking
         if run_id in running_processes:
@@ -756,7 +828,7 @@ async def stop_crawl(run_id: str):
                 else:
                     print(f"[{run_id}] HTTP stop API returned: {response.status_code}")
             except Exception as e:
-                print(f"[{run_id}] HTTP stop request failed: {e}")
+                logger.warning(f"[{run_id}] HTTP stop request failed: {e}")
         
         # For file-based triggers, create a stop signal file
         if not stopped:
@@ -772,7 +844,7 @@ async def stop_crawl(run_id: str):
                     import json
                     json.dump(stop_data, f)
                 
-                print(f"[{run_id}] Created stop signal file: {stop_file}")
+                logger.info(f"[{run_id}] Created stop signal file: {stop_file}")
                 stopped = True
             except Exception as e:
                 print(f"[{run_id}] Failed to create stop file: {e}")
@@ -791,7 +863,7 @@ async def stop_crawl(run_id: str):
             if run_id in running_processes:
                 del running_processes[run_id]
             
-            print(f"[{run_id}] Crawl stopped successfully")
+            logger.info(f"[{run_id}] Crawl stopped successfully")
             
             return JSONResponse(content={
                 "message": "Crawl stopped successfully",
@@ -806,7 +878,7 @@ async def stop_crawl(run_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[{run_id}] Error stopping crawl: {e}")
+        logger.error(f"[{run_id}] Error stopping crawl: {e}")
         raise HTTPException(status_code=500, detail=f"Error stopping crawl: {str(e)}")
 
 @app.get("/results/{run_id}", response_model=list[PageRow])
@@ -1085,5 +1157,77 @@ async def get_raw_crawl_data(run_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving raw data: {str(e)}")
+
+
+@app.websocket("/norconex/ws/{run_id}")
+async def norconex_websocket(websocket: WebSocket, run_id: str):
+    """WebSocket endpoint for live Norconex crawl updates and backend logs"""
+    await websocket.accept()
+
+    # Add to connections list
+    if run_id not in websocket_connections:
+        websocket_connections[run_id] = []
+    websocket_connections[run_id].append(websocket)
+
+    try:
+        # Send connection established message
+        await websocket.send_text(json.dumps({
+            "type": "connection_established",
+            "run_id": run_id,
+            "message": "Connected to Norconex crawl monitoring"
+        }))
+
+        # Send buffered logs for this run_id
+        if run_id in log_buffer:
+            logger.info(f"[WebSocket] Sending {len(log_buffer[run_id])} buffered logs for run_id {run_id[:8]}")
+            for buffered_log in log_buffer[run_id]:
+                await websocket.send_text(json.dumps({
+                    "type": "backend_log",
+                    "log": buffered_log
+                }))
+
+        # Send current crawl status if available
+        if run_id in crawl_jobs:
+            job = crawl_jobs[run_id]
+            await websocket.send_text(json.dumps({
+                "type": "status",
+                "status": job["status"],
+                "progress": job.get("progress", 0)
+            }))
+
+        # Keep connection alive
+        while True:
+            data = await websocket.receive_text()
+            # Handle ping/pong
+            try:
+                message = json.loads(data)
+                if message.get('type') == 'ping':
+                    await websocket.send_text(json.dumps({'type': 'pong'}))
+            except json.JSONDecodeError:
+                pass
+
+    except WebSocketDisconnect:
+        if run_id in websocket_connections:
+            try:
+                websocket_connections[run_id].remove(websocket)
+            except ValueError:
+                pass
+    except Exception as e:
+        print(f"WebSocket error for run_id {run_id}: {e}")
+        if run_id in websocket_connections:
+            try:
+                websocket_connections[run_id].remove(websocket)
+            except ValueError:
+                pass
+
+
+@app.get("/ws/status")
+async def websocket_status():
+    """Get WebSocket connection status and active runs"""
+    return {
+        "enabled": True,
+        "active_runs": {run_id: len(connections) for run_id, connections in websocket_connections.items()},
+        "total_connections": sum(len(connections) for connections in websocket_connections.values())
+    }
 
 
