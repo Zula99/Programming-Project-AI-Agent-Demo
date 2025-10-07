@@ -1,82 +1,121 @@
-# Remove version as it's obsolete in newer Docker Compose
-
 services:
-  app:
-    build: .
-    container_name: ai-agent-app
-    env_file:
-      - ./ai-agent-demo-factory-backend/.env  # Load environment variables from .env file at runtime
-    environment:
-      - PYTHONIOENCODING=utf-8
-      - LANG=C.UTF-8
-      - LC_ALL=C.UTF-8
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
-    volumes:
-      # Mount output directory to host for persistent storage
-      - ./ai-agent-demo-factory-backend/output:/app/backend/output
-      # Mount logs directory to host for persistent log storage
-      - ./logs:/app/backend/logs
-      # Mount source code for development (optional)
-      - ./ai-agent-demo-factory-backend:/app/backend
-      - ./crawl4ai:/app/crawl4ai
-    ports:
-      - "8000:8000"
-      - "3000:3000"
-    depends_on:
-      - opensearch-demo
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
-    networks:
-      - ai-agent-network
-
-  opensearch-demo:
-    image: opensearchproject/opensearch:2.11.0
-    container_name: opensearch-demo
-    environment:
-      - discovery.type=single-node
-      - plugins.security.disabled=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - opensearch-data:/usr/share/opensearch/data
+  # OpenSearch Service
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    container_name: opensearch
     ports:
       - "9200:9200"
       - "9600:9600"
-    networks:
-      - ai-agent-network
-    restart: unless-stopped
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.11.0
-    container_name: opensearch-dashboards
     environment:
-      - OPENSEARCH_HOSTS=http://opensearch-demo:9200
-      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+      - discovery.type=single-node
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      - DISABLE_SECURITY_PLUGIN=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # OpenSearch Dashboards (Web Console)
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.14.0
+    container_name: opensearch-dashboards
     ports:
       - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=http://opensearch:9200
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
     depends_on:
-      - opensearch-demo
-    networks:
-      - ai-agent-network
-    restart: unless-stopped
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
-  # Future: Add database service when learning system is implemented
-  # ai-agent-db:
-  #   image: postgres:15-alpine
-  #   container_name: ai-agent-database
-  #   environment:
-  #     - POSTGRES_DB=ai_agent_patterns
-  #     - POSTGRES_USER=aiagent
-  #     - POSTGRES_PASSWORD=secure_password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - ai-agent-network
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: ./ai-agent-demo-factory-backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ai-agent-demo-factory-backend:/app
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/data:/opt/norconex/data:ro
+      - ./norconex-runner/logs:/opt/norconex/logs:ro
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      norconex-maven:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_HOST: opensearch
+      OPENSEARCH_PORT: 9200
+      NORCONEX_MODE: "maven"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./ai-agent-demo-factory-backend
+          target: /app
 
-networks:
-  ai-agent-network:
-    driver: bridge
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./ai-agent-demo-factory-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ai-agent-demo-factory-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - opensearch
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:5000
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
+      - OPENSEARCH_BASE_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=demo_factory
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./ai-agent-demo-factory-frontend
+          target: /app
 
+  # Norconex Maven Runner Container
+  norconex-maven:
+    build:
+      context: ./norconex-runner
+      dockerfile: Dockerfile
+    volumes:
+      - ./norconex-runner/data:/opt/norconex/data:rw
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/logs:/opt/norconex/logs:rw
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms512m
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# Define named volumes for persistent data storage
 volumes:
-  opensearch-data:
-#   postgres_data:
+  opensearch_data: {}

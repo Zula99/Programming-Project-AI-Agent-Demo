@@ -5,6 +5,12 @@ norconex/workdir/
 norconex/logs/
 norconex/progress/
 
+# Generated Crawler Configs and Status Files
+norconex-runner/configs/crawler-*.xml
+norconex-runner/configs/completed-*.json
+norconex-runner/configs/failed-*.json
+norconex-runner/configs/stop-*.json
+
 # Norconex Database Files
 *.mvstore
 *.mvstore.db
@@ -29,7 +35,7 @@ ai-agent-demo-factory-backend/output/
 # Log Files
 *.log
 *.log.*
-logs/
+
 
 # Temporary Files
 *.tmp
