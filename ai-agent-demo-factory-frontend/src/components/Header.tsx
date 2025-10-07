@@ -12,13 +12,19 @@ export default function Header() {
                         href="/"
                         className="text-gray-300 hover:text-white transition-colors px-3 py-1 rounded"
                     >
-                        Norconnex Crawler
+                        Norconex Crawler
                     </Link>
                     <Link
                         href="/crawl4ai"
                         className="text-gray-300 hover:text-white transition-colors px-3 py-1 rounded"
                     >
                         Crawl4AI Agent
+                    </Link>
+                    <Link
+                        href="/logs"
+                        className="text-gray-300 hover:text-white transition-colors px-3 py-1 rounded"
+                    >
+                        Norconex Logs
                     </Link>
                 </div>
             </div>
