@@ -1,0 +1,69 @@
+from lxml import etree
+from lanchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from services.llm_provider import llm_openAI
+
+SYSTEM = """You generate NORCONEX Web Crawler v3 XML ONLY.
+Rules:
+- Use ONLY v3 tags/attributes.
+- Output XML only (no markdown fences, no commentary).
+- Target ~80-90% coverage with safe defaults.
+- add minimal <webdriver> only if site is JS-heavy.
+- Include Opensearch/ElasticSearch commiter when indexName is given.
+- Prefer keepDownloads when mirroring. 
+- do NOT use v2 elements or classes.
+"""
+
+USER_TMPL = """
+Generate a Norconex v3 XML config to crawl/mirror: {url}
+
+Constraints:
+- maxDepth: {max_depth}
+- maxDocuments: {max_documents}
+- keepDownloads: {keep_downloads}
+- indexName: {index_name} 
+- stayOnDomain = false, stayOnPort = false, stayOnProtocol = false
+- Disabled over-aggresive canonical rejection if needed
+- Disregard robots.txt rules
+- add <webdriver> only if site is JS-heavy (heuristic ok)
+
+Return XML only.
+"""
+
+prompt = PromptTemplate.from_template(USER_TMPL)
+parser = StrOutputParser()
+
+# LangChain Runnable pipeline: (system message) + user prompt -> llm -> text
+chain = (
+    {"url": lambda x: x["url"],
+     "max_depth": lambda x: x["max_depth"],
+     "max_documents": lambda x: x["max_documents"],
+     "keep_downloads": lambda x: "true" if x["Keep_downloads"] else "false",
+     "index_name": lambda x: x["index_name"]}
+    | prompt
+    | llm_openAI.bind(system=SYSTEM)
+    | parser
+)
+
+def _validate_xml(xml_str: str):
+    etree.fromstring(xml_text.encode("utf-8"))  # raises on malformed
+
+def generate_norconex_v3_xml(url: str, max_depth: int = 3, max_documents: int = 500,
+                             index_name: str = "demo_factory", keep_downloads: bool = True) -> str:
+    """
+    Generates a Norconex v3 XML config using a LangChain agent (OpenAI backend).
+    """
+    result = chain.invoke({
+        "url": url,
+        "max_depth": max_depth,
+        "max_documents": max_documents,
+        "index_name": index_name,
+        "keep_downloads": keep_downloads
+    }).strip()
+
+    if xml.startswith("```"):
+        xml = xml.strip("`")
+        if xml.startswith("xml\n"):
+            xml = xml[len("xml\n"):]
+    _validate_xml(xml)
+    return xml

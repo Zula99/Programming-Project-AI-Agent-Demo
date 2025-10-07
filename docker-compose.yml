@@ -1,17 +1,121 @@
-version: '3.7'
 services:
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
-    container_name: elasticsearch
-    environment:
-      - xpack.security.enabled=false
-      - discovery.type=single-node
+  # OpenSearch Service
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    container_name: opensearch
     ports:
-      - 9200:9200
-      - 9300:9300
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      - discovery.type=single-node
+      - cluster.name=opensearch-cluster
+      - node.name=opensearch-node1
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+      - DISABLE_SECURITY_PLUGIN=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
+  # OpenSearch Dashboards (Web Console)
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.14.0
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=http://opensearch:9200
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: ./ai-agent-demo-factory-backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ai-agent-demo-factory-backend:/app
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/data:/opt/norconex/data:ro
+      - ./norconex-runner/logs:/opt/norconex/logs:ro
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      norconex-maven:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_HOST: opensearch
+      OPENSEARCH_PORT: 9200
+      NORCONEX_MODE: "maven"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./ai-agent-demo-factory-backend
+          target: /app
+
+  # React Frontend Service
+  frontend:
+    build:
+      context: ./ai-agent-demo-factory-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ai-agent-demo-factory-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - opensearch
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:5000
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
+      - OPENSEARCH_BASE_URL=http://opensearch:9200
+      - OPENSEARCH_INDEX=demo_factory
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./ai-agent-demo-factory-frontend
+          target: /app
+
+  # Norconex Maven Runner Container
+  norconex-maven:
+    build:
+      context: ./norconex-runner
+      dockerfile: Dockerfile
+    volumes:
+      - ./norconex-runner/data:/opt/norconex/data:rw
+      - ./norconex-runner/configs:/opt/norconex/configs:rw
+      - ./norconex-runner/logs:/opt/norconex/logs:rw
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms512m
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/health-check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# Define named volumes for persistent data storage
 volumes:
-  elasticsearch-data:
-    driver: local
+  opensearch_data: {}

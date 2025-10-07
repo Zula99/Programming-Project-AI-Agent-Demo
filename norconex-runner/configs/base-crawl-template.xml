@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Base Crawl Template - Maximum Data Extraction for Post-Processing -->
+<httpcollector id="base-crawl-collector">
+
+  <!-- Updated paths for Docker container -->
+  <workDir>/opt/norconex/data/workdir</workDir>
+
+  <crawlers>
+    <crawler id="base-crawl-extractor">
+
+    <!-- Start URLs: will be dynamically replaced -->
+    <startURLs stayOnDomain="true" includeSubdomains="false" stayOnProtocol="true">
+        <url>https://example.com/</url>
+    </startURLs>
+
+    <!-- Crawl limits -->
+    <numThreads>4</numThreads>
+    <maxDocuments>500</maxDocuments>
+    <maxDepth>3</maxDepth>
+
+    <!-- Politeness -->
+    <delay class="com.norconex.collector.http.delay.impl.GenericDelayResolver"
+            default="2 seconds" />
+
+    <!-- Robots / sitemaps -->
+    <robotsTxt ignore="false" />
+    <sitemapResolver ignore="false" />
+
+    <!-- Reference filters - will be dynamically replaced -->
+    <referenceFilters>
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
+            <valueMatcher method="regex">^https?://([a-z0-9-]+\.)*example\.com(/.*)?$</valueMatcher>
+        </filter>
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
+            css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2
+        </filter>
+    </referenceFilters>
+
+    <!-- Link extraction -->
+    <linkExtractors>
+        <extractor class="com.norconex.collector.http.link.impl.HtmlLinkExtractor"/>
+    </linkExtractors>
+
+    <!-- Maximum data extraction importer -->
+    <importer>
+        <preParseHandlers>
+            <!-- Comprehensive DOM extraction -->
+            <handler class="com.norconex.importer.handler.tagger.impl.DOMTagger">
+                <!-- Keep full HTML source for post-processing -->
+                <dom selector="html" toField="html_source" extract="outerHtml" />
+
+                <!-- Extract meta tag names and content separately -->
+                <dom selector="meta[name]" toField="meta_names" extract="attr(name)" />
+                <dom selector="meta[name]" toField="meta_contents" extract="attr(content)" />
+
+                <!-- Extract meta property names and content separately -->
+                <dom selector="meta[property]" toField="meta_property_names" extract="attr(property)" />
+                <dom selector="meta[property]" toField="meta_property_contents" extract="attr(content)" />
+
+                <!-- Extract meta http-equiv names and content separately -->
+                <dom selector="meta[http-equiv]" toField="meta_http_equiv_names" extract="attr(http-equiv)" />
+                <dom selector="meta[http-equiv]" toField="meta_http_equiv_contents" extract="attr(content)" />
+
+                <!-- Extract ALL headings for structure analysis -->
+                <dom selector="h1" toField="h1_headings" />
+                <dom selector="h2" toField="h2_headings" />
+                <dom selector="h3" toField="h3_headings" />
+                <dom selector="h4" toField="h4_headings" />
+                <dom selector="h5" toField="h5_headings" />
+                <dom selector="h6" toField="h6_headings" />
+
+                <!-- Extract ALL links for relationship analysis -->
+                <dom selector="a[href]" toField="all_link_urls" extract="attr(href)" />
+                <dom selector="a[href]" toField="all_link_texts" extract="text" />
+
+                <!-- Extract images with alt text -->
+                <dom selector="img" toField="all_image_sources" extract="attr(src)" />
+                <dom selector="img" toField="all_image_alts" extract="attr(alt)" />
+
+                <!-- Extract structured data (JSON-LD, microdata) -->
+                <dom selector="script[type='application/ld+json']" toField="structured_data_jsonld" />
+                <dom selector="*[itemscope]" toField="microdata_types" extract="attr(itemtype)" />
+                <dom selector="*[itemprop]" toField="microdata_props" extract="attr(itemprop)" />
+
+                <!-- Extract forms and inputs -->
+                <dom selector="form" toField="form_actions" extract="attr(action)" />
+                <dom selector="form" toField="form_methods" extract="attr(method)" />
+                <dom selector="input" toField="input_types" extract="attr(type)" />
+                <dom selector="input" toField="input_names" extract="attr(name)" />
+                <dom selector="input" toField="input_placeholders" extract="attr(placeholder)" />
+
+                <!-- Extract social media links -->
+                <dom selector="a[href*='facebook.com']" toField="facebook_links" extract="attr(href)" />
+                <dom selector="a[href*='twitter.com']" toField="twitter_links" extract="attr(href)" />
+                <dom selector="a[href*='linkedin.com']" toField="linkedin_links" extract="attr(href)" />
+                <dom selector="a[href*='instagram.com']" toField="instagram_links" extract="attr(href)" />
+
+                <!-- Extract contact information -->
+                <dom selector="*[href^='mailto:']" toField="email_links" extract="attr(href)" />
+                <dom selector="*[href^='tel:']" toField="phone_links" extract="attr(href)" />
+
+                <!-- Extract navigation elements -->
+                <dom selector="nav" toField="navigation" />
+                <dom selector="*[role='navigation']" toField="navigation_role" />
+
+                <!-- Extract main content area -->
+                <dom selector="main" toField="main_content" />
+                <dom selector="*[role='main']" toField="main_content_role" />
+                <dom selector="article" toField="article_content" />
+
+                <!-- Extract footer and header -->
+                <dom selector="header" toField="header_content" />
+                <dom selector="footer" toField="footer_content" />
+
+                <!-- Extract breadcrumbs -->
+                <dom selector="*[typeof='BreadcrumbList']" toField="breadcrumbs_structured" />
+                <dom selector="nav ol li a" toField="breadcrumbs_nav" />
+
+                <!-- Extract tables for data extraction -->
+                <dom selector="table" toField="tables" extract="outerHtml" />
+            </handler>
+
+            <!-- HTTP headers will be preserved by default -->
+
+            <!-- Extract text statistics and run tracking -->
+            <handler class="com.norconex.importer.handler.tagger.impl.ConstantTagger">
+                <constant name="crawl_timestamp">${NOW}</constant>
+                <constant name="extractor_version">base-crawl-v1.0</constant>
+                <constant name="run_id">PLACEHOLDER_RUN_ID</constant>
+            </handler>
+        </preParseHandlers>
+
+        <postParseHandlers>
+            <!-- Content will be processed in post-processing pipeline -->
+        </postParseHandlers>
+    </importer>
+
+    <!-- ===== COMMITTERS ===== -->
+    <committers>
+        <!-- Local XML mirror for debugging -->
+        <committer class="com.norconex.committer.core3.fs.impl.XMLFileCommitter">
+            <directory>/opt/norconex/data/xml-output</directory>
+            <docsPerFile>200</docsPerFile>
+            <splitUpsertDelete>true</splitUpsertDelete>
+            <fileNamePrefix>base-crawl-raw-</fileNamePrefix>
+            <indent>2</indent>
+        </committer>
+
+        <!-- OpenSearch committer for raw data -->
+        <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+            <nodes>http://opensearch:9200</nodes>
+            <indexName>demo_factory_raw</indexName>
+
+            <ignoreResponseErrors>false</ignoreResponseErrors>
+            <connectionTimeout>30000</connectionTimeout>
+            <socketTimeout>30000</socketTimeout>
+
+            <sourceIdField>document.reference</sourceIdField>
+
+            <!-- Raw field mappings - preserve everything for post-processing -->
+            <fieldMappings>
+                <!-- Core document fields -->
+                <mapping fromField="document.reference" toField="id" />
+                <mapping fromField="document.reference" toField="url" />
+                <mapping fromField="source_url" toField="source_url" />
+                <mapping fromField="original_url" toField="original_url" />
+                <mapping fromField="title" toField="title" />
+                <mapping fromField="content" toField="content" />
+
+                <!-- Full HTML source -->
+                <mapping fromField="html_source" toField="html_source" />
+
+                <!-- Meta tag collections -->
+                <mapping fromField="meta_tags" toField="meta_tags" />
+                <mapping fromField="meta_properties" toField="meta_properties" />
+                <mapping fromField="meta_http_equiv" toField="meta_http_equiv" />
+
+                <!-- Heading collections -->
+                <mapping fromField="h1_headings" toField="h1_headings" />
+                <mapping fromField="h2_headings" toField="h2_headings" />
+                <mapping fromField="h3_headings" toField="h3_headings" />
+                <mapping fromField="h4_headings" toField="h4_headings" />
+                <mapping fromField="h5_headings" toField="h5_headings" />
+                <mapping fromField="h6_headings" toField="h6_headings" />
+
+                <!-- Link and media collections -->
+                <mapping fromField="all_links" toField="all_links" />
+                <mapping fromField="all_images" toField="all_images" />
+
+                <!-- Structured data -->
+                <mapping fromField="structured_data_jsonld" toField="structured_data_jsonld" />
+                <mapping fromField="microdata" toField="microdata" />
+
+                <!-- Forms and interaction elements -->
+                <mapping fromField="forms" toField="forms" />
+                <mapping fromField="inputs" toField="inputs" />
+
+                <!-- Social media links -->
+                <mapping fromField="facebook_links" toField="facebook_links" />
+                <mapping fromField="twitter_links" toField="twitter_links" />
+                <mapping fromField="linkedin_links" toField="linkedin_links" />
+                <mapping fromField="instagram_links" toField="instagram_links" />
+
+                <!-- Contact information -->
+                <mapping fromField="email_links" toField="email_links" />
+                <mapping fromField="phone_links" toField="phone_links" />
+
+                <!-- Page structure -->
+                <mapping fromField="navigation" toField="navigation" />
+                <mapping fromField="navigation_role" toField="navigation_role" />
+                <mapping fromField="main_content" toField="main_content" />
+                <mapping fromField="main_content_role" toField="main_content_role" />
+                <mapping fromField="article_content" toField="article_content" />
+                <mapping fromField="header_content" toField="header_content" />
+                <mapping fromField="footer_content" toField="footer_content" />
+
+                <!-- Breadcrumbs -->
+                <mapping fromField="breadcrumbs_structured" toField="breadcrumbs_structured" />
+                <mapping fromField="breadcrumbs_nav" toField="breadcrumbs_nav" />
+
+                <!-- Tables -->
+                <mapping fromField="tables" toField="tables" />
+
+                <!-- HTTP headers (preserve all) -->
+                <mapping fromField="http_headers.*" toField="http_headers.*" />
+
+                <!-- Collector metadata -->
+                <mapping fromField="collector_metadata.*" toField="collector_metadata.*" />
+
+                <!-- Document metadata -->
+                <mapping fromField="document_metadata.*" toField="document_metadata.*" />
+
+                <!-- Crawl metadata -->
+                <mapping fromField="crawl_timestamp" toField="crawl_timestamp" />
+                <mapping fromField="extractor_version" toField="extractor_version" />
+            </fieldMappings>
+
+            <!-- Queue configuration -->
+            <queue class="com.norconex.committer.core3.batch.queue.impl.FSQueue">
+                <batchSize>50</batchSize>
+                <maxPerFolder>500</maxPerFolder>
+                <commitLeftoversOnInit>true</commitLeftoversOnInit>
+                <onCommitFailure>
+                    <maxRetries>3</maxRetries>
+                    <retryDelay>5000</retryDelay>
+                    <ignoreErrors>false</ignoreErrors>
+                </onCommitFailure>
+            </queue>
+        </committer>
+    </committers>
+
+    </crawler>
+  </crawlers>
+
+</httpcollector>

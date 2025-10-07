@@ -26,7 +26,7 @@ export default function SortableTH({
       >
         {label}
         {active && (
-          <span className="text-xs text-gray-500">{dir === "asc" ? "▲" : "▼"}</span>
+          <span className="text-xs text-gray-700">{dir === "asc" ? "▲" : "▼"}</span>
         )}
       </span>
     </th>

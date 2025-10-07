@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Norconex HTTP Collector v3.x configuration -->
+<httpcollector id="demo_factory">
+
+  <workDir>./workdir</workDir>
+
+  <crawlers>
+    <crawler id="nab-banking-crawler">
+    <keepDownloads>true</keepDownloads>
+
+      <!-- Seeds -->
+      <startURLs stayOnDomain="true" includeSubdomains="false" stayOnProtocol="true">
+        <url>https://www.nab.com.au/</url>
+        <url>https://www.nab.com.au/personal</url>
+        <url>https://www.nab.com.au/business</url>
+        <url>https://www.nab.com.au/corporate</url>
+        <url>https://www.nab.com.au/about-us</url>
+      </startURLs>
+
+      <!-- Crawl limits -->
+      <numThreads>2</numThreads>
+      <maxDocuments>5000</maxDocuments>
+      <maxDepth>5</maxDepth>
+
+      <!-- Politeness -->
+      <delay class="com.norconex.collector.http.delay.impl.GenericDelayResolver" default="1500" />
+
+      <!-- Fetch strategy -->
+      <fetchHttpHead>OPTIONAL</fetchHttpHead>
+      <fetchHttpGet>REQUIRED</fetchHttpGet>
+
+      <!-- HTTP fetchers (user-agent via headers; retries here) -->
+      <httpFetchers maxRetries="3" retryDelay="10000">
+        <fetcher class="com.norconex.collector.http.fetch.impl.GenericHttpFetcher">
+          <maxConnections>10</maxConnections>
+          <headers>
+            <header name="User-Agent">Mozilla/5.0 (compatible; Norconex/3.0)</header>
+          </headers>
+        </fetcher>
+      </httpFetchers>
+
+      <!-- Robots / sitemaps -->
+      <robotsTxt ignore="false" />
+      <sitemapResolver ignore="false" />
+
+      <!-- URL filters (v3: ReferenceFilter needs <valueMatcher/>) -->
+      <referenceFilters>
+        <!-- Include only nab.com.au -->
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="include">
+          <valueMatcher method="regex">^https?://(www\.)?nab\.com\.au(/.*)?$</valueMatcher>
+        </filter>
+
+        <!-- Exclude auth/secure areas -->
+        <filter class="com.norconex.collector.core.filter.impl.ReferenceFilter" onMatch="exclude">
+          <valueMatcher method="regex">.*/(?:login|signin|register|secure|logout|auth|account|my-nab).*</valueMatcher>
+        </filter>
+
+        <!-- Exclude non-content assets (KEEP PDFs by not listing pdf) -->
+        <filter class="com.norconex.collector.core.filter.impl.ExtensionReferenceFilter" onMatch="exclude">
+          css,js,png,jpg,jpeg,gif,ico,zip,exe,svg,webp,mp4,mp3,woff,woff2,ttf,eot
+        </filter>
+      </referenceFilters>
+
+      <!-- Link extraction (omit <nofollow> text: not allowed in your schema) -->
+      <linkExtractors>
+        <extractor class="com.norconex.collector.http.link.impl.HtmlLinkExtractor"/>
+      </linkExtractors>
+
+      <!-- Importer: grab key fields -->
+      <importer>
+        <preParseHandlers>
+          <handler class="com.norconex.importer.handler.tagger.impl.DOMTagger">
+            <dom selector="title" toField="page_title" />
+            <dom selector="h1" toField="main_heading" />
+            <dom selector="meta[name='description']" toField="meta_description" extract="attr(content)" />
+            <dom selector="meta[property='og:description']" toField="og_description" extract="attr(content)" />
+          </handler>
+        </preParseHandlers>
+
+        <postParseHandlers>
+          <handler class="com.norconex.importer.handler.tagger.impl.KeepOnlyTagger">
+            <fieldMatcher method="regex">
+              ^(content|page_title|main_heading|meta_description|og_description|document\.reference|document\.contentType|collector\.depth)$
+            </fieldMatcher>
+          </handler>
+        </postParseHandlers>
+      </importer>
+
+      <!-- Change detection -->
+      <documentChecksummer class="com.norconex.collector.core.checksum.impl.MD5DocumentChecksummer" />
+
+      <!-- Committers -->
+      <committers>
+        <!-- Local XML mirror (debug) -->
+        <committer class="com.norconex.committer.core3.fs.impl.XMLFileCommitter">
+          <directory>./out/xml</directory>
+          <docsPerFile>50</docsPerFile>
+          <compress>false</compress>
+          <splitUpsertDelete>true</splitUpsertDelete>
+          <fileNamePrefix>nab-</fileNamePrefix>
+          <indent>2</indent>
+        </committer>
+
+        <!-- OpenSearch via Elasticsearch committer -->
+        <committer class="com.norconex.committer.elasticsearch.ElasticsearchCommitter">
+          <nodes>http://localhost:9200</nodes>
+          <indexName>demo_factory</indexName>
+          <ignoreResponseErrors>true</ignoreResponseErrors>
+          <discoverNodes>false</discoverNodes>
+          <connectionTimeout>60000</connectionTimeout>
+          <socketTimeout>60000</socketTimeout>
+
+          <sourceIdField>document.reference</sourceIdField>
+          <fieldMappings>
+            <mapping fromField="document.reference" toField="url" />
+            <mapping fromField="page_title" toField="title" />
+            <mapping fromField="meta_description" toField="description" />
+            <mapping fromField="main_heading" toField="heading" />
+            <mapping fromField="content" toField="content" />
+            <mapping fromField="collector.depth" toField="crawl_depth" />
+          </fieldMappings>
+
+          <queue class="com.norconex.committer.core3.batch.queue.impl.FSQueue">
+            <batchSize>20</batchSize>
+            <maxPerFolder>100</maxPerFolder>
+            <commitLeftoversOnInit>true</commitLeftoversOnInit>
+            <onCommitFailure>
+              <maxRetries>5</maxRetries>
+              <retryDelay>10000</retryDelay>
+              <ignoreErrors>false</ignoreErrors>
+            </onCommitFailure>
+          </queue>
+        </committer>
+      </committers>
+
+    </crawler>
+  </crawlers>
+</httpcollector>
