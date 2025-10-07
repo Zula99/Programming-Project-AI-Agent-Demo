@@ -223,15 +223,15 @@ export default function CrawlLogs() {
                 onClick={() => setSelectedRunId(run.run_id)}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {run.run_id.substring(0, 8)}...
+                  <p className="text-sm font-medium text-gray-900 truncate" title={run.target_url}>
+                    {run.target_url}
                   </p>
                   {run.status && <StatusBadge status={run.status as any} />}
                 </div>
-                <p className="text-xs text-gray-700 truncate">{run.target_url}</p>
+                <p className="text-xs text-gray-600 truncate" title={run.run_id}>ID: {run.run_id.substring(0, 12)}...</p>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-700">{run.log_count} logs</span>
-                  <span className="text-xs text-gray-700">
+                  <span className="text-xs text-gray-800">{run.log_count} logs</span>
+                  <span className="text-xs text-gray-800">
                     {formatTimestamp(run.last_activity)}
                   </span>
                 </div>
@@ -301,17 +301,17 @@ export default function CrawlLogs() {
                           {log.log_type}
                         </span>
                         {log.thread && (
-                          <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                          <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-800">
                             {log.thread}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-700">
+                      <span className="text-xs text-gray-800">
                         {formatTimestamp(log.timestamp)}
                       </span>
                     </div>
-                    
-                    <p className="text-sm text-gray-700 mb-1">{log.message}</p>
+
+                    <p className="text-sm text-gray-900 mb-1">{log.message}</p>
                     
                     {log.execution_stats && (
                       <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
@@ -329,10 +329,10 @@ export default function CrawlLogs() {
                     )}
                     
                     <details className="mt-2">
-                      <summary className="text-xs text-gray-700 cursor-pointer hover:text-gray-700">
+                      <summary className="text-xs text-gray-900 cursor-pointer hover:text-blue-600">
                         Raw log line
                       </summary>
-                      <pre className="text-xs text-gray-800 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
+                      <pre className="text-xs text-gray-900 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
                         {log.raw_log_line}
                       </pre>
                     </details>
@@ -340,14 +340,14 @@ export default function CrawlLogs() {
                 ))}
                 
                 {logs.length === 0 && !loading && (
-                  <div className="text-center py-8 text-gray-700">
+                  <div className="text-center py-8 text-gray-900">
                     No logs found for this run
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div className="text-center py-12 text-gray-700">
+            <div className="text-center py-12 text-gray-900">
               Select a crawl run to view its logs
             </div>
           )}
