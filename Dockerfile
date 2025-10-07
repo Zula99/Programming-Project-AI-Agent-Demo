@@ -39,8 +39,9 @@ RUN playwright install-deps chromium || echo "Some deps failed but continuing...
 # Copy backend application code
 COPY ai-agent-demo-factory-backend/ /app/backend/
 
-# Create output directory with proper permissions
+# Create output directories with proper permissions
 RUN mkdir -p /app/output && chmod 777 /app/output
+RUN mkdir -p /app/backend/output/agent_crawls /app/backend/output/cost_logs /app/backend/logs
 
 # Set Python path to include our modules
 ENV PYTHONPATH=/app/backend:/app
