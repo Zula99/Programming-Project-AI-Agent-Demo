@@ -1,3 +1,4 @@
+# Multi-system architecture supporting both Crawl4AI and Norconex crawlers
 services:
   # OpenSearch Service
   opensearch:
@@ -22,13 +23,16 @@ services:
         hard: 65536
     volumes:
       - opensearch_data:/usr/share/opensearch/data
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # OpenSearch Dashboards (Web Console)
+  # OpenSearch Dashboards
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2.14.0
     container_name: opensearch-dashboards
@@ -40,6 +44,9 @@ services:
     depends_on:
       opensearch:
         condition: service_healthy
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
       interval: 30s
@@ -47,11 +54,40 @@ services:
       retries: 5
       start_period: 60s
 
-  # FastAPI Backend Service
-  backend:
+  # Crawl4AI Backend (port 8000)
+  crawl4ai-backend:
+    build: .
+    container_name: crawl4ai-backend
+    env_file:
+      - ./ai-agent-demo-factory-backend/.env
+    environment:
+      - PYTHONIOENCODING=utf-8
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+    volumes:
+      - ./ai-agent-demo-factory-backend/output:/app/backend/output
+      - ./logs/crawl4ai:/app/backend/logs
+      - ./ai-agent-demo-factory-backend:/app/backend
+      - ./crawl4ai:/app/crawl4ai
+    ports:
+      - "8000:8000"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
+
+  # Norconex Backend (port 5000)
+  norconex-backend:
     build:
       context: ./ai-agent-demo-factory-backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.norconex
+    container_name: norconex-backend
     ports:
       - "5000:5000"
     volumes:
@@ -59,56 +95,61 @@ services:
       - ./norconex-runner/configs:/opt/norconex/configs:rw
       - ./norconex-runner/data:/opt/norconex/data:ro
       - ./norconex-runner/logs:/opt/norconex/logs:ro
+      - ./logs/norconex:/app/logs
     depends_on:
       opensearch:
         condition: service_healthy
-      norconex-maven:
-        condition: service_healthy
     environment:
-      OPENSEARCH_HOST: opensearch
-      OPENSEARCH_PORT: 9200
-      NORCONEX_MODE: "maven"
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./ai-agent-demo-factory-backend
-          target: /app
+      - OPENSEARCH_HOST=opensearch
+      - OPENSEARCH_PORT=9200
+      - NORCONEX_MODE=maven
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
 
-  # React Frontend Service
+  # Frontend (Next.js) - talks to both backends
   frontend:
     build:
       context: ./ai-agent-demo-factory-frontend
       dockerfile: Dockerfile
+    container_name: ai-agent-frontend
     ports:
       - "3000:3000"
     volumes:
-      - ./ai-agent-demo-factory-frontend:/app
-      - /app/node_modules
+      # Mount source but exclude node_modules to use container's native binaries
+      - ./ai-agent-demo-factory-frontend/src:/app/src
+      - ./ai-agent-demo-factory-frontend/public:/app/public
+      - ./ai-agent-demo-factory-frontend/next.config.ts:/app/next.config.ts
+      - ./ai-agent-demo-factory-frontend/tailwind.config.ts:/app/tailwind.config.ts
+      - ./ai-agent-demo-factory-frontend/tsconfig.json:/app/tsconfig.json
     depends_on:
-      - backend
+      - crawl4ai-backend
+      - norconex-backend
       - opensearch
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:5000
-      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
+      - NEXT_PUBLIC_CRAWL4AI_URL=http://crawl4ai-backend:8000
+      - NEXT_PUBLIC_NORCONEX_URL=http://norconex-backend:5000
       - OPENSEARCH_BASE_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=demo_factory
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./ai-agent-demo-factory-frontend
-          target: /app
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
 
   # Norconex Maven Runner Container
   norconex-maven:
     build:
       context: ./norconex-runner
       dockerfile: Dockerfile
+    container_name: norconex-maven
     volumes:
       - ./norconex-runner/data:/opt/norconex/data:rw
       - ./norconex-runner/configs:/opt/norconex/configs:rw
       - ./norconex-runner/logs:/opt/norconex/logs:rw
     environment:
       - JAVA_OPTS=-Xmx2g -Xms512m
+    networks:
+      - ai-agent-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "/usr/local/bin/health-check"]
       interval: 30s
@@ -116,6 +157,9 @@ services:
       retries: 3
       start_period: 60s
 
-# Define named volumes for persistent data storage
+networks:
+  ai-agent-network:
+    driver: bridge
+
 volumes:
-  opensearch_data: {}
+  opensearch_data:

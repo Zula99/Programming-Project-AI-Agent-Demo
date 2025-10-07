@@ -4,9 +4,9 @@ FROM openjdk:17-jdk-slim
 # Set working directory
 WORKDIR /app
 
-# Install Maven
+# Install Maven and bash
 RUN apt-get update && \
-    apt-get install -y maven && \
+    apt-get install -y maven bash && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

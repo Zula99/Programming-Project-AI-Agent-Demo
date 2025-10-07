@@ -118,7 +118,7 @@ class HybridCrawler:
         Returns:
             SitemapAnalysis with intelligence about site structure and sitemap availability
         """
-        self.logger.info(f"🔍 Analyzing site structure for {start_url}")
+        self.logger.info(f"Analyzing site structure for {start_url}")
         
         domain = urllib.parse.urlparse(start_url).netloc
         
@@ -197,18 +197,18 @@ class HybridCrawler:
                         # Get robots.txt intelligence
                         analysis.robots_intelligence = extractor.analyze_robots_txt(domain)
                         
-                        self.logger.info(f"✅ Found working sitemap: {sitemap_url}")
-                        self.logger.info(f"   Discovered {len(urls)} URLs")
+                        self.logger.info(f" Found working sitemap: {sitemap_url}")
+                        self.logger.info(f" Discovered {len(urls)} URLs")
                         break
                         
                 except Exception as e:
-                    self.logger.debug(f"   Sitemap {sitemap_url} failed: {e}")
+                    self.logger.debug(f"  Sitemap {sitemap_url} failed: {e}")
                     continue
             
             if not successful_sitemap:
-                self.logger.info("❌ No accessible sitemap found - will use progressive discovery")
-                analysis.discovery_metadata['sitemap_search_attempted'] = len(sitemap_candidates)
-                analysis.discovery_metadata['fallback_reason'] = 'No accessible sitemap'
+                self.logger.info(" No accessible sitemap found - will use progressive discovery")
+                analysis.discovery_metadata[' sitemap_search_attempted'] = len(sitemap_candidates)
+                analysis.discovery_metadata[' fallback_reason'] = 'No accessible sitemap'
             
             # Cleanup temp directory
             try:
@@ -240,7 +240,7 @@ class HybridCrawler:
         Returns:
             CrawlPlan with strategy, priority URLs, and configuration
         """
-        self.logger.info("📋 Creating intelligent crawl plan")
+        self.logger.info(" Creating intelligent crawl plan")
         
         # US-54 Strategy Selection: Only two scenarios
         if analysis.has_sitemap and analysis.sitemap_urls:
@@ -305,7 +305,7 @@ class HybridCrawler:
             reasoning=reasoning
         )
 
-        self.logger.info(f"📋 Crawl plan created:")
+        self.logger.info(f"   Crawl plan created:")
         self.logger.info(f"   Strategy: {strategy.value}")
         self.logger.info(f"   Priority URLs: {len(priority_urls)}")
         self.logger.info(f"   Est. coverage target: {estimated_coverage}")
@@ -427,7 +427,7 @@ class HybridCrawler:
                         'us54_scenario': 'A' if plan.strategy == DiscoveryStrategy.SITEMAP_FIRST else 'B',
                         'quality_plateau_triggered': stats.get('quality_plateau_stats', {}).get('should_stop', False)
                     })
-                    self.logger.info(f"📊 Coverage tracking finalized: {coverage_summary['final_coverage_percentage']:.1f}% coverage")
+                    self.logger.info(f" Coverage tracking finalized: {coverage_summary['final_coverage_percentage']:.1f}% coverage")
                 except Exception as e:
                     self.logger.warning(f"Failed to finalize coverage tracking: {e}")
             
