@@ -30,9 +30,9 @@ export default function BackendLogsDropdown({
 
   // Auto-scroll to bottom only if user is at the bottom
   useEffect(() => {
-    if (isExpanded && autoScroll) {
+    if (isExpanded && autoScroll && logsContainerRef.current) {
       isAutoScrollingRef.current = true; // Mark as programmatic scroll
-      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
 
       // Reset flag after scroll animation completes (smooth scrolling takes ~300-500ms)
       setTimeout(() => {
