@@ -5,6 +5,7 @@ import StatusBadge from './StatusBadge';
 
 interface LogEntry {
   run_id: string;
+  target_url?: string;
   timestamp: string;
   log_level: string;
   logger: string;
@@ -67,26 +68,27 @@ export default function CrawlLogs() {
         if (!runMap.has(runId)) {
           runMap.set(runId, {
             run_id: runId,
-            target_url: extractTargetUrl(log.message),
+            target_url: log.target_url || 'Unknown URL',
             status: extractStatus(log.message, log.log_level),
             log_count: 0,
             last_activity: log.timestamp
           });
         }
-        
+
         const run = runMap.get(runId)!;
         run.log_count++;
-        
+
         // Update last activity if this log is newer
         if (new Date(log.timestamp) > new Date(run.last_activity)) {
           run.last_activity = log.timestamp;
         }
-        
-        // Update status and URL from more specific log entries
-        if (log.message.includes('Executing crawl for') && log.message.includes('with config')) {
-          run.target_url = extractTargetUrl(log.message);
+
+        // Update target_url if we didn't have it before
+        if (!run.target_url && log.target_url) {
+          run.target_url = log.target_url;
         }
-        
+
+        // Update status from log entries
         if (log.message.includes('Crawl completed successfully') || log.message.includes('Crawl failed')) {
           run.status = log.message.includes('failed') ? 'failed' : 'complete';
         }
