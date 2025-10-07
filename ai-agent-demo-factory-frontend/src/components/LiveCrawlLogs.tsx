@@ -11,6 +11,7 @@ interface LiveCrawlLogsProps {
 
 export default function LiveCrawlLogs({ runId, onComplete, onFailed }: LiveCrawlLogsProps) {
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const logsContainerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [filter, setFilter] = useState<'ALL' | 'INFO' | 'WARN' | 'ERROR'>('ALL');
 
@@ -33,10 +34,10 @@ export default function LiveCrawlLogs({ runId, onComplete, onFailed }: LiveCrawl
     autoConnect: true,
   });
 
-  // Auto-scroll to bottom when new logs arrive
+  // Auto-scroll to bottom when new logs arrive (within container only, not the whole page)
   useEffect(() => {
-    if (autoScroll && logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll && logsContainerRef.current) {
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
     }
   }, [logs, autoScroll]);
 
@@ -71,7 +72,7 @@ export default function LiveCrawlLogs({ runId, onComplete, onFailed }: LiveCrawl
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-md border border-gray-200">
+    <div className="flex flex-col max-h-[600px] bg-white rounded-lg shadow-md border border-gray-200">
       {/* Header */}
       <div className="bg-gray-800 text-white px-4 py-3 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -153,7 +154,7 @@ export default function LiveCrawlLogs({ runId, onComplete, onFailed }: LiveCrawl
       )}
 
       {/* Logs Container */}
-      <div className="flex-1 overflow-y-auto p-4 font-mono text-sm bg-gray-50">
+      <div ref={logsContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-sm bg-gray-50">
         {filteredLogs.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             {isConnected ? 'Waiting for logs...' : 'Not connected. Logs will appear when crawl starts.'}
