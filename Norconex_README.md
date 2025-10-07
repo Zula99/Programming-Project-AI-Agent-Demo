@@ -30,10 +30,10 @@ docker-compose ps
 ## Architecture Overview
 
 ```
-┌─────────────────┐    WebSocket    ┌──────────────────┐
+┌─────────────────┐    WebSocket     ┌──────────────────┐
 │   Next.js UI    │◀───────────────▶│   FastAPI        │
-│   Port 3000     │    REST API     │   Backend        │
-│                 │─────────────────▶│   Port 5000      │
+│   Port 3000     │    REST API      │   Backend        │
+│                 │────────────────▶│   Port 5000      │
 └─────────────────┘                  └──────────────────┘
                                               │
                                               ▼
@@ -51,20 +51,60 @@ docker-compose ps
                           │  │  demo_factory_raw        │  │
                           │  │  (Raw crawl data)        │  │
                           │  └──────────────────────────┘  │
-                          │              │                  │
-                          │              ▼                  │
+                          │              │                 │
+                          │              ▼                 │
                           │  ┌──────────────────────────┐  │
                           │  │  Schema Processor        │  │
                           │  │  (Auto-enrichment)       │  │
                           │  └──────────────────────────┘  │
-                          │              │                  │
-                          │              ▼                  │
+                          │              │                 │
+                          │              ▼                 │
                           │  ┌──────────────────────────┐  │
                           │  │  demo_factory            │  │
                           │  │  (Search365 enriched)    │  │
                           │  └──────────────────────────┘  │
                           └────────────────────────────────┘
 ```
+
+## Norconex Runner Directory Structure
+
+The `norconex-runner/` directory contains the Java-based Norconex crawler implementation and all related configuration files.
+
+```
+norconex-runner/
+├── pom.xml                        # Parent Maven configuration
+├── mvnw / mvnw.cmd                # Maven wrapper scripts
+├── .mvn/wrapper/                  # Maven wrapper configuration
+├── Dockerfile                     # Container image definition
+├── trigger-crawler.sh             # Shell script to trigger crawler execution
+├── README.md                      # Module-specific documentation
+├── runner/                        # Main executable module
+│   ├── pom.xml                    # Runner module POM with shade plugin
+│   ├── src/main/java/
+│   │   └── io/demo/nx/
+│   │       └── Runner.java        # Main application entry point
+│   ├── src/main/resources/
+│   │   └── logback.xml            # Logging configuration
+│   ├── src/test/java/             # Unit tests
+│   └── target/                    # Build output directory (generated)
+│       └── runner-1.0.0-SNAPSHOT.jar  # Executable fat JAR with dependencies
+├── configs/                       # Crawler configuration files
+│   ├── base-crawl-template.xml    # Base template for crawler configuration
+│   ├── search365-basic-template.xml  # Search365-specific template
+│   ├── working-example.xml        # Working example configuration
+│   ├── crawler-helper.sh          # Helper script for crawler operations
+│   ├── crawler-{run_id}.xml       # Generated crawler configs with unique IDs
+│   ├── completed-{run_id}.json    # Status files for completed crawls
+│   ├── stop-{run_id}.json         # Stop signal files for crawler instances
+│   └── failed-{run_id}.json       # Status files for failed crawls
+├── logs/                          # Runtime log files
+│   ├── norconex-runner.log        # Main application log with rotation
+│   └── trigger.log                # Logs from the trigger script
+└── data/                          # Crawler working directory and output
+    ├── workdir/                   # Norconex working dir (state, queue, cache, MD5)
+    └── xml-output/                # Output directory for crawled data in XML
+```
+
 
 ## How to Use
 
@@ -152,7 +192,7 @@ After crawl completion, the **Schema Processor** automatically:
 - `https://books.toscrape.com/` - Fake bookstore
 - `https://scrapeme.live/shop/` - Pokemon shop
 
-⚠️ **Important:**
+**Important:**
 - Start with small sites for initial testing
 - Respect robots.txt and website ToS
 - Current limits: 50 pages max, 2 levels deep, 15-minute timeout
@@ -433,7 +473,7 @@ docker-compose logs backend | grep schema_processor
 
 ## Re-crawling Same Sites
 
-⚠️ **IMPORTANT**: Norconex uses MD5 checksums to detect duplicate URLs. To re-crawl the same site:
+**IMPORTANT**: Norconex uses MD5 checksums to detect duplicate URLs. To re-crawl the same site:
 
 ### Option 1: Clear Norconex Cache (Recommended)
 ```bash
@@ -482,27 +522,9 @@ docker-compose up -d
 - **Contents**: Checksums, crawl state, queues
 - **Purpose**: Duplicate detection, resume capability
 
-## System Requirements
-
-### Minimum
-- 4GB RAM
-- 2 CPU cores
-- 10GB disk space
-
-### Recommended
-- 8GB+ RAM
-- 4+ CPU cores
-- 50GB+ disk space (for large crawls)
-
-### Production
-- 16GB+ RAM
-- 8+ CPU cores
-- SSD storage
-- Load balancer for multiple frontends
-
 ## Security Notes
 
-⚠️ **Current Setup is Development-Only**
+**Current Setup is Development-Only**
 
 **Not Implemented (Add for Production):**
 - OpenSearch authentication (currently admin:admin)
@@ -585,10 +607,3 @@ docker-compose up -d
 - [ ] Content categorization
 - [ ] Duplicate content detection
 - [ ] Custom field extraction rules
-
-
-
-
-
-
-
