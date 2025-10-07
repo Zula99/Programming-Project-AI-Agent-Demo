@@ -209,14 +209,16 @@ def index_runner_log_entries(run_id: str, log_path: str, opensearch_url: str, in
                 else:
                     failed_count += 1
         
-        # Index other relevant log lines for this run
+        # Index other relevant log lines for this run (only lines that mention the run_id)
         lines = content.split('\n')
         for line in lines:
             if not line.strip():
                 continue
-            
-            # Look for log lines that might be related to our run
-            # This is a heuristic based on timing and context
+
+            # Only index runner logs that explicitly mention this run_id
+            if run_id not in line:
+                continue
+
             log_entry = parse_runner_log_line(line.strip(), run_id, target_url)
             if log_entry:
                 success = index_log_entry(log_entry, opensearch_url, index_name)
