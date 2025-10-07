@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // For server-side API routes, use internal Docker service name
-const BACKEND_URL = "http://backend:5000";
+const BACKEND_URL = "http://norconex-backend:5000";
 
 export async function GET() {
     try {

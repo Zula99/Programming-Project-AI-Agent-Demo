@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ runI
     }
 
     // Forward request to FastAPI backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://backend:5000";
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://norconex-backend:5000";
     
     const response = await fetch(`${backendUrl}/status/${runId}`, {
       method: "GET",
