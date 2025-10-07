@@ -66,6 +66,10 @@ temp/
 # Screenshots (keep in repo but don't copy to container unnecessarily)
 Screenshot*.png
 
+# Environment files (should be loaded at runtime, not baked into image)
+.env
+.env.*
+
 # Docker files themselves
 Dockerfile
 docker-compose*.yml

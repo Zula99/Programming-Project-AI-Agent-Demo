@@ -64,7 +64,7 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 RUN playwright install chromium
 RUN playwright install-deps chromium || echo "Some deps failed but continuing..."
 
-# Copy backend application code (includes .env now)
+# Copy backend application code (.env loaded at runtime via docker-compose)
 COPY ai-agent-demo-factory-backend/ /app/backend/
 
 # Copy built frontend standalone output from frontend-builder stage

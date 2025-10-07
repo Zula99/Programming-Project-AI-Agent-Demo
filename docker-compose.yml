@@ -4,14 +4,13 @@ services:
   app:
     build: .
     container_name: ai-agent-app
+    env_file:
+      - ./ai-agent-demo-factory-backend/.env  # Load environment variables from .env file at runtime
     environment:
       - PYTHONIOENCODING=utf-8
       - LANG=C.UTF-8
       - LC_ALL=C.UTF-8
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api
-      # Add API keys when needed
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     volumes:
       # Mount output directory to host for persistent storage
       - ./ai-agent-demo-factory-backend/output:/app/backend/output
