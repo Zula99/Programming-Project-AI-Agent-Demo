@@ -7,7 +7,7 @@ export default function URLBar() {
 
     return (
         <div className="flex items-center gap-2 mt-4">
-            <div className="flex items-center flex-1 bg-white text-gray-300 border rounded-lg px-3 py-2">
+            <div className="flex items-center flex-1 bg-white text-gray-700 border rounded-lg px-3 py-2">
                 <input
                     type="text"
                     value={url}
@@ -21,7 +21,7 @@ export default function URLBar() {
                             hover:shadow-lg hover:bg-blue-700">
                 Start crawl
             </button>
-            <button className="border bg-gray-200 text-gray-500 px-3 py-2 rounded-lg
+            <button className="border bg-gray-200 text-gray-700 px-3 py-2 rounded-lg
                                 hover:shadow-lg hover:bg-gray-300 hover:text-gray-700">
                 Crawler settings
             </button>

@@ -10,8 +10,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
-    const base = process.env.OPENSEARCH_BASE_URL || "http://localhost:9200";
-    const index = process.env.OPENSEARCH_INDEX || "nab_search";
+    // For Docker environment, use the service name, for local fallback to localhost
+    const base = process.env.OPENSEARCH_BASE_URL || "http://opensearch:9200";
+    const index = process.env.OPENSEARCH_INDEX || "demo_factory";
 
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (process.env.OPENSEARCH_USERNAME && process.env.OPENSEARCH_PASSWORD) {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
           query: {
             multi_match: {
               query,
-              fields: ["title^3", "description^2", "content"],
+              fields: ["title^3", "content", "url"],
               type: "best_fields",
               fuzziness: "AUTO",
             },
@@ -39,7 +40,6 @@ export async function POST(req: NextRequest) {
           highlight: {
             fields: {
               title: {},
-              description: {},
               content: { fragment_size: 150, number_of_fragments: 2 },
             },
           },

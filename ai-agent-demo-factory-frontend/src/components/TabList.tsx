@@ -1,5 +1,5 @@
 import { useId } from "react";
-type Tab = "data" | "config" | "logs";
+type Tab = "data" | "config" | "stats";
 
 export default function TabList({
   value,
@@ -12,7 +12,7 @@ export default function TabList({
   const tabs: { key: Tab; label: string }[] = [
     { key: "data", label: "Data" },
     { key: "config", label: "Config" },
-    { key: "logs", label: "Logs" },
+    { key: "stats", label: "Stats" },
   ];
 
   return (
@@ -31,7 +31,7 @@ export default function TabList({
                 "relative -mb-px rounded-t-lg px-3 py-2 text-sm font-medium transition-colors",
                 active
                   ? "text-blue-600"
-                  : "text-gray-500 hover:text-gray-700",
+                  : "text-gray-700 hover:text-gray-700",
               ].join(" ")}
             >
               {t.label}
