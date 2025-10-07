@@ -2,11 +2,41 @@ import os
 import json
 import requests
 import re
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Dict, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+def extract_target_url_from_config(run_id: str) -> Optional[str]:
+    """
+    Extract the target URL from the crawler config file.
+    """
+    config_path = f"/opt/norconex/configs/crawler-{run_id}.xml"
+
+    # Fallback for development
+    if not os.path.exists(config_path):
+        config_path = f"./norconex-runner/configs/crawler-{run_id}.xml"
+
+    if not os.path.exists(config_path):
+        return None
+
+    try:
+        tree = ET.parse(config_path)
+        root = tree.getroot()
+
+        # Find the startURLs element
+        start_urls_elem = root.find(".//startURLs")
+        if start_urls_elem is not None:
+            url_elem = start_urls_elem.find("url")
+            if url_elem is not None and url_elem.text:
+                return url_elem.text.strip()
+
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to extract target URL from config: {e}")
+        return None
 
 def index_crawl_logs_to_opensearch(run_id: str, opensearch_url: str = "http://opensearch:9200", index_name: str = "crawl_logs") -> Dict:
     """
@@ -35,21 +65,24 @@ def index_crawl_logs_to_opensearch(run_id: str, opensearch_url: str = "http://op
     indexed_count = 0
     failed_count = 0
     errors = []
-    
+
+    # Extract target URL from config file
+    target_url = extract_target_url_from_config(run_id)
+
     try:
         # Create index if it doesn't exist
         create_crawl_logs_index(opensearch_url, index_name)
-        
+
         # Index trigger log entries
         if os.path.exists(trigger_log_path):
-            trigger_results = index_trigger_log_entries(run_id, trigger_log_path, opensearch_url, index_name)
+            trigger_results = index_trigger_log_entries(run_id, trigger_log_path, opensearch_url, index_name, target_url)
             indexed_count += trigger_results.get('indexed', 0)
             failed_count += trigger_results.get('failed', 0)
             errors.extend(trigger_results.get('errors', []))
-        
+
         # Index detailed crawler log entries
         if os.path.exists(runner_log_path):
-            runner_results = index_runner_log_entries(run_id, runner_log_path, opensearch_url, index_name)
+            runner_results = index_runner_log_entries(run_id, runner_log_path, opensearch_url, index_name, target_url)
             indexed_count += runner_results.get('indexed', 0)
             failed_count += runner_results.get('failed', 0)
             errors.extend(runner_results.get('errors', []))
@@ -87,6 +120,7 @@ def create_crawl_logs_index(opensearch_url: str, index_name: str) -> bool:
             "mappings": {
                 "properties": {
                     "run_id": {"type": "keyword"},
+                    "target_url": {"type": "keyword"},
                     "timestamp": {"type": "date"},
                     "log_level": {"type": "keyword"},
                     "logger": {"type": "keyword"},
@@ -119,25 +153,25 @@ def create_crawl_logs_index(opensearch_url: str, index_name: str) -> bool:
         logger.error(f"Error creating crawl logs index: {e}")
         return False
 
-def index_trigger_log_entries(run_id: str, log_path: str, opensearch_url: str, index_name: str) -> Dict:
+def index_trigger_log_entries(run_id: str, log_path: str, opensearch_url: str, index_name: str, target_url: Optional[str] = None) -> Dict:
     """
     Parse and index trigger log entries for a specific run.
     """
     indexed_count = 0
     failed_count = 0
     errors = []
-    
+
     try:
         with open(log_path, 'r') as f:
             lines = f.readlines()
-        
+
         for line in lines:
             line = line.strip()
             if not line or run_id not in line:
                 continue
-            
+
             # Parse trigger log line
-            log_entry = parse_trigger_log_line(line, run_id)
+            log_entry = parse_trigger_log_line(line, run_id, target_url)
             if log_entry:
                 success = index_log_entry(log_entry, opensearch_url, index_name)
                 if success:
@@ -152,22 +186,22 @@ def index_trigger_log_entries(run_id: str, log_path: str, opensearch_url: str, i
     
     return {"indexed": indexed_count, "failed": failed_count, "errors": errors}
 
-def index_runner_log_entries(run_id: str, log_path: str, opensearch_url: str, index_name: str) -> Dict:
+def index_runner_log_entries(run_id: str, log_path: str, opensearch_url: str, index_name: str, target_url: Optional[str] = None) -> Dict:
     """
     Parse and index runner log entries for a specific run.
     """
     indexed_count = 0
     failed_count = 0
     errors = []
-    
+
     try:
         with open(log_path, 'r') as f:
             content = f.read()
-        
+
         # Find execution summary for this run
         summary_match = find_execution_summary_for_run(content, run_id)
         if summary_match:
-            log_entry = parse_execution_summary(summary_match, run_id)
+            log_entry = parse_execution_summary(summary_match, run_id, target_url)
             if log_entry:
                 success = index_log_entry(log_entry, opensearch_url, index_name)
                 if success:
@@ -183,7 +217,7 @@ def index_runner_log_entries(run_id: str, log_path: str, opensearch_url: str, in
             
             # Look for log lines that might be related to our run
             # This is a heuristic based on timing and context
-            log_entry = parse_runner_log_line(line.strip(), run_id)
+            log_entry = parse_runner_log_line(line.strip(), run_id, target_url)
             if log_entry:
                 success = index_log_entry(log_entry, opensearch_url, index_name)
                 if success:
@@ -198,27 +232,34 @@ def index_runner_log_entries(run_id: str, log_path: str, opensearch_url: str, in
     
     return {"indexed": indexed_count, "failed": failed_count, "errors": errors}
 
-def parse_trigger_log_line(line: str, run_id: str) -> Optional[Dict]:
+def parse_trigger_log_line(line: str, run_id: str, target_url: Optional[str] = None) -> Optional[Dict]:
     """
     Parse a trigger log line into a structured log entry.
     """
     try:
-        # Example: Mon Aug 25 07:20:35 UTC 2025: Found trigger file: /opt/norconex/configs/trigger-{run_id}.json
-        timestamp_match = re.match(r'^(\w+ \w+ \d+ \d+:\d+:\d+ \w+ \d+):\s*(.+)$', line)
+        # Example: Tue Oct  7 10:24:36 UTC 2025: Found trigger file (note: double space before single-digit day)
+        timestamp_match = re.match(r'^(\w+ \w+ +\d+ \d+:\d+:\d+ \w+ \d+):\s*(.+)$', line)
         if not timestamp_match:
             return None
-        
+
         timestamp_str = timestamp_match.group(1)
         message = timestamp_match.group(2)
-        
+
         # Convert timestamp to ISO format
+        # Example: Tue Oct  7 10:24:36 UTC 2025
         try:
-            timestamp = datetime.strptime(timestamp_str, '%a %b %d %H:%M:%S %Z %Y')
+            # Remove timezone from string and parse without it
+            # Format: "Tue Oct  7 10:24:36 UTC 2025" -> "Tue Oct  7 10:24:36 2025"
+            timestamp_no_tz = re.sub(r'\s+\w+\s+(\d{4})$', r' \1', timestamp_str)
+            # Handle variable spacing in day field (single space or multiple spaces)
+            timestamp_normalized = re.sub(r'\s+', ' ', timestamp_no_tz)
+            timestamp = datetime.strptime(timestamp_normalized, '%a %b %d %H:%M:%S %Y')
             iso_timestamp = timestamp.isoformat() + 'Z'
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to parse timestamp '{timestamp_str}': {e}, using current time")
             iso_timestamp = datetime.utcnow().isoformat() + 'Z'
-        
-        return {
+
+        result = {
             "run_id": run_id,
             "timestamp": iso_timestamp,
             "log_level": "INFO",
@@ -227,12 +268,17 @@ def parse_trigger_log_line(line: str, run_id: str) -> Optional[Dict]:
             "log_type": "trigger",
             "raw_log_line": line
         }
-        
+
+        if target_url:
+            result["target_url"] = target_url
+
+        return result
+
     except Exception as e:
         logger.error(f"Error parsing trigger log line: {e}")
         return None
 
-def parse_runner_log_line(line: str, run_id: str) -> Optional[Dict]:
+def parse_runner_log_line(line: str, run_id: str, target_url: Optional[str] = None) -> Optional[Dict]:
     """
     Parse a runner log line into a structured log entry.
     """
@@ -240,24 +286,24 @@ def parse_runner_log_line(line: str, run_id: str) -> Optional[Dict]:
         # Example: 2025-08-24 17:24:00.109 [main] INFO  io.demo.nx.Runner - Norconex Runner starting with 0 arguments
         log_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3})\s+\[([^\]]+)\]\s+(\w+)\s+([^\s]+)\s+-\s+(.+)$'
         match = re.match(log_pattern, line)
-        
+
         if not match:
             return None
-        
+
         timestamp_str = match.group(1)
         thread = match.group(2)
         log_level = match.group(3)
         logger_name = match.group(4)
         message = match.group(5)
-        
+
         # Convert timestamp to ISO format
         try:
             timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
             iso_timestamp = timestamp.isoformat() + 'Z'
         except:
             iso_timestamp = datetime.utcnow().isoformat() + 'Z'
-        
-        return {
+
+        result = {
             "run_id": run_id,
             "timestamp": iso_timestamp,
             "log_level": log_level,
@@ -267,6 +313,11 @@ def parse_runner_log_line(line: str, run_id: str) -> Optional[Dict]:
             "thread": thread,
             "raw_log_line": line
         }
+
+        if target_url:
+            result["target_url"] = target_url
+
+        return result
         
     except Exception as e:
         logger.error(f"Error parsing runner log line: {e}")
@@ -301,7 +352,7 @@ def find_execution_summary_for_run(content: str, run_id: str) -> Optional[str]:
         logger.error(f"Error finding execution summary: {e}")
         return None
 
-def parse_execution_summary(summary_text: str, run_id: str) -> Optional[Dict]:
+def parse_execution_summary(summary_text: str, run_id: str, target_url: Optional[str] = None) -> Optional[Dict]:
     """
     Parse execution summary into a structured log entry.
     """
@@ -311,21 +362,21 @@ def parse_execution_summary(summary_text: str, run_id: str) -> Optional[Dict]:
         duration_match = re.search(r'Crawl duration:\s*([^\n]+)', summary_text)
         throughput_match = re.search(r'Avg\. throughput:\s*([^\n]+)', summary_text)
         events_match = re.search(r'Event counts:\s*\n((?:\s*[A-Z_]+:\s*\d+\s*\n)*)', summary_text, re.MULTILINE)
-        
+
         execution_stats = {}
-        
+
         if total_match:
             execution_stats['total_processed'] = int(total_match.group(1))
-        
+
         if duration_match:
             execution_stats['crawl_duration'] = duration_match.group(1).strip()
-        
+
         if throughput_match:
             throughput_str = throughput_match.group(1).strip()
             throughput_num_match = re.search(r'([0-9.]+)\s+processed/seconds', throughput_str)
             if throughput_num_match:
                 execution_stats['avg_throughput'] = float(throughput_num_match.group(1))
-        
+
         if events_match:
             events_section = events_match.group(1)
             event_counts = {}
@@ -336,8 +387,8 @@ def parse_execution_summary(summary_text: str, run_id: str) -> Optional[Dict]:
                     if event_match:
                         event_counts[event_match.group(1)] = int(event_match.group(2))
             execution_stats['event_counts'] = event_counts
-        
-        return {
+
+        result = {
             "run_id": run_id,
             "timestamp": datetime.utcnow().isoformat() + 'Z',
             "log_level": "INFO",
@@ -347,7 +398,12 @@ def parse_execution_summary(summary_text: str, run_id: str) -> Optional[Dict]:
             "execution_stats": execution_stats,
             "raw_log_line": summary_text
         }
-        
+
+        if target_url:
+            result["target_url"] = target_url
+
+        return result
+
     except Exception as e:
         logger.error(f"Error parsing execution summary: {e}")
         return None
