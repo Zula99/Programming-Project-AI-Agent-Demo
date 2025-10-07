@@ -477,12 +477,13 @@ docker-compose logs backend | grep schema_processor
 
 ### Option 1: Clear Norconex Cache (Recommended)
 ```bash
-# Delete checksums and workdir
-docker exec norconex-runner rm -rf /opt/norconex/data/workdir/*
+# Delete checksums and workdir (use norconex-maven container name)
+docker exec norconex-maven rm -rf /opt/norconex/data/workdir/*
+docker exec norconex-maven rm -rf /opt/norconex/data/xml-output/*
 
 # Delete OpenSearch indexes
-curl -X DELETE -u admin:admin http://localhost:9200/demo_factory
-curl -X DELETE -u admin:admin http://localhost:9200/demo_factory_raw
+curl -X DELETE http://localhost:9200/demo_factory
+curl -X DELETE http://localhost:9200/demo_factory_raw
 
 # Verify cleanup
 curl http://localhost:9200/_cat/indices?v
@@ -495,14 +496,34 @@ curl http://localhost:9200/_cat/indices?v
 # Second crawl: https://example.com/about
 ```
 
-### Option 3: Nuclear Reset
+### Option 3: Nuclear Reset (Clean Everything)
+**Use this when you have conflicting volumes from multiple repo copies or need a complete fresh start:**
+
 ```bash
-# Complete system reset
+# Stop all containers
 docker-compose down
-docker volume rm $(docker volume ls -q | grep opensearch) 2>/dev/null
-rm -rf norconex-runner/data/workdir/*
+
+# Clean old volumes from previous repo instances
+docker volume rm programming-project-ai-agent-demo_opensearch-data 2>/dev/null
+docker volume rm programming-project-ai-agent-demo_opensearch_data 2>/dev/null
+docker volume rm programming-project-ai-agent-demo_elasticsearch-data 2>/dev/null
+
+# Clean local Norconex data (may require sudo if files are root-owned)
+sudo rm -rf norconex-runner/data/workdir/*
+sudo rm -rf norconex-runner/data/xml-output/*
+
+# Start fresh
 docker-compose up -d
+
+# Verify all services are running
+docker-compose ps
 ```
+
+**When to use Nuclear Reset:**
+- Copied repo to a new location and volumes are conflicting
+- Data not appearing in OpenSearch after successful crawls
+- Multiple repo instances causing volume name conflicts
+- Complete fresh start needed for testing/demo
 
 ## Data Persistence
 
