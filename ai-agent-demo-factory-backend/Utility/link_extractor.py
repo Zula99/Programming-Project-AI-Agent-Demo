@@ -551,16 +551,19 @@ class LinkExtractor:
             logger.warning(f"FORCE STOP detected before AI classification")
             return [], processing_stats
 
+        # Limit URLs BEFORE AI classification to avoid classifying thousands of URLs
+        urls_to_classify = filtered_urls
+        if max_urls and len(filtered_urls) > max_urls:
+            urls_to_classify = filtered_urls[:max_urls]
+            logger.info(f"Limiting AI classification to first {max_urls} URLs (out of {len(filtered_urls)} total)")
+
         # Apply AI classification for prioritization
-        if filtered_urls:
-            prioritized_results = await self.intelligent_url_filtering(filtered_urls, sample_content)
-            
-            # Extract URLs and apply limit if specified
+        if urls_to_classify:
+            prioritized_results = await self.intelligent_url_filtering(urls_to_classify, sample_content)
+
+            # Extract URLs (already limited before classification)
             final_urls = [url for url, confidence, reasoning in prioritized_results]
-            if max_urls:
-                final_urls = final_urls[:max_urls]
-                logger.info(f"Limited output to top {len(final_urls)} URLs by AI confidence")
-            
+
             processing_stats['ai_classified_urls'] = len(prioritized_results)
             processing_stats['final_url_count'] = len(final_urls)
             processing_stats['average_confidence'] = sum(conf for _, conf, _ in prioritized_results) / len(prioritized_results)

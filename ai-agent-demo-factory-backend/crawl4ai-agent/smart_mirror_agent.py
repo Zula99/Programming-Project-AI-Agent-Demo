@@ -211,8 +211,16 @@ class SmartMirrorAgent:
     async def reconnaissance(self, url: str) -> ReconResults:
         """Quick reconnaissance to understand site characteristics and plan smart crawling"""
         self.logger.info(f"Performing reconnaissance on {url}")
-        
+
+        # Store original callback to restore later
+        original_callback = self.crawler.progress_callback
+
         try:
+            # Temporarily disable progress_callback for reconnaissance
+            # Reconnaissance should NOT update frontend metrics
+            self.crawler.progress_callback = None
+            self.logger.info("Disabled progress callback for reconnaissance phase")
+
             # Quick crawl of homepage for analysis
             success, crawl_data = await self.crawler.crawl_website(
                 url=url,
@@ -220,7 +228,7 @@ class SmartMirrorAgent:
                 request_gap=0.3,  # Fast for recon
                 user_agent="Mozilla/5.0 (compatible; SmartMirrorAgent-Recon/1.0)"
             )
-            
+
             if not success:
                 self.logger.warning("Reconnaissance failed, using fallback analysis")
                 return self._fallback_recon(url)
@@ -270,10 +278,14 @@ class SmartMirrorAgent:
                 content_depth_estimate=len(homepage_result.markdown),
                 recommended_sample_size=recommended_sample_size
             )
-            
+
         except Exception as e:
             self.logger.error(f"Reconnaissance failed: {e}")
             return self._fallback_recon(url)
+        finally:
+            # Always restore progress_callback, even if exception occurred
+            self.crawler.progress_callback = original_callback
+            self.logger.info("Restored progress callback after reconnaissance phase")
         
     def select_strategy(self, recon: ReconResults, similar_pattern: Optional[SitePattern]) -> CrawlStrategy:
         """Select optimal crawling strategy based on reconnaissance and memory"""

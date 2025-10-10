@@ -339,8 +339,11 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                         quality_score = result.ai_classification.get('confidence', None)
 
                     await notify_page_crawled(config.run_id, url, result.success and not is_duplicate, quality_score)
+                    _logger.info(f"Coverage tracking: Notified page crawled for {url}")
                 except Exception as e:
-                    _logger.debug(f"Coverage tracking notification failed: {e}")
+                    _logger.warning(f"Coverage tracking notification failed: {e}")
+                    import traceback
+                    _logger.warning(f"Traceback: {traceback.format_exc()}")
 
             if result.success and not is_duplicate:
                 pages_crawled += 1
@@ -408,8 +411,11 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                 if COVERAGE_TRACKING_AVAILABLE and config.run_id and new_urls:
                     try:
                         await notify_urls_discovered(config.run_id, new_urls)
+                        _logger.info(f"Coverage tracking: Notified {len(new_urls)} new URLs discovered")
                     except Exception as e:
-                        _logger.debug(f"Coverage tracking URL discovery notification failed: {e}")
+                        _logger.warning(f"Coverage tracking URL discovery notification failed: {e}")
+                        import traceback
+                        _logger.warning(f"Traceback: {traceback.format_exc()}")
 
                 # Quality plateau monitoring and intelligent stopping
                 if plateau_monitor:

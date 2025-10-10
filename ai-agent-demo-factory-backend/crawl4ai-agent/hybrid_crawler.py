@@ -518,8 +518,25 @@ class HybridCrawler:
                 except Exception:
                     pass
 
+            # Initialize coverage tracking if available
+            start_url = plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]
+            self.logger.info(f"Checking coverage tracking: run_id={run_id}, available={COVERAGE_TRACKING_AVAILABLE}")
+            if run_id and COVERAGE_TRACKING_AVAILABLE:
+                try:
+                    sitemap_urls = plan.sitemap_analysis.sitemap_urls if hasattr(plan, 'sitemap_analysis') and plan.sitemap_analysis else None
+                    self.logger.info(f"Initializing coverage tracking with {len(sitemap_urls) if sitemap_urls else 0} sitemap URLs")
+                    coverage_calculator = await initialize_coverage_tracking(run_id, start_url, sitemap_urls)
+                    coverage_calculator.set_phase(CrawlPhase.CRAWLING)
+                    self.logger.info(f"Coverage tracking initialized successfully for run_id: {run_id}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to initialize coverage tracking: {e}")
+                    import traceback
+                    self.logger.warning(f"Traceback: {traceback.format_exc()}")
+            else:
+                self.logger.info(f"Coverage tracking NOT initialized - run_id={run_id}, available={COVERAGE_TRACKING_AVAILABLE}")
+
             # Create crawl config from plan
-            domain = urllib.parse.urlparse(plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]).netloc
+            domain = urllib.parse.urlparse(start_url).netloc
             # Use user-provided max_pages if specified, otherwise use plan recommendation
             pages_limit = max_pages if max_pages is not None else plan.max_pages_recommendation
             crawl_config = CrawlConfig(
@@ -528,7 +545,7 @@ class HybridCrawler:
                 max_pages=pages_limit,
                 request_gap=0.8,
                 respect_robots=False,
-                start_url=plan.priority_urls[0] if plan.priority_urls else plan.start_url,
+                start_url=start_url,
                 cost_tracker=cost_tracker,  # Add cost tracking
                 run_id=run_id  # Pass run_id for stop checking in crawl loop
             )

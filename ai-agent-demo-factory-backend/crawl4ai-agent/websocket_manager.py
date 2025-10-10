@@ -194,6 +194,9 @@ async def notify_page_crawled(run_id: str, url: str, success: bool, quality_scor
         calculator.mark_url_crawled(url, success, quality_score)
         await broadcast_coverage_update(run_id)
 
+        # Also broadcast to main crawl4ai WebSocket (for frontend progress panel)
+        await _broadcast_progress_to_main_websocket(run_id, calculator)
+
 
 async def notify_urls_discovered(run_id: str, new_urls: list):
     """Notify that new URLs have been discovered"""
@@ -201,6 +204,54 @@ async def notify_urls_discovered(run_id: str, new_urls: list):
     if calculator:
         calculator.add_discovered_urls(new_urls)
         await broadcast_coverage_update(run_id)
+
+        # Also broadcast to main crawl4ai WebSocket (for frontend progress panel)
+        await _broadcast_progress_to_main_websocket(run_id, calculator)
+
+
+async def _broadcast_progress_to_main_websocket(run_id: str, calculator):
+    """
+    Broadcast progress update to main crawl4ai WebSocket system.
+
+    This allows the frontend CrawlProgressPanel to receive real-time updates
+    even though it connects to /crawl4ai/ws/{run_id} instead of /ws/coverage/{run_id}.
+    """
+    try:
+        # Import websocket_connections from websocket_log_handler (used by main.py)
+        from websocket_log_handler import websocket_connections
+        import json
+
+        snapshot = calculator.get_current_snapshot()
+
+        # Format progress message for frontend
+        progress_message = {
+            "type": "progress",
+            "progress": {
+                "pages_crawled": snapshot.pages_crawled,
+                "total_pages": snapshot.total_known_urls,
+                "pages_remaining": max(0, snapshot.total_known_urls - snapshot.pages_crawled),
+                "percentage": round(snapshot.coverage_percentage, 2),
+                "crawl_speed": round(snapshot.crawl_velocity, 2),
+                "estimated_time_remaining": snapshot.estimated_time_remaining or 0
+            }
+        }
+
+        # Broadcast to websocket connections
+        if run_id in websocket_connections:
+            dead_connections = []
+            for ws in websocket_connections[run_id]:
+                try:
+                    await ws.send_text(json.dumps(progress_message))
+                except Exception:
+                    dead_connections.append(ws)
+
+            # Remove dead connections
+            for dead_ws in dead_connections:
+                websocket_connections[run_id].remove(dead_ws)
+
+    except Exception as e:
+        # Silently fail - don't break the crawl if WebSocket broadcast fails
+        pass
 
 
 async def cleanup_websocket_connections(run_id: str):

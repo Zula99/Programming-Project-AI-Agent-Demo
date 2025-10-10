@@ -247,25 +247,29 @@ def generate_run_id() -> str:
 async def initialize_coverage_tracking(run_id: str, start_url: str, sitemap_urls: Optional[List[str]] = None) -> CoverageCalculator:
     """
     Initialize coverage tracking for new crawl
-    
+
     To be called from crawler when starting new crawl job
     """
     calculator = create_coverage_calculator(run_id)
     calculator.set_phase(CrawlPhase.INITIALIZING)
-    
+
     if sitemap_urls:
         calculator.initialize_sitemap_urls(sitemap_urls)
         logger.info(f"Initialized coverage tracking for {run_id} with {len(sitemap_urls)} sitemap URLs")
     else:
         logger.info(f"Initialized coverage tracking for {run_id} with progressive discovery")
-    
+
     # Notify WebSocket clients
     await websocket_manager.broadcast_crawl_event(run_id, 'crawl_initialized', {
         'start_url': start_url,
         'has_sitemap': bool(sitemap_urls),
         'initial_url_count': len(sitemap_urls) if sitemap_urls else 1
     })
-    
+
+    # Broadcast initial coverage state so frontend sees total_pages immediately
+    from websocket_manager import broadcast_coverage_update
+    await broadcast_coverage_update(run_id)
+
     return calculator
 
 
