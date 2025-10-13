@@ -28,6 +28,10 @@ app = FastAPI()
 from Proxy.proxy_server import app as proxy_app
 app.mount("/proxy-api", proxy_app)
 
+# Include indexing API router (Phase 2+)
+from API.indexing_routes import router as indexing_router
+app.include_router(indexing_router)
+
 # Configure CORS to allow frontend requests
 app.add_middleware(
     CORSMiddleware,
