@@ -7,14 +7,15 @@
 3.  [Module Reference](#module-reference)
 4.  [Data Flow](#data-flow)
 5.  [API Reference](#api-reference)
-6.  [Developer Guide](#developer-guide)
-7.  [Configuration](#configuration)
-8.  [Integration Guide](#integration-guide)
-9.  [Code Examples](#code-examples)
-10. [Performance & Optimization](#performance--optimization)
-11. [Error Handling](#error-handling)
-12. [Deployment](#deployment)
-13. [Troubleshooting](#troubleshooting)
+6.  [Manual Operations Guide](#manual-operations-guide)
+7.  [Developer Guide](#developer-guide)
+8.  [Configuration](#configuration)
+9.  [Integration Guide](#integration-guide)
+10. [Code Examples](#code-examples)
+11. [Performance & Optimization](#performance--optimization)
+12. [Error Handling](#error-handling)
+13. [Deployment](#deployment)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -1434,6 +1435,144 @@ Search indexed content.
         }
     ]
 }
+```
+
+---
+
+## Manual Operations Guide
+
+Quick guide for working with crawled data until the UI is available.
+
+### Find Your Crawl Data
+
+After a crawl completes, find it here:
+```bash
+./output/agent_crawls/{domain}/{run_id}/
+```
+
+Example:
+```bash
+ls ./output/agent_crawls/nab.com.au/
+# Shows: abc123-def456/
+
+ls ./output/agent_crawls/nab.com.au/abc123-def456/
+# Shows: run_metadata.json, nab.com.au/ (crawled content)
+```
+
+---
+
+### Index to OpenSearch
+
+Create a Python script to index your crawl:
+
+```python
+# index_crawl.py
+from Utility.opensearch_integration import Crawl4AIOpenSearchIntegration, OpenSearchConfig
+
+# Set your values
+DOMAIN = "nab.com.au"
+RUN_ID = "abc123-def456"
+
+# Initialize OpenSearch
+config = OpenSearchConfig(host="opensearch-demo", port=9200, scheme="http")
+opensearch = Crawl4AIOpenSearchIntegration(config)
+
+# Index crawl data
+index_name = f"demo-{DOMAIN.replace('.', '_')}-{RUN_ID}"
+crawl_dir = f"./output/agent_crawls/{DOMAIN}/{RUN_ID}/{DOMAIN}"
+
+stats = opensearch.index_crawl4ai_data(
+    crawl_output_dir=crawl_dir,
+    index_name=index_name,
+    batch_size=100
+)
+
+print(f"✓ Indexed {stats['documents_indexed']} documents to {index_name}")
+```
+
+Run it:
+```bash
+cd ai-agent-demo-factory-backend
+python index_crawl.py
+```
+
+Verify:
+```bash
+# Check index was created
+curl http://localhost:9200/_cat/indices/demo-*?v
+
+# Check document count
+curl http://localhost:9200/demo-nab_com_au-abc123-def456/_count
+```
+
+---
+
+### Configure Proxy
+
+Create a script to launch the proxy:
+
+```python
+# launch_proxy.py
+import requests
+
+TARGET_URL = "https://www.nab.com.au"
+RUN_ID = "abc123-def456"
+
+response = requests.post("http://localhost:8000/proxy-api/auto-configure", json={
+    "target_url": TARGET_URL,
+    "run_id": RUN_ID,
+    "enabled": True
+})
+
+print("✓ Proxy configured!")
+print("  Access at: http://localhost:8000/proxy/")
+```
+
+Run it:
+```bash
+python launch_proxy.py
+```
+
+Access proxied site:
+```
+http://localhost:8000/proxy/
+```
+
+**What you get:**
+- ✅ Proxied website serving cached content
+- ✅ **Auto-injected search modal** - Click any search button on the site to see it
+- ✅ **Search powered by your OpenSearch index** - Searches only your crawled content
+- ✅ Working internal navigation with rewritten links
+
+---
+
+### Quick Troubleshooting
+
+**Can't find crawl data?**
+```bash
+# Check if crawl completed
+curl http://localhost:8000/crawl4ai/status/{run_id}
+
+# List all crawls
+ls -la ./output/agent_crawls/
+```
+
+**OpenSearch won't connect?**
+```bash
+# Test connection
+curl http://localhost:9200
+
+# If in Docker, use: opensearch-demo
+# If outside Docker, use: localhost
+```
+
+**Proxy not working?**
+```bash
+# Check proxy status
+curl http://localhost:8000/proxy-api/config
+
+# Verify output directory exists
+ls ./output/agent_crawls/{domain}/{run_id}/{domain}/
 ```
 
 ---
