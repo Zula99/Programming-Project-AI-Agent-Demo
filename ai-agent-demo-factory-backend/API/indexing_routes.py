@@ -15,6 +15,8 @@ from typing import List, Dict, Optional
 import sys
 from pathlib import Path
 import logging
+import httpx
+from urllib.parse import urlparse
 
 # Add Utility to path for crawl_storage
 sys.path.insert(0, str(Path(__file__).parent.parent / "Utility"))
@@ -23,6 +25,9 @@ from crawl_storage import list_all_crawls, get_crawl_by_run_id
 # Initialize router
 router = APIRouter(prefix="/api", tags=["indexing"])
 logger = logging.getLogger(__name__)
+
+# Proxy is mounted as sub-app at /proxy-api (same port as main app)
+PROXY_SERVER_URL = "http://localhost:8000/proxy-api"
 
 
 # ============================================================================
@@ -215,21 +220,116 @@ async def get_opensearch_indexes():
 
 
 # ============================================================================
-# PHASE 4: Proxy Control Endpoints (Placeholder)
+# PHASE 4: Proxy Control Endpoints
 # ============================================================================
 
-# TODO: Add in Phase 4
-# @router.post("/proxy/launch")
-# async def launch_proxy(request: ProxyLaunchRequest):
-#     """Launch proxy server with target URL and index"""
-#     pass
+class ProxyLaunchRequest(BaseModel):
+    target_url: str
+    run_id: str
 
-# @router.post("/proxy/stop")
-# async def stop_proxy():
-#     """Stop proxy server"""
-#     pass
 
-# @router.get("/proxy/status")
-# async def get_proxy_status():
-#     """Get proxy server status"""
-#     pass
+@router.post("/proxy/launch")
+async def launch_proxy(request: ProxyLaunchRequest):
+    """
+    Launch proxy server with target URL and index
+
+    Args:
+        request: ProxyLaunchRequest with target_url and run_id
+
+    Returns:
+        Proxy launch confirmation with proxy URL
+
+    Phase: 4 (Proxy Control)
+    """
+    try:
+        # Generate index name from run_id (matches indexing naming)
+        domain = urlparse(request.target_url).netloc
+        domain_clean = domain.replace(".", "_")
+        index_name = f"demo-{domain_clean}-{request.run_id}"
+
+        # Call proxy_server's /auto-configure endpoint
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{PROXY_SERVER_URL}/auto-configure",
+                json={
+                    "target_url": request.target_url,
+                    "run_id": request.run_id,
+                    "enabled": True
+                }
+            )
+            response.raise_for_status()
+
+        proxy_logger = logging.getLogger("proxy")
+        proxy_logger.info(f"Proxy launched: {request.target_url} -> {index_name}")
+
+        return {
+            "message": "Proxy launched successfully",
+            "proxy_url": "http://localhost:8000/proxy/",
+            "target_url": request.target_url,
+            "index_name": index_name
+        }
+
+    except httpx.HTTPError as e:
+        logger.error(f"Proxy server unavailable: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Proxy server unavailable: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to launch proxy: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to launch proxy: {str(e)}")
+
+
+@router.post("/proxy/stop")
+async def stop_proxy():
+    """
+    Stop proxy server
+
+    Returns:
+        Stop confirmation message
+
+    Phase: 4 (Proxy Control)
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"{PROXY_SERVER_URL}/auto-configure",
+                json={"target_url": "", "enabled": False}
+            )
+            response.raise_for_status()
+
+        proxy_logger = logging.getLogger("proxy")
+        proxy_logger.info("Proxy stopped")
+
+        return {"message": "Proxy stopped"}
+
+    except httpx.HTTPError as e:
+        logger.error(f"Failed to stop proxy: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Proxy server unavailable: {str(e)}")
+    except Exception as e:
+        logger.error(f"Failed to stop proxy: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop proxy: {str(e)}")
+
+
+@router.get("/proxy/status")
+async def get_proxy_status():
+    """
+    Get proxy server status
+
+    Returns:
+        Proxy configuration and status
+
+    Phase: 4 (Proxy Control)
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{PROXY_SERVER_URL}/config")
+            response.raise_for_status()
+            return response.json()
+
+    except httpx.HTTPError:
+        return {
+            "enabled": False,
+            "target_url": None,
+            "message": "Proxy server not running"
+        }
+    except Exception as e:
+        logger.error(f"Failed to get proxy status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get proxy status: {str(e)}")
