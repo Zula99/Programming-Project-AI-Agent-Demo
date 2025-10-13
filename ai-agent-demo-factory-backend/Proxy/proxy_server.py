@@ -18,7 +18,7 @@ import re
 from typing import Set
 import os
 from dotenv import load_dotenv
-from search_templates import create_native_search_template, create_result_item_html, create_no_results_html
+from Proxy.search_templates import create_native_search_template, create_result_item_html, create_no_results_html
 
 # Configure logging first
 logging.basicConfig(level=logging.INFO)
