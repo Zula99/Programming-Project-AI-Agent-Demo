@@ -226,6 +226,16 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
                 if pages_crawled == 0:
                     # Try to get from progress if not in metrics
                     pages_crawled = crawl4ai_sessions[run_id]["progress"]["pages_crawled"]
+
+                # Final fallback: count meta.json files in output directory
+                if pages_crawled == 0 and output_path:
+                    try:
+                        meta_files = list(Path(output_path).rglob("meta.json"))
+                        pages_crawled = len(meta_files)
+                        logger.info(f"Counted {pages_crawled} pages from output directory")
+                    except Exception as e:
+                        logger.warning(f"Could not count pages from output directory: {e}")
+
                 crawl4ai_sessions[run_id]["pages_crawled"] = pages_crawled
 
                 # Save run metadata to file (persists to Docker volume)

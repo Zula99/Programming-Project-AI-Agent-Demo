@@ -114,19 +114,104 @@ async def get_crawl_details(run_id: str):
 
 
 # ============================================================================
-# PHASE 3: Manual Indexing Endpoints (Placeholder)
+# PHASE 3: Manual Indexing Endpoints
 # ============================================================================
 
-# TODO: Add in Phase 3
-# @router.post("/opensearch/index")
-# async def index_crawl_data(request: IndexRequest):
-#     """Index crawl data to OpenSearch with progress logging"""
-#     pass
+# Import OpenSearch integration
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "Utility"))
+from opensearch_integration import Crawl4AIOpenSearchIntegration, OpenSearchConfig
+from websocket_log_handler import current_run_id
 
-# @router.get("/opensearch/indexes")
-# async def get_opensearch_indexes():
-#     """List all OpenSearch demo indexes"""
-#     pass
+
+class IndexRequest(BaseModel):
+    run_id: str
+    output_path: str
+    domain: str
+
+
+@router.post("/opensearch/index")
+async def index_crawl_data(request: IndexRequest):
+    """
+    Index crawl data to OpenSearch with progress logging
+
+    Args:
+        request: IndexRequest with run_id, output_path, and domain
+
+    Returns:
+        Indexing result with stats
+
+    Phase: 3 (Manual Indexing)
+    """
+    try:
+        # Set logging context for WebSocket (shows in backend logs)
+        current_run_id.set(request.run_id)
+        index_logger = logging.getLogger("opensearch_indexing")
+
+        # Create index name: demo-{domain}-{run_id}
+        domain_clean = request.domain.replace(".", "_")
+        index_name = f"demo-{domain_clean}-{request.run_id}"
+
+        index_logger.info(f"Starting OpenSearch indexing: {index_name}")
+        index_logger.info(f"Source: {request.output_path}")
+
+        # Initialize OpenSearch
+        config = OpenSearchConfig(host="opensearch", port=9200, scheme="http")
+        opensearch = Crawl4AIOpenSearchIntegration(config)
+
+        # Check if index already exists
+        if opensearch.index_exists(index_name):
+            index_logger.warning(f"Index {index_name} already exists - will append data")
+
+        # Index data (index_crawl4ai_data logs progress automatically)
+        stats = opensearch.index_crawl4ai_data(
+            crawl_output_dir=request.output_path,
+            index_name=index_name,
+            batch_size=100
+        )
+
+        index_logger.info(f"Indexing complete!")
+        index_logger.info(f"  Documents indexed: {stats.get('documents_indexed', 0)}")
+        index_logger.info(f"  Duration: {stats.get('duration', 0):.2f}s")
+        index_logger.info(f"  Errors: {stats.get('errors', 0)}")
+
+        return {
+            "index_name": index_name,
+            "stats": stats,
+            "message": f"Successfully indexed {stats.get('documents_indexed', 0)} documents"
+        }
+
+    except Exception as e:
+        logger.error(f"Indexing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Indexing failed: {str(e)}")
+
+
+@router.get("/opensearch/indexes")
+async def get_opensearch_indexes():
+    """
+    List all OpenSearch demo indexes
+
+    Returns:
+        List of all demo-* indexes with metadata
+
+    Phase: 3 (Manual Indexing)
+    """
+    try:
+        config = OpenSearchConfig(host="opensearch", port=9200, scheme="http")
+        opensearch = Crawl4AIOpenSearchIntegration(config)
+        indexes = opensearch.get_all_demo_indexes()
+
+        return {
+            "indexes": indexes,
+            "count": len(indexes)
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to list OpenSearch indexes: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list indexes: {str(e)}"
+        )
 
 
 # ============================================================================
