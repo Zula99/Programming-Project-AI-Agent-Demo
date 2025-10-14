@@ -22,4 +22,4 @@
     - make a better codebase structure.
     - Crawler_utils.py is 1200+ lines of code, bad practice.  **DONE**
 
-- file size opensearch_integration.py too big, needs to be refactored. 
+- file size opensearch_integration.py and proxy_server.py is too big, needs to be refactored. 

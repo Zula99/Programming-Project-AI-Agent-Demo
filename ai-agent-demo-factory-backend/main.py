@@ -24,9 +24,11 @@ from task_manager import task_manager
 # Initialize FastAPI app
 app = FastAPI()
 
-# Mount proxy as sub-application at /proxy-api
+# Mount proxy as sub-application at /proxy-api (for API control endpoints)
 from Proxy.proxy_server import app as proxy_app
 app.mount("/proxy-api", proxy_app)
+# Also mount at /proxy for actual proxied traffic
+app.mount("/proxy", proxy_app)
 
 # Include indexing API router (Phase 2+)
 from API.indexing_routes import router as indexing_router

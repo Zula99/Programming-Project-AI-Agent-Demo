@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OpenSearchConfig:
     """Configuration for OpenSearch connection"""
-    host: str = os.getenv("OPENSEARCH_HOST", "opensearch-demo")
+    host: str = os.getenv("OPENSEARCH_HOST", "opensearch")
     port: int = int(os.getenv("OPENSEARCH_PORT", "9200"))
     scheme: str = "http"
     username: Optional[str] = None
