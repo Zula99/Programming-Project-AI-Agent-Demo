@@ -12,6 +12,8 @@ import sys
 from typing import Dict, List, Optional
 from io import StringIO
 from datetime import datetime
+from pathlib import Path
+from urllib.parse import urlparse
 
 # Import WebSocket logging handler
 from websocket_log_handler import setup_websocket_logging, websocket_connections, current_run_id
@@ -21,6 +23,16 @@ from task_manager import task_manager
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Mount proxy as sub-application at /proxy-api (for API control endpoints)
+from Proxy.proxy_server import app as proxy_app
+app.mount("/proxy-api", proxy_app)
+# Also mount at /proxy for actual proxied traffic
+app.mount("/proxy", proxy_app)
+
+# Include indexing API router (Phase 2+)
+from API.indexing_routes import router as indexing_router
+app.include_router(indexing_router)
 
 # Configure CORS to allow frontend requests
 app.add_middleware(
@@ -204,6 +216,51 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
             if output_path:
                 await add_agent_log(run_id, f" Output saved to: {output_path}", "info")
                 logger.info(f"Crawl output saved to: {output_path}")
+
+                # Store metadata in session
+                crawl4ai_sessions[run_id]["output_path"] = output_path
+                crawl4ai_sessions[run_id]["domain"] = urlparse(target_url).netloc
+                crawl4ai_sessions[run_id]["completed_at"] = datetime.now().isoformat()
+                crawl4ai_sessions[run_id]["quality_score"] = overall_score
+
+                # Extract pages_crawled from metrics
+                pages_crawled = getattr(metrics, 'pages_crawled', 0)
+                if pages_crawled == 0:
+                    # Try to get from progress if not in metrics
+                    pages_crawled = crawl4ai_sessions[run_id]["progress"]["pages_crawled"]
+
+                # Final fallback: count meta.json files in output directory
+                if pages_crawled == 0 and output_path:
+                    try:
+                        meta_files = list(Path(output_path).rglob("meta.json"))
+                        pages_crawled = len(meta_files)
+                        logger.info(f"Counted {pages_crawled} pages from output directory")
+                    except Exception as e:
+                        logger.warning(f"Could not count pages from output directory: {e}")
+
+                crawl4ai_sessions[run_id]["pages_crawled"] = pages_crawled
+
+                # Save run metadata to file (persists to Docker volume)
+                metadata_file = Path(output_path) / "run_metadata.json"
+                metadata = {
+                    "run_id": run_id,
+                    "target_url": target_url,
+                    "domain": urlparse(target_url).netloc,
+                    "status": "completed",
+                    "started_at": datetime.fromtimestamp(crawl4ai_sessions[run_id]["started_at"]).isoformat(),
+                    "completed_at": datetime.now().isoformat(),
+                    "pages_crawled": pages_crawled,
+                    "quality_score": overall_score,
+                    "output_path": output_path
+                }
+
+                try:
+                    metadata_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(metadata_file, 'w') as f:
+                        json.dump(metadata, f, indent=2)
+                    logger.info(f"Run metadata saved to: {metadata_file}")
+                except Exception as e:
+                    logger.error(f"Failed to save metadata file: {e}")
 
             # Final progress update with actual results from metrics
             pages_crawled = getattr(metrics, 'pages_crawled', 0)

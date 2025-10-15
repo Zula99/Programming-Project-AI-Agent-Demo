@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OpenSearchConfig:
     """Configuration for OpenSearch connection"""
-    host: str = os.getenv("OPENSEARCH_HOST", "opensearch-demo")
+    host: str = os.getenv("OPENSEARCH_HOST", "opensearch")
     port: int = int(os.getenv("OPENSEARCH_PORT", "9200"))
     scheme: str = "http"
     username: Optional[str] = None
@@ -474,6 +474,71 @@ class Crawl4AIOpenSearchIntegration:
         except Exception as e:
             logger.error(f"Failed to get stats for {index_name}: {e}")
             return {"error": str(e)}
+
+    def list_all_indexes(self, pattern: str = "demo-*") -> List[Dict]:
+        """
+        List all indexes matching pattern with metadata
+
+        Args:
+            pattern: Index pattern to match (default: demo-*)
+
+        Returns:
+            List of index metadata dictionaries
+        """
+        try:
+            # Get all indexes matching pattern
+            indices = self.client.cat.indices(index=pattern, format="json")
+
+            results = []
+            for idx in indices:
+                results.append({
+                    "name": idx["index"],
+                    "doc_count": int(idx.get("docs.count", 0)),
+                    "size_bytes": idx.get("store.size", "0b"),
+                    "status": idx.get("health", "unknown")
+                })
+
+            return results
+        except Exception as e:
+            logger.error(f"Failed to list indexes: {e}")
+            return []
+
+    def get_all_demo_indexes(self) -> List[Dict]:
+        """
+        Get all demo-* indexes with parsed metadata
+
+        Returns:
+            List of index dictionaries with parsed domain and run_id
+        """
+        indexes = self.list_all_indexes("demo-*")
+
+        # Parse index names to extract domain and run_id
+        # Format: demo-domain_com-run_id
+        for idx in indexes:
+            name = idx["name"]
+            if name.startswith("demo-"):
+                parts = name[5:].split("-")
+                if len(parts) >= 2:
+                    idx["domain"] = parts[0].replace("_", ".")
+                    idx["run_id"] = "-".join(parts[1:])
+
+        return indexes
+
+    def index_exists(self, index_name: str) -> bool:
+        """
+        Check if index exists
+
+        Args:
+            index_name: Name of the index to check
+
+        Returns:
+            True if index exists, False otherwise
+        """
+        try:
+            return self.client.indices.exists(index=index_name)
+        except Exception as e:
+            logger.error(f"Failed to check index existence: {e}")
+            return False
 
     def create_log_index(self, index_name: str, recreate: bool = False) -> bool:
         """

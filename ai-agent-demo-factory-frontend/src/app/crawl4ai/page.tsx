@@ -6,6 +6,8 @@ import Crawl4AIUrlBar from "@/components/Crawl4AIUrlBar";
 import AgentOutputCard from "@/components/AgentOutputCard";
 import CrawlProgressPanel from "@/components/CrawlProgressPanel";
 import BackendLogsDropdown from "@/components/BackendLogsDropdown";
+import IndexControlPanel from "@/components/IndexControlPanel";
+import ProxyControlPanel from "@/components/ProxyControlPanel";
 import { startCrawl4AI, stopCrawl4AI, createWebSocketConnection, type AgentLog, type StopSummary } from "@/lib/crawl4ai-api";
 
 type AgentStatus = "idle" | "pending" | "running" | "waiting_for_input" | "completed" | "error" | "stopped";
@@ -37,6 +39,7 @@ export default function Crawl4AIPage() {
   const [backendLogs, setBackendLogs] = useState<BackendLogEntry[]>([]);
   const [stopSummary, setStopSummary] = useState<StopSummary | null>(null);
   const [showStopModal, setShowStopModal] = useState(false);
+  const [maxPages, setMaxPages] = useState<string>("");
   const [progress, setProgress] = useState<CrawlProgress>({
     percentage: 0,
     pages_crawled: 0,
@@ -51,9 +54,10 @@ export default function Crawl4AIPage() {
   const wsRef = useRef<WebSocket | null>(null);
 
   // Handle starting a new crawl
-  const handleStartCrawl = async (url: string, maxPages?: number) => {
+  const handleStartCrawl = async (url: string) => {
     try {
-      const response = await startCrawl4AI(url, maxPages);
+      const pages = maxPages.trim() ? parseInt(maxPages) : undefined;
+      const response = await startCrawl4AI(url, pages);
       setRunId(response.run_id);
       setStatus("running");
       setLogs([]);
@@ -203,6 +207,16 @@ export default function Crawl4AIPage() {
         onStopCrawl={handleStopCrawl}
         isRunning={status === "running"}
       />
+
+      {/* Phase 5: Index & Proxy Control - 40/60 Split */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
+        <div className="md:col-span-2">
+          <IndexControlPanel />
+        </div>
+        <div className="md:col-span-3">
+          <ProxyControlPanel />
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {/* Left: Progress Panel */}
