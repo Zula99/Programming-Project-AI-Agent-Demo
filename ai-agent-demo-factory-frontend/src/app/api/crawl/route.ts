@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Forward request to FastAPI backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://norconex-backend:5000";
+    const backendUrl = process.env.NEXT_PUBLIC_NORCONEX_URL || "http://norconex-backend:5000";
     
     const response = await fetch(`${backendUrl}/crawl`, {
       method: "POST",

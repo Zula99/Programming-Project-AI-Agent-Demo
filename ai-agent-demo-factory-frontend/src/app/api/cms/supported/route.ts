@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://norconex-backend:5000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_NORCONEX_URL || 'http://norconex-backend:5000';
 
 export async function GET(request: NextRequest) {
   try {
