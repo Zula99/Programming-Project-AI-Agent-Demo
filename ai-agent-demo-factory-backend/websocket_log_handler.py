@@ -160,14 +160,16 @@ def setup_websocket_logging():
     # Configure root logger to capture all logs (INFO and above)
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
-    root_logger.addHandler(websocket_handler)
+
+    # Only add handler if not already present (prevents duplicates on reload)
+    if not any(isinstance(h, WebSocketLogHandler) for h in root_logger.handlers):
+        root_logger.addHandler(websocket_handler)
 
     # Silence noisy third-party DEBUG logs
     logging.getLogger("opensearch").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    # Configure uvicorn logger specifically
-    uvicorn_logger = logging.getLogger("uvicorn")
-    uvicorn_logger.addHandler(websocket_handler)
+    # Don't add to uvicorn logger - it propagates to root logger already
+    # (Adding to both causes duplicate logs!)
 
     return websocket_handler

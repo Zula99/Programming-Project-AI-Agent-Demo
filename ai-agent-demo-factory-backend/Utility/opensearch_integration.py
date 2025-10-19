@@ -390,14 +390,15 @@ class Crawl4AIOpenSearchIntegration:
                             "multi_match": {
                                 "query": query,
                                 "fields": [
-                                    "title^3",
-                                    "h1^2",
-                                    "h2^1.5",
-                                    "h3^1.2",
+                                    "title^10",
+                                    "h1^8",
+                                    "h2^3",
+                                    "h3^2",
                                     "content_md^1",
-                                    "meta_desc^2"
+                                    "meta_desc^3"
                                 ],
-                                "type": "best_fields",
+                                "type": "most_fields",
+                                "operator": "or",
                                 "fuzziness": "AUTO"
                             }
                         }

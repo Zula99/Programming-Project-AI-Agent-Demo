@@ -294,7 +294,10 @@ def get_search_injection_script() -> str:
                     input[name*="search" i],
                     input[id*="search" i],
                     input[class*="search" i],
-                    form[role="search"] input
+                    form[role="search"] input,
+                    input#query,
+                    input[name="query"],
+                    input[name="q"]
                 `);
 
                 searchInputs.forEach(input => {
@@ -386,11 +389,15 @@ def get_search_injection_script() -> str:
                 let isSearchRelated = false;
 
                 // 1. Search input fields
+                const name = (element.getAttribute('name') || '').toLowerCase();
                 if (tagName === 'input' && (
                     type === 'search' ||
                     placeholder.includes('search') ||
                     className.includes('search') ||
-                    id.includes('search')
+                    id.includes('search') ||
+                    id === 'query' ||
+                    name === 'query' ||
+                    name === 'q'
                 )) {
                     isSearchRelated = true;
                 }
