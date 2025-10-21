@@ -127,8 +127,13 @@ services:
       - norconex-backend
       - opensearch
     environment:
-      - NEXT_PUBLIC_CRAWL4AI_URL=http://crawl4ai-backend:8000
-      - NEXT_PUBLIC_NORCONEX_URL=http://norconex-backend:5000
+      # Server-side environment variables (for API routes inside Docker)
+      - NORCONEX_BACKEND_URL=http://norconex-backend:5000
+      - CRAWL4AI_BACKEND_URL=http://crawl4ai-backend:8000
+      # Client-side environment variables (exposed to browser via NEXT_PUBLIC_)
+      - NEXT_PUBLIC_NORCONEX_URL=http://localhost:5000
+      - NEXT_PUBLIC_CRAWL4AI_URL=http://localhost:8000
+      # OpenSearch config
       - OPENSEARCH_BASE_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=demo_factory
     networks:
