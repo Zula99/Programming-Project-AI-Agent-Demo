@@ -31,7 +31,8 @@ RUN echo '#!/bin/bash\necho "Norconex Runner is ready"\nexit 0' > /usr/local/bin
 
 # Copy and setup the trigger crawler script
 COPY trigger-crawler.sh /app/trigger-crawler.sh
-RUN chmod +x /app/trigger-crawler.sh
+# Convert Windows line endings to Unix (CRLF -> LF) for Linux compatibility
+RUN sed -i 's/\r$//' /app/trigger-crawler.sh && chmod +x /app/trigger-crawler.sh
 
 # Default command - run the trigger crawler monitoring script
 CMD ["/app/trigger-crawler.sh"]
