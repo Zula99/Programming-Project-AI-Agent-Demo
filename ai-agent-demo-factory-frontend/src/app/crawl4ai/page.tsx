@@ -217,6 +217,8 @@ export default function Crawl4AIPage() {
         onStartCrawl={handleStartCrawl}
         onStopCrawl={handleStopCrawl}
         isRunning={status === "running"}
+        maxPages={maxPages}
+        setMaxPages={setMaxPages}
       />
 
       {/* Phase 5: Index & Proxy Control - 40/60 Split */}

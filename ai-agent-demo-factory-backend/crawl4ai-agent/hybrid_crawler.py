@@ -345,7 +345,7 @@ class HybridCrawler:
             self.logger.info(" Phase 1: Site structure analysis and sitemap detection")
 
             # Perform site analysis (progress updates will come from actual crawling)
-            analysis = await self.analyze_site_structure(start_url, run_id)
+            analysis = await self.analyze_site_structure(start_url, run_id, max_pages)
 
             # Phase 2: Site Type Detection for Quality Thresholds
             site_type = None

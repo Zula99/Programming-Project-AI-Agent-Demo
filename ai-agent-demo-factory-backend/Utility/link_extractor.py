@@ -479,13 +479,19 @@ class LinkExtractor:
         start_time = time.time()
 
         logger.info(f"Processing {len(sitemap_urls_to_process)} sitemaps with AI enhancement...")
-        
-        # Extract all URLs from sitemaps
+        logger.info(f"MAX_URLS PARAMETER: {max_urls}")  # DEBUG: Check if max_urls is being passed
+
+        # Extract URLs from sitemaps with early stopping when max_urls is reached
         for sitemap_url in sitemap_urls_to_process:
             # CHECK FOR STOP before processing each sitemap
             if self.stop_check_callback and self.stop_check_callback():
                 logger.warning(f"FORCE STOP detected during sitemap URL extraction")
                 return [], processing_stats
+
+            # Check if we've already reached max_urls limit
+            if max_urls and len(all_urls) >= max_urls:
+                logger.info(f"  -> Reached max_urls limit ({max_urls}), stopping sitemap extraction")
+                break
 
             try:
                 logger.info(f"  -> Processing sitemap: {sitemap_url}")
@@ -505,29 +511,47 @@ class LinkExtractor:
                             logger.warning(f"FORCE STOP detected during sub-sitemap processing")
                             return all_urls, processing_stats
 
+                        # Check if we've reached max_urls limit before processing next sub-sitemap
+                        if max_urls and len(all_urls) >= max_urls:
+                            logger.info(f"     ...reached max_urls limit ({max_urls}), stopping sub-sitemap processing")
+                            break
+
                         try:
                             sub_sitemap_response = self.session.get(loc.text, verify=False)
                             sub_sitemap_response.raise_for_status()
                             sub_soup = BeautifulSoup(sub_sitemap_response.content, "lxml-xml")
                             sub_urls = [sub_loc.text for sub_loc in sub_soup.find_all("loc")]
+
+                            # Only take URLs up to the max_urls limit
+                            if max_urls:
+                                remaining_quota = max_urls - len(all_urls)
+                                if remaining_quota <= 0:
+                                    break
+                                if len(sub_urls) > remaining_quota:
+                                    sub_urls = sub_urls[:remaining_quota]
+                                    logger.info(f"     ...extracted {len(sub_urls)} URLs from {loc.text} (LIMITED to reach max_urls={max_urls})")
+                                else:
+                                    logger.info(f"     ...extracted {len(sub_urls)} URLs from {loc.text}")
+                            else:
+                                logger.info(f"     ...extracted {len(sub_urls)} URLs from {loc.text}")
+
                             all_urls.extend(sub_urls)
-                            logger.info(f"     ...extracted {len(sub_urls)} URLs from {loc.text}")
                         except Exception as e:
                             logger.warning(f"     ...failed to process sub-sitemap {loc.text}: {e}")
                 else:
                     # Direct sitemap with URLs
                     urls = [loc.text for loc in sitemap_refs]
-                    
-                    # TEMPORARY TEST LIMIT: Only take first 10 URLs to prevent massive AI costs
+
+                    # Only take URLs up to the max_urls limit
                     if max_urls and len(all_urls) + len(urls) > max_urls:
                         remaining_quota = max_urls - len(all_urls)
                         urls = urls[:remaining_quota] if remaining_quota > 0 else []
                         logger.info(f"     ...extracted {len(urls)} URLs (LIMITED by max_urls={max_urls})")
                     else:
                         logger.info(f"     ...extracted {len(urls)} URLs")
-                    
+
                     all_urls.extend(urls)
-                
+
                 processing_stats['total_sitemaps_processed'] += 1
 
             except Exception as e:
@@ -551,11 +575,14 @@ class LinkExtractor:
             logger.warning(f"FORCE STOP detected before AI classification")
             return [], processing_stats
 
-        # Limit URLs BEFORE AI classification to avoid classifying thousands of URLs
-        urls_to_classify = filtered_urls
+        # Limit URLs for classification based on max_pages
+        # Domain filtering may have removed external URLs, so we need to ensure we don't exceed max_urls
         if max_urls and len(filtered_urls) > max_urls:
             urls_to_classify = filtered_urls[:max_urls]
-            logger.info(f"Limiting AI classification to first {max_urls} URLs (out of {len(filtered_urls)} total)")
+            logger.info(f"Limited classification to {max_urls} URLs (from {len(filtered_urls)} after domain filtering)")
+        else:
+            urls_to_classify = filtered_urls
+            logger.info(f"Proceeding to AI classification with {len(urls_to_classify)} URLs")
 
         # Apply AI classification for prioritization
         if urls_to_classify:

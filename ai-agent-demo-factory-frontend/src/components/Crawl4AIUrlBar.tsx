@@ -6,11 +6,17 @@ interface Crawl4AIUrlBarProps {
   onStartCrawl?: (url: string, maxPages?: number) => void;
   onStopCrawl?: () => void;
   isRunning?: boolean;
+  maxPages?: string;
+  setMaxPages?: (value: string) => void;
 }
 
-export default function Crawl4AIUrlBar({ onStartCrawl, onStopCrawl, isRunning = false }: Crawl4AIUrlBarProps) {
+export default function Crawl4AIUrlBar({ onStartCrawl, onStopCrawl, isRunning = false, maxPages: propMaxPages, setMaxPages: propSetMaxPages }: Crawl4AIUrlBarProps) {
     const [url, setUrl] = useState("https://example.com");
-    const [maxPages, setMaxPages] = useState<string>("");
+    const [localMaxPages, setLocalMaxPages] = useState<string>("");
+
+    // Use prop values if provided, otherwise use local state
+    const maxPages = propMaxPages !== undefined ? propMaxPages : localMaxPages;
+    const setMaxPages = propSetMaxPages || setLocalMaxPages;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
