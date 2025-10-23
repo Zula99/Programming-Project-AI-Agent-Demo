@@ -8,6 +8,14 @@ from fastapi.responses import Response, HTMLResponse
 from typing import Dict, Any
 import httpx
 import logging
+import gzip
+
+try:
+    import zstandard as zstd
+    ZSTD_AVAILABLE = True
+except ImportError:
+    ZSTD_AVAILABLE = False
+    logging.warning("zstandard module not available - zstd decompression will not work")
 
 from Proxy.url_rewriter import rewrite_urls_in_html, rewrite_urls_in_css, clean_response_headers
 from Proxy.search_injection import inject_search_functionality, is_dynamic_search_site
@@ -15,6 +23,40 @@ from Proxy.spa_handler import is_search_api_request, extract_search_query, handl
 from Proxy.search_handler import handle_search_request
 
 logger = logging.getLogger(__name__)
+
+
+def decompress_if_needed(content: bytes, encoding: str) -> bytes:
+    """
+    Decompress content only for formats httpx doesn't handle automatically (like zstd)
+
+    Args:
+        content: Raw content bytes (already auto-decompressed by httpx if it was gzip/br/deflate)
+        encoding: Original content-encoding header value
+
+    Returns:
+        Decompressed content bytes
+    """
+    if not encoding:
+        return content
+
+    encoding = encoding.lower().strip()
+
+    # httpx auto-handles: gzip, deflate, brotli (br)
+    # We need to manually handle: zstd
+    if encoding == 'zstd':
+        if ZSTD_AVAILABLE:
+            try:
+                dctx = zstd.ZstdDecompressor()
+                return dctx.decompress(content)
+            except Exception as e:
+                logger.error(f"Failed to decompress zstd content: {e}")
+                return content
+        else:
+            logger.error("zstd-encoded content detected but zstandard module not available")
+            return content
+
+    # For gzip/br/deflate, httpx already decompressed - just return content
+    return content
 
 
 async def proxy_request_handler(
@@ -171,7 +213,17 @@ async def proxy_request_handler(
                     headers=clean_response_headers(dict(response.headers))
                 )
 
-            # Clean headers for successful responses
+            # Get original content encoding
+            content_encoding = response.headers.get("content-encoding", "")
+
+            # httpx auto-decompresses gzip/br/deflate, but not zstd
+            # We need to manually decompress zstd if present
+            content = decompress_if_needed(response.content, content_encoding)
+
+            if content_encoding:
+                logger.info(f"Content-encoding: {content_encoding} -> decompressed")
+
+            # Clean headers for successful responses (this removes content-encoding)
             clean_headers = clean_response_headers(dict(response.headers))
 
             # Get content type
@@ -217,7 +269,7 @@ async def proxy_request_handler(
 
             # For all other content types (JS, images, fonts, etc.), return as-is with proper content-type
             return Response(
-                content=response.content,
+                content=content,  # Use decompressed content
                 status_code=response.status_code,
                 headers=clean_headers,
                 media_type=content_type or "application/octet-stream"
@@ -323,6 +375,13 @@ async def catch_all_proxy_handler(
                 content=await request.body()
             )
 
+            # Get original content encoding and decompress if needed (for zstd)
+            content_encoding = response.headers.get("content-encoding", "")
+            content = decompress_if_needed(response.content, content_encoding)
+
+            if content_encoding:
+                logger.info(f"Content-encoding: {content_encoding} -> decompressed")
+
             clean_headers = clean_response_headers(dict(response.headers))
             content_type = response.headers.get("content-type", "").lower()
 
@@ -371,7 +430,7 @@ async def catch_all_proxy_handler(
 
             # For all other content types (JS, images, fonts, etc.), return as-is with proper content-type
             return Response(
-                content=response.content,
+                content=content,  # Use decompressed content
                 status_code=response.status_code,
                 headers=clean_headers,
                 media_type=content_type or "application/octet-stream"
