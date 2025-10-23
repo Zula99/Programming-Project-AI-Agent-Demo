@@ -52,6 +52,17 @@ export default function Crawl4AIPage() {
     loaded_caches: 0
   });
   const wsRef = useRef<WebSocket | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(Date.now());
+
+  // Trigger a refresh of IndexControl and ProxyControl panels
+  const triggerRefresh = () => setRefreshTrigger(Date.now());
+
+  // Refresh dropdowns when crawl completes
+  useEffect(() => {
+    if (status === "completed" || status === "stopped") {
+      triggerRefresh();
+    }
+  }, [status]);
 
   // Handle starting a new crawl
   const handleStartCrawl = async (url: string) => {
@@ -211,10 +222,13 @@ export default function Crawl4AIPage() {
       {/* Phase 5: Index & Proxy Control - 40/60 Split */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
         <div className="md:col-span-2">
-          <IndexControlPanel />
+          <IndexControlPanel
+            refreshTrigger={refreshTrigger}
+            onIndexComplete={triggerRefresh}
+          />
         </div>
         <div className="md:col-span-3">
-          <ProxyControlPanel />
+          <ProxyControlPanel refreshTrigger={refreshTrigger} />
         </div>
       </div>
 

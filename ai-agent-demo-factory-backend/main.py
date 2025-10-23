@@ -21,6 +21,10 @@ from websocket_log_handler import setup_websocket_logging, websocket_connections
 # Import task manager for background task cancellation
 from task_manager import task_manager
 
+# Import SmartMirrorAgent at module level to avoid first-request delay
+sys.path.append(str(Path(__file__).parent / "crawl4ai-agent"))
+from smart_mirror_agent import SmartMirrorAgent
+
 # Initialize FastAPI app
 app = FastAPI()
 
@@ -169,14 +173,7 @@ async def run_crawl4ai_agent_real(run_id: str, target_url: str):
         await add_agent_log(run_id, " Crawl4AI SmartMirrorAgent initialized", "info")
         logger.info("SmartMirrorAgent session initialized successfully")
 
-        # Import the SmartMirrorAgent from the crawl4ai-agent directory
-        import sys
-        import os
-        sys.path.append(os.path.join(os.path.dirname(__file__), "crawl4ai-agent"))
-
-        from smart_mirror_agent import SmartMirrorAgent
-
-        # Create the agent instance
+        # Create the agent instance (SmartMirrorAgent now imported at module level)
         agent = SmartMirrorAgent(memory_path="backend_agent_memory.json")
         await add_agent_log(run_id, " Starting site reconnaissance...", "info")
         logger.info("SmartMirrorAgent created, starting reconnaissance")

@@ -3,7 +3,12 @@
 import { useState, useEffect } from 'react';
 import { getCompletedCrawls, indexCrawl, type CompletedCrawl } from '@/lib/indexing-api';
 
-export default function IndexControlPanel() {
+interface IndexControlPanelProps {
+  refreshTrigger?: string | number; // Triggers refetch when changed
+  onIndexComplete?: () => void; // Callback when indexing completes
+}
+
+export default function IndexControlPanel({ refreshTrigger, onIndexComplete }: IndexControlPanelProps) {
   const [crawls, setCrawls] = useState<CompletedCrawl[]>([]);
   const [selectedCrawl, setSelectedCrawl] = useState<string>('');
   const [indexing, setIndexing] = useState(false);
@@ -11,7 +16,7 @@ export default function IndexControlPanel() {
 
   useEffect(() => {
     loadCrawls();
-  }, []);
+  }, [refreshTrigger]); // Refetch when refreshTrigger changes
 
   const loadCrawls = async () => {
     try {
@@ -40,6 +45,10 @@ export default function IndexControlPanel() {
         type: 'success',
         text: `Indexed as ${result.index_name} (${result.stats.documents_indexed} docs)`
       });
+      // Trigger refresh of proxy control panel to show new index
+      if (onIndexComplete) {
+        onIndexComplete();
+      }
     } catch (error) {
       setMessage({type: 'error', text: `Indexing failed: ${error}`});
     } finally {

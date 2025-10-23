@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react';
 import { getOpenSearchIndexes, launchProxy, stopProxy, getProxyStatus, type OpenSearchIndex } from '@/lib/indexing-api';
 
-export default function ProxyControlPanel() {
+interface ProxyControlPanelProps {
+  refreshTrigger?: string | number; // Triggers refetch when changed
+}
+
+export default function ProxyControlPanel({ refreshTrigger }: ProxyControlPanelProps) {
   const [indexes, setIndexes] = useState<OpenSearchIndex[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<string>('');
   const [targetUrl, setTargetUrl] = useState<string>('');
@@ -14,7 +18,7 @@ export default function ProxyControlPanel() {
   useEffect(() => {
     loadIndexes();
     checkProxyStatus();
-  }, []);
+  }, [refreshTrigger]); // Refetch when refreshTrigger changes
 
   const loadIndexes = async () => {
     try {

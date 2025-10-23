@@ -133,6 +133,7 @@ services:
       # Client-side environment variables (exposed to browser via NEXT_PUBLIC_)
       - NEXT_PUBLIC_NORCONEX_URL=http://localhost:5000
       - NEXT_PUBLIC_CRAWL4AI_URL=http://localhost:8000
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
       # OpenSearch config
       - OPENSEARCH_BASE_URL=http://opensearch:9200
       - OPENSEARCH_INDEX=demo_factory
