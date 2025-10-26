@@ -269,20 +269,21 @@ class HybridCrawler:
             # Apply AI classification to prioritize URLs
             # Extract navigation patterns from sitemap structure
             # Use quality plateau detection during crawling
-            
+
             if analysis.ai_classified_urls:
                 # Sort by AI confidence/worthiness for prioritization
                 sorted_urls = sorted(
-                    analysis.ai_classified_urls, 
-                    key=lambda x: x[1], 
+                    analysis.ai_classified_urls,
+                    key=lambda x: x[1],
                     reverse=True
                 )
                 priority_urls = [url for url, conf, reason in sorted_urls[:50]]
             else:
                 priority_urls = analysis.sitemap_urls[:50]  # Reasonable starting set
-            
+
             estimated_coverage = len(analysis.sitemap_urls)
-            max_pages_limit = max_pages or 999999  # User limit or intelligent stopping
+            # Use actual sitemap URL count (or user limit if specified)
+            max_pages_limit = max_pages if max_pages is not None else len(analysis.sitemap_urls)
 
         else:  # PROGRESSIVE
             # Scenario B: Start with homepage and main navigation extraction
@@ -293,7 +294,8 @@ class HybridCrawler:
 
             priority_urls = [start_url]
             estimated_coverage = 150  # Conservative estimate without sitemap
-            max_pages_limit = max_pages or 999999  # User limit or intelligent stopping
+            # Progressive discovery - use 0 to indicate dynamic/unknown total
+            max_pages_limit = max_pages if max_pages is not None else 0
         
         plan = CrawlPlan(
             strategy=strategy,
@@ -520,6 +522,7 @@ class HybridCrawler:
 
             # Initialize coverage tracking if available
             start_url = plan.start_url if hasattr(plan, 'start_url') else plan.priority_urls[0]
+            coverage_calculator = None
             self.logger.info(f"Checking coverage tracking: run_id={run_id}, available={COVERAGE_TRACKING_AVAILABLE}")
             if run_id and COVERAGE_TRACKING_AVAILABLE:
                 try:
@@ -539,6 +542,14 @@ class HybridCrawler:
             domain = urllib.parse.urlparse(start_url).netloc
             # Use user-provided max_pages if specified, otherwise use plan recommendation
             pages_limit = max_pages if max_pages is not None else plan.max_pages_recommendation
+
+            # If coverage tracking is available, use actual total_known_urls for accurate logging
+            if run_id and COVERAGE_TRACKING_AVAILABLE and coverage_calculator:
+                snapshot = coverage_calculator.get_current_snapshot()
+                if snapshot.total_known_urls > 0:
+                    pages_limit = snapshot.total_known_urls
+                    self.logger.info(f"Using total_known_urls ({pages_limit}) for max_pages (accurate logging)")
+
             crawl_config = CrawlConfig(
                 domain=domain,
                 output_root=self.output_dir / domain.replace('.', '_'),

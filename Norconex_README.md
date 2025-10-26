@@ -158,9 +158,9 @@ Use the **Crawled Data from OpenSearch** section:
 
 After crawl completion, the **Schema Processor** automatically:
 - Reads raw data from `demo_factory_raw` index
-- Enriches with 98+ Search365 fields
+- Enriches with all critical Search365 fields from 229-field schema
 - Indexes to `demo_factory` for searching
-- Coverage: 62.2% of Search365 schema (97/156 fields)
+- Populates all critical fields (title, content, metadata, HTML structure) with additional fields when available
 
 **Populated Fields Include:**
 - Core: id, url, title, content, description
@@ -601,7 +601,7 @@ docker-compose ps
 ## Known Limitations
 
 1. **Duplicate Detection**: Norconex caches URLs - requires manual cache clearing for re-crawls
-2. **Schema Coverage**: 62.2% of Search365 fields (missing: H1 extraction, publication dates, HTTP headers)
+2. **Schema Mapping**: Populates all critical Search365 fields; some optional fields not extracted (H1 extraction improvements pending, publication date parsing)
 3. **Concurrent Crawls**: Limited by Norconex container resources
 4. **WebSocket Scaling**: In-memory connections don't scale across multiple backend instances
 5. **No Authentication**: Development setup only

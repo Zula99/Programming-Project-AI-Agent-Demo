@@ -57,9 +57,9 @@ Index 1: demo_factory_raw
   Replicas: 0
 
 Index 2: demo_factory
-  Purpose: Enriched data with Search365 schema (98 fields)
+  Purpose: Enriched data with Search365 schema
   Documents: Processed from demo_factory_raw
-  Schema Coverage: 62.2% of full Search365 spec (97/156 fields)
+  Schema Coverage: All critical fields populated from 229-field schema (title, content, metadata, HTML structure)
   Fields Include:
     - Core: id, url, title, content, description
     - Metadata: contenttype, encoding, docsize

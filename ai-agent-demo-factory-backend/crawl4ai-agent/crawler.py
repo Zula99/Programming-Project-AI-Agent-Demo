@@ -248,7 +248,8 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
             _logger.debug(f"Initial progress callback error: {e}")
 
     async with AsyncWebCrawler(**crawler_config) as crawler:
-        while q and pages_crawled < config.max_pages:
+        # max_pages = 0 means dynamic discovery (no limit from config, rely on quality plateau)
+        while q and (config.max_pages == 0 or pages_crawled < config.max_pages):
             # Check stop flag at start of every iteration
             if config.run_id:
                 try:
@@ -412,6 +413,14 @@ async def generic_crawl(config: CrawlConfig) -> Tuple[List[CrawlResult], Dict[st
                     try:
                         await notify_urls_discovered(config.run_id, new_urls)
                         _logger.info(f"Coverage tracking: Notified {len(new_urls)} new URLs discovered")
+
+                        # Update max_pages to reflect actual total known URLs (for accurate logging)
+                        coverage_calc = get_coverage_calculator(config.run_id)
+                        if coverage_calc:
+                            snapshot = coverage_calc.get_current_snapshot()
+                            if snapshot.total_known_urls > 0:
+                                config.max_pages = snapshot.total_known_urls
+                                _logger.debug(f"Updated max_pages to {config.max_pages} based on total known URLs")
                     except Exception as e:
                         _logger.warning(f"Coverage tracking URL discovery notification failed: {e}")
                         import traceback
