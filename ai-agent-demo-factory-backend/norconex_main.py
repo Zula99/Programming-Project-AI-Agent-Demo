@@ -506,7 +506,7 @@ async def run_norconex_crawler_maven(run_id: str, target_url: str, template: Opt
                 
                 # Wait for completion (simplified - check for completion file)
                 import time
-                max_wait_time = 900  # 15 minutes
+                max_wait_time = 10800  # 3 hours (180 minutes)
                 wait_interval = 5  # 5 seconds
                 total_waited = 0
                 
