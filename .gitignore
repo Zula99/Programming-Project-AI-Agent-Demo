@@ -23,6 +23,15 @@ norconex/cache/
 norconex/temp/
 norconex/downloads/
 
+# Crawl4AI Crawler Output
+crawl4ai/crawl-*
+crawl4ai/output/
+
+# SmartMirrorAgent Output
+ai-agent-demo-factory-backend/crawl4ai-agent/output/
+ai-agent-demo-factory-backend/output/
+**/output/agent_crawls/
+
 # Log Files
 *.log
 *.log.*
@@ -77,7 +86,7 @@ __pycache__/
 env/
 venv/
 .venv/
-
+.claude/
 # Node.js
 node_modules/
 npm-debug.log*
@@ -136,3 +145,4 @@ credentials.json
 *.wmv
 *.flv
 *.webm
+ToDolist.md

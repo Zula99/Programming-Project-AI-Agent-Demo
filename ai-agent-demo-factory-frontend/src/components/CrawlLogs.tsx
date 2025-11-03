@@ -5,6 +5,7 @@ import StatusBadge from './StatusBadge';
 
 interface LogEntry {
   run_id: string;
+  target_url?: string;
   timestamp: string;
   log_level: string;
   logger: string;
@@ -67,26 +68,27 @@ export default function CrawlLogs() {
         if (!runMap.has(runId)) {
           runMap.set(runId, {
             run_id: runId,
-            target_url: extractTargetUrl(log.message),
+            target_url: log.target_url || 'Unknown URL',
             status: extractStatus(log.message, log.log_level),
             log_count: 0,
             last_activity: log.timestamp
           });
         }
-        
+
         const run = runMap.get(runId)!;
         run.log_count++;
-        
+
         // Update last activity if this log is newer
         if (new Date(log.timestamp) > new Date(run.last_activity)) {
           run.last_activity = log.timestamp;
         }
-        
-        // Update status and URL from more specific log entries
-        if (log.message.includes('Executing crawl for') && log.message.includes('with config')) {
-          run.target_url = extractTargetUrl(log.message);
+
+        // Update target_url if we didn't have it before
+        if (!run.target_url && log.target_url) {
+          run.target_url = log.target_url;
         }
-        
+
+        // Update status from log entries
         if (log.message.includes('Crawl completed successfully') || log.message.includes('Crawl failed')) {
           run.status = log.message.includes('failed') ? 'failed' : 'complete';
         }
@@ -223,15 +225,15 @@ export default function CrawlLogs() {
                 onClick={() => setSelectedRunId(run.run_id)}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {run.run_id.substring(0, 8)}...
+                  <p className="text-sm font-medium text-gray-900 truncate" title={run.target_url}>
+                    {run.target_url}
                   </p>
                   {run.status && <StatusBadge status={run.status as any} />}
                 </div>
-                <p className="text-xs text-gray-700 truncate">{run.target_url}</p>
+                <p className="text-xs text-gray-600 truncate" title={run.run_id}>ID: {run.run_id.substring(0, 12)}...</p>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-700">{run.log_count} logs</span>
-                  <span className="text-xs text-gray-700">
+                  <span className="text-xs text-gray-800">{run.log_count} logs</span>
+                  <span className="text-xs text-gray-800">
                     {formatTimestamp(run.last_activity)}
                   </span>
                 </div>
@@ -301,17 +303,17 @@ export default function CrawlLogs() {
                           {log.log_type}
                         </span>
                         {log.thread && (
-                          <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                          <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-800">
                             {log.thread}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-700">
+                      <span className="text-xs text-gray-800">
                         {formatTimestamp(log.timestamp)}
                       </span>
                     </div>
-                    
-                    <p className="text-sm text-gray-700 mb-1">{log.message}</p>
+
+                    <p className="text-sm text-gray-900 mb-1">{log.message}</p>
                     
                     {log.execution_stats && (
                       <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
@@ -329,10 +331,10 @@ export default function CrawlLogs() {
                     )}
                     
                     <details className="mt-2">
-                      <summary className="text-xs text-gray-700 cursor-pointer hover:text-gray-700">
+                      <summary className="text-xs text-gray-900 cursor-pointer hover:text-blue-600">
                         Raw log line
                       </summary>
-                      <pre className="text-xs text-gray-800 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
+                      <pre className="text-xs text-gray-900 mt-1 whitespace-pre-wrap bg-gray-50 p-2 rounded">
                         {log.raw_log_line}
                       </pre>
                     </details>
@@ -340,14 +342,14 @@ export default function CrawlLogs() {
                 ))}
                 
                 {logs.length === 0 && !loading && (
-                  <div className="text-center py-8 text-gray-700">
+                  <div className="text-center py-8 text-gray-900">
                     No logs found for this run
                   </div>
                 )}
               </div>
             </>
           ) : (
-            <div className="text-center py-12 text-gray-700">
+            <div className="text-center py-12 text-gray-900">
               Select a crawl run to view its logs
             </div>
           )}

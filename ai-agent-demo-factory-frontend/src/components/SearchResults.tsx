@@ -36,7 +36,7 @@ export default function SearchResults() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchNABData = async (query: string = '') => {
+  const fetchCrawledData = async (query: string = '') => {
     setLoading(true);
     setError(null);
     
@@ -67,12 +67,12 @@ export default function SearchResults() {
   };
 
   useEffect(() => {
-    fetchNABData();
+    fetchCrawledData();
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchNABData(searchQuery);
+    fetchCrawledData(searchQuery);
   };
 
   const formatSize = (bytes?: number) => {
@@ -114,7 +114,7 @@ export default function SearchResults() {
               type="button"
               onClick={() => {
                 setSearchQuery('');
-                fetchNABData();
+                fetchCrawledData();
               }}
               className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
             >

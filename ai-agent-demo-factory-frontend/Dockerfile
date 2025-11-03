@@ -1,22 +1,24 @@
-# Use a Node.js official image as the base for building and serving the React app
+# Frontend Dockerfile for Next.js - Development Mode
 FROM node:20-alpine
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json from the correct location
-# Note: The COPY path should be relative to the build context
-COPY package*.json ./
+# Install build dependencies for native modules
+RUN apk add --no-cache libc6-compat python3 make g++
 
-# Install project dependencies
-RUN npm ci
+# Copy only package.json first
+COPY package.json ./
 
-# Copy the rest of your frontend application files
-COPY . /app
+# Generate fresh lockfile for Alpine Linux platform
+RUN npm install
 
-# Expose the port your React development server typically runs on
+# Copy application source
+COPY . .
+
 EXPOSE 3000
 
-# Command to start the React development server
-# Use npm start for Create React App, or npm run dev for Vite
-CMD ["npm", "run" , "dev"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# Run in development mode
+CMD ["npm", "run", "dev"]

@@ -4,9 +4,9 @@ FROM openjdk:17-jdk-slim
 # Set working directory
 WORKDIR /app
 
-# Install Maven
+# Install Maven and bash
 RUN apt-get update && \
-    apt-get install -y maven && \
+    apt-get install -y maven bash && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -31,7 +31,8 @@ RUN echo '#!/bin/bash\necho "Norconex Runner is ready"\nexit 0' > /usr/local/bin
 
 # Copy and setup the trigger crawler script
 COPY trigger-crawler.sh /app/trigger-crawler.sh
-RUN chmod +x /app/trigger-crawler.sh
+# Convert Windows line endings to Unix (CRLF -> LF) for Linux compatibility
+RUN sed -i 's/\r$//' /app/trigger-crawler.sh && chmod +x /app/trigger-crawler.sh
 
 # Default command - run the trigger crawler monitoring script
 CMD ["/app/trigger-crawler.sh"]

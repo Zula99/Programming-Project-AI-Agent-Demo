@@ -30,9 +30,9 @@ export default function BackendLogsDropdown({
 
   // Auto-scroll to bottom only if user is at the bottom
   useEffect(() => {
-    if (isExpanded && autoScroll) {
+    if (isExpanded && autoScroll && logsContainerRef.current) {
       isAutoScrollingRef.current = true; // Mark as programmatic scroll
-      logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
 
       // Reset flag after scroll animation completes (smooth scrolling takes ~300-500ms)
       setTimeout(() => {
@@ -63,11 +63,14 @@ export default function BackendLogsDropdown({
     log.timestamp.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Backend logs are now received via props from parent component (WebSocket)
+  // No simulation needed anymore
+
   const getLevelColor = (level: string) => {
     switch (level) {
       case "ERROR": return "text-red-400";
       case "WARNING": return "text-yellow-400";
-      case "DEBUG": return "text-gray-700";
+      case "DEBUG": return "text-gray-400";
       default: return "text-green-400";
     }
   };
@@ -75,11 +78,12 @@ export default function BackendLogsDropdown({
   const getSourceColor = (source: string) => {
     switch (source) {
       case "uvicorn": return "text-blue-400";
-      case "main": return "text-purple-400";
-      case "crawler": return "text-cyan-400";
-      case "indexer": return "text-orange-400";
-      case "schema_processor": return "text-pink-400";
-      default: return "text-gray-700";
+      case "crawler": return "text-purple-400";
+      case "parser": return "text-cyan-400";
+      case "classifier": return "text-orange-400";
+      case "network": return "text-pink-400";
+      case "storage": return "text-indigo-400";
+      default: return "text-gray-400";
     }
   };
 
@@ -98,19 +102,19 @@ export default function BackendLogsDropdown({
             <div className={`w-2 h-2 rounded-full ${
               isConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
             }`} />
-            <span className="text-xs text-gray-700">
+            <span className="text-xs text-gray-500">
               {isConnected ? 'Live' : 'Disconnected'}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-gray-500">
             {backendLogs.length} entries
           </span>
           {isExpanded ? (
-            <HiChevronUp className="h-5 w-5 text-gray-700" />
+            <HiChevronUp className="h-5 w-5 text-gray-500" />
           ) : (
-            <HiChevronDown className="h-5 w-5 text-gray-700" />
+            <HiChevronDown className="h-5 w-5 text-gray-500" />
           )}
         </div>
       </button>
@@ -121,7 +125,7 @@ export default function BackendLogsDropdown({
           <div className="p-3 bg-gray-800 border-b border-gray-700 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <HiCodeBracket className="h-4 w-4 text-gray-400" />
-              <span className="text-xs text-gray-300 font-mono">
+              <span className="text-xs text-gray-400 font-mono">
                 Real-time backend output • Auto-scroll {autoScroll ? 'enabled' : 'paused'}
               </span>
             </div>
@@ -134,12 +138,12 @@ export default function BackendLogsDropdown({
                 placeholder="Search logs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-gray-200 text-xs font-mono outline-none w-64 placeholder-gray-400"
+                className="bg-transparent text-gray-300 text-xs font-mono outline-none w-64 placeholder-gray-500"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="text-gray-300 hover:text-gray-100 text-xs"
+                  className="text-gray-400 hover:text-gray-200 text-xs"
                 >
                   Clear
                 </button>
@@ -153,15 +157,15 @@ export default function BackendLogsDropdown({
             className="h-96 overflow-y-auto p-3 font-mono text-sm"
           >
             {!runId ? (
-              <div className="text-center py-8 text-gray-400">
-                <HiCommandLine className="h-8 w-8 mx-auto mb-2 text-gray-500" />
+              <div className="text-center py-8 text-gray-500">
+                <HiCommandLine className="h-8 w-8 mx-auto mb-2 text-gray-600" />
                 <p>Backend logs will appear when a crawl is started</p>
               </div>
             ) : (
               <div className="space-y-1">
                 {filteredLogs.map((log, index) => (
                   <div key={index} className="flex items-start gap-2">
-                    <span className="text-gray-400 text-xs whitespace-nowrap">
+                    <span className="text-gray-500 text-xs whitespace-nowrap">
                       {log.timestamp}
                     </span>
                     <span className={`text-xs font-bold whitespace-nowrap ${getLevelColor(log.level)}`}>
@@ -176,8 +180,8 @@ export default function BackendLogsDropdown({
                   </div>
                 ))}
                 {filteredLogs.length === 0 && backendLogs.length > 0 && (
-                  <div className="text-center py-8 text-gray-400">
-                    <HiMagnifyingGlass className="h-8 w-8 mx-auto mb-2 text-gray-500" />
+                  <div className="text-center py-8 text-gray-500">
+                    <HiMagnifyingGlass className="h-8 w-8 mx-auto mb-2 text-gray-600" />
                     <p>No logs match your search query</p>
                   </div>
                 )}

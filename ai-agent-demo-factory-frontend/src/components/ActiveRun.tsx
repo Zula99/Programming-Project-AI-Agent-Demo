@@ -103,7 +103,7 @@ export default function ActiveRun() {
 	const [rows, setRows] = useState<PageRow[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [searchTime, setSearchTime] = useState<number | null>(null);
-	const [error, setError] = useState<string>("");
+	const [, setError] = useState<string>("");
 
     // Default fallback for when no run is selected
     const displayRun = selectedRun || {
