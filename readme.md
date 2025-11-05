@@ -16,7 +16,6 @@ https://github.com/Zula99/Programming-Project-AI-Agent-Demo.git
 DEPLOYED APPLICATION
 --------------------
 Local development: http://localhost:3000 (Frontend), http://localhost:8000 (Backend)
-Deployed URL: [Insert deployment URL if applicable, or state "Not deployed"]
 
 QUICK START
 -----------
